@@ -107,14 +107,11 @@ const AppLayout = () => {
               👋 Olá, <span className="font-bold text-black text-lg">{user?.name || user?.email}</span>
               <span className="ml-3 px-3 py-1.5 bg-emerald-200 text-emerald-900 rounded-full text-sm font-bold border border-emerald-400">
                 {user?.role === 'admin' ? '👑 Admin' : 
-                 user?.role === 'genios_card' ? '🎯 Genios Card' :
-                 user?.role === 'coord_lojinha' ? '🏪 Coord Lojinha' :
-                 user?.role === 'coord_lanchonete' ? '🍔 Coord Lanchonete' :
+                 user?.role === 'lojinha' ? '🏪 Lojinha' :
+                 user?.role === 'lanchonete' ? '🍔 Lanchonete' :
                  user?.role === 'comunicacao' ? '📢 Comunicação' :
-                 user?.role === 'vendedor_lojinha' ? '🛒 Vendedor Lojinha' :
-                 user?.role === 'vendedor_lanchonete' ? '🍔 Vendedor Lanchonete' :
-                 user?.role === 'entregador_lojinha' ? '🚚 Entregador' :
-                 user?.role === 'encontrista' ? '👤 Encontrista' : '👻 Guest'}
+                 user?.role === 'servico' ? '🔧 Serviço' :
+                 '👤 Encontrista'}
               </span>
             </div>
             <div className="flex space-x-2">

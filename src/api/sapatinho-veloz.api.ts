@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase'
 import { SapatinhoVelozOrder, SaleItem } from '../types'
-import { salesApi } from './sales.api'
 
 export const sapatinhoVelozApi = {
   getAll: async (): Promise<SapatinhoVelozOrder[]> => {
@@ -112,64 +111,33 @@ export const sapatinhoVelozApi = {
     isAnonymous?: boolean
     items: Omit<SaleItem, 'id'>[]
   }): Promise<string> => {
-    // Verificar saldo antes de criar a venda
-    const { data: card, error: cardError } = await supabase
-      .from('cards')
-      .select('id, balance, user_name')
-      .eq('user_id', params.senderUserId)
-      .single()
-
-    if (cardError) throw cardError
-
-    const total = params.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-
-    if (card.balance < total) {
-      throw new Error('Saldo insuficiente no cartão')
-    }
-
-    // Criar venda usando salesApi
-    const saleId = await salesApi.create({
-      userId: params.senderUserId,
-      sellerId: params.senderUserId,
-      items: params.items,
-      category: 'sapatinho'
+    // ✅ AGORA USA EDGE FUNCTION (SEGURO!)
+    const { data: response, error } = await supabase.functions.invoke('sapatinho-order-', {
+      body: {
+        senderTeam: params.senderTeam,
+        recipientName: params.recipientName,
+        recipientAddress: params.recipientAddress,
+        message: params.message,
+        isAnonymous: params.isAnonymous,
+        items: params.items.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      }
     })
 
-    // Criar pedido Sapatinho Veloz
-    const { data: order, error: orderError } = await supabase
-      .from('sapatinho_veloz_orders')
-      .insert({
-        sale_id: saleId,
-        sender_user_id: params.senderUserId,
-        sender_name: params.isAnonymous ? null : card.user_name,
-        sender_team: params.senderTeam,
-        recipient_name: params.recipientName,
-        recipient_address: params.recipientAddress,
-        message: params.message || null,
-        total,
-        status: 'completed'
-      })
-      .select()
-      .single()
+    if (error) {
+      console.error('Edge function error:', error)
+      throw new Error(error.message || 'Erro ao criar pedido')
+    }
 
-    if (orderError) throw orderError
+    if (!response?.success) {
+      throw new Error(response?.error || 'Erro ao criar pedido')
+    }
 
-    // Criar itens do pedido
-    const orderItems = params.items.map(item => ({
-      order_id: order.id,
-      product_id: item.productId,
-      product_name: item.productName,
-      quantity: item.quantity,
-      price: item.price
-    }))
-
-    const { error: itemsError } = await supabase
-      .from('sapatinho_veloz_order_items')
-      .insert(orderItems)
-
-    if (itemsError) throw itemsError
-
-    return order.id
+    return response.data.orderId
   },
 
   markAsDelivered: async (orderId: string): Promise<void> => {

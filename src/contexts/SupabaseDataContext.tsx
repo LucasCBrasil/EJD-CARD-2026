@@ -49,6 +49,11 @@ export interface Sale {
     card_number?: string
     user_name?: string
   }
+  seller?: {
+    id: string
+    name: string
+    email: string
+  }
 }
 
 export interface Order {
@@ -305,18 +310,27 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   // Funções de produtos
   const addProduct = async (product: Omit<Product, 'id' | 'createdAt'>) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .insert({
+      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
+      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+        method: 'POST',
+        body: {
           name: product.name,
           price: product.price,
           category: product.category,
           description: product.description,
-          stock: product.stock,
-          active: product.active
-        })
+          stock: product.stock
+        }
+      })
 
-      if (error) throw error
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Erro ao adicionar produto')
+      }
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao adicionar produto')
+      }
+
       await loadData()
     } catch (err) {
       console.error('Erro ao adicionar produto:', err)
@@ -326,15 +340,24 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
+      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
+      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+        method: 'PUT',
+        body: {
+          id,
+          ...updates
+        }
+      })
 
-      if (error) throw error
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Erro ao atualizar produto')
+      }
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao atualizar produto')
+      }
+
       await loadData()
     } catch (err) {
       console.error('Erro ao atualizar produto:', err)
@@ -344,12 +367,21 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   const deleteProduct = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .update({ active: false, updated_at: new Date().toISOString() })
-        .eq('id', id)
+      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
+      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+        method: 'DELETE',
+        body: { id }
+      })
 
-      if (error) throw error
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Erro ao deletar produto')
+      }
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao deletar produto')
+      }
+
       await loadData()
     } catch (err) {
       console.error('Erro ao deletar produto:', err)
@@ -363,18 +395,37 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   // Funções de vendas
   const makeSale = async (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
-    const { data, error } = await supabase.rpc('make_sale_tx', {
-      p_user_id: userId,
-      p_items: items,
-      p_category: category,
-      p_coupon: coupon,
-      p_discounted_total: discountedTotal
-    });
+    // ✅ AGORA USA EDGE FUNCTION (SEGURO!)
+    // Chama função na nuvem que valida tudo antes de criar a venda
+    const { data: response, error } = await supabase.functions.invoke('make-sale', {
+      body: {
+        cardId: userId,
+        items: items.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        category,
+        coupon,
+        discountedTotal
+      }
+    })
 
-    if (error) throw error;
+    if (error) {
+      console.error('Edge function error:', error)
+      throw new Error(error.message || 'Erro ao criar venda')
+    }
 
-    // data é o id da venda criada
-    return data;
+    if (!response?.success) {
+      throw new Error(response?.error || 'Erro ao criar venda')
+    }
+
+    // Recarregar dados após venda
+    await loadData()
+
+    // Retornar ID da venda criada
+    return response.data.saleId
   }
 
   const getSales = async (category?: 'lojinha' | 'lanchonete' | 'sapatinho', limit: number = 100): Promise<Sale[]> => {
@@ -453,6 +504,8 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
             user_name
           ),
           items: sale_items (
+            id,
+            product_id,
             product_name,
             quantity,
             price
@@ -474,12 +527,25 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       
       // Processar dados já carregados em 1 query (sem N+1!)
       const processedSales = (salesData || []).map((sale: any) => ({
-        ...sale,
-        seller: sale.seller || {
-          id: sale.seller_id,
-          name: sale.seller_id,
-          email: ''
-        }
+        id: sale.id,
+        userId: sale.user_id,
+        sellerId: sale.seller_id,
+        category: sale.category,
+        items: (sale.items || []).map((item: any) => ({
+          productId: item.product_id || '',
+          productName: item.product_name,
+          quantity: item.quantity,
+          price: parseFloat(item.price) || 0
+        })),
+        total: parseFloat(sale.total) || 0,
+        status: sale.status,
+        createdAt: sale.created_at,
+        card: sale.card || null,
+        seller: sale.seller ? {
+          id: sale.seller.id,
+          name: sale.seller.name || sale.seller.email || 'Vendedor',
+          email: sale.seller.email || ''
+        } : undefined
       }))
       
       return processedSales
@@ -506,6 +572,8 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
             user_name
           ),
           items: sale_items (
+            id,
+            product_id,
             product_name,
             quantity,
             price
@@ -777,47 +845,24 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   // Atualizar saldo do cartão
   const updateCardBalance = async (cardId: string, amount: number, type: 'credit' | 'debit', description?: string): Promise<void> => {
     try {
-      // Buscar cartão atual
-      const { data: card, error: cardError } = await supabase
-        .from('cards')
-        .select('balance')
-        .eq('id', cardId)
-        .single()
-      
-      if (cardError) throw cardError
-      
-      // Calcular novo saldo
-      const newBalance = type === 'credit' 
-        ? (card.balance + amount)
-        : (card.balance - amount)
-      
-      if (newBalance < 0) {
-        throw new Error('Saldo insuficiente')
+      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
+      const { data: response, error } = await supabase.functions.invoke('update-balance', {
+        body: {
+          cardId,
+          amount,
+          type,
+          description
+        }
+      })
+
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Erro ao atualizar saldo')
       }
 
-      // Atualizar saldo
-      const { error: updateError } = await supabase
-        .from('cards')
-        .update({
-          balance: newBalance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', cardId)
-
-      if (updateError) throw updateError
-
-      // Criar transação
-      const { error: transactionError } = await supabase
-        .from('transactions')
-        .insert({
-          card_id: cardId,
-          amount: type === 'credit' ? amount : -amount,
-          type,
-          description: description || `${type === 'credit' ? 'Crédito' : 'Débito'} no cartão`,
-          created_by: 'admin'
-        })
-
-      if (transactionError) throw transactionError
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao atualizar saldo')
+      }
 
       await loadData()
     } catch (err) {

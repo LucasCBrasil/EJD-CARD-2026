@@ -21,9 +21,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate()
   const { hasPermission, userRole } = usePermissions()
 
-  const isAdminRole = userRole === 'admin' || userRole === 'genios_card'
-  const isManagerRole = ['coord_lojinha', 'coord_lanchonete'].includes(userRole) || isAdminRole
-  const isStandardUser = userRole !== 'guest'
+  const isAdminRole = userRole === 'admin'
+  const isManagerRole = ['lojinha', 'lanchonete'].includes(userRole) || isAdminRole
+  const isStandardUser = true // Todos os usuários autenticados são válidos
 
   const safeNavigate = (path: string) => {
     navigate({ to: path as any, replace: true, search: {} as any })

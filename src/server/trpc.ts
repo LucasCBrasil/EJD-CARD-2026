@@ -58,7 +58,7 @@ export async function createContext(opts: any) {
     user: {
       id: user.id,
       email: user.email,
-      role: (user.user_metadata?.role || 'guest') as UserRole,
+      role: (user.user_metadata?.role || 'encontrista') as UserRole,
       metadata: user.user_metadata,
     },
     supabase,

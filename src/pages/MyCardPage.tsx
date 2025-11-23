@@ -52,11 +52,24 @@ const MyCardPage: React.FC = () => {
 
   // Carregar dados do usuário
   useEffect(() => {
-    if (!user?.id || isLoadingData) return
+    if (!user?.id) return
 
     loadUserData()
+    
+    // ✅ Recarregar quando a página ficar visível novamente
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadUserData()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [user?.id]) // Recarregar sempre que o user mudar
 
   const loadUserData = async () => {
     if (isLoadingData) return // Evita chamadas duplicadas
@@ -65,41 +78,33 @@ const MyCardPage: React.FC = () => {
       setIsLoadingData(true)
       
       if (supabaseData && isSupabaseConfigured()) {
-        // Primeiro tentar buscar do contexto (mais rápido)
-        let userCard = supabaseData.getCardByUserId(user?.id || '')
+        // ✅ SEMPRE buscar direto do Supabase para ter dados frescos
+        const { data: cardData, error } = await supabase
+          .from('cards')
+          .select('*')
+          .eq('user_id', user?.id || '')
+          .eq('is_associated', true)
+          .maybeSingle()
         
-        // Se não encontrar no contexto, buscar diretamente no Supabase
-        if (!userCard) {
-          console.log('Cartão não encontrado no contexto, buscando diretamente no Supabase para user:', user?.id)
-          const { data: cardData, error } = await supabase
-            .from('cards')
-            .select('*')
-            .eq('user_id', user?.id || '')
-            .eq('is_associated', true)
-            .maybeSingle()
-          
-          if (error) {
-            console.error('Erro ao buscar cartão:', error)
-          }
-          
-          if (cardData) {
-            console.log('Cartão encontrado no Supabase:', cardData)
-            // Mapear do formato Supabase para Card
-            userCard = {
-              id: cardData.id,
-              userId: cardData.user_id || '',
-              userName: cardData.user_name || '',
-              cardNumber: cardData.card_number || '',
-              phoneNumber: cardData.phone_number || '',
-              balance: parseFloat(cardData.balance) || 0,
-              createdAt: cardData.created_at || '',
-              updatedAt: cardData.updated_at || ''
-            }
-          } else {
-            console.log('Nenhum cartão associado encontrado para o usuário')
+        if (error) {
+          console.error('Erro ao buscar cartão:', error)
+        }
+        
+        let userCard = null
+        if (cardData) {
+          // Mapear do formato Supabase para Card
+          userCard = {
+            id: cardData.id,
+            userId: cardData.user_id || '',
+            userName: cardData.user_name || '',
+            cardNumber: cardData.card_number || '',
+            phoneNumber: cardData.phone_number || '',
+            balance: parseFloat(cardData.balance) || 0,
+            createdAt: cardData.created_at || '',
+            updatedAt: cardData.updated_at || ''
           }
         } else {
-          console.log('Cartão encontrado no contexto:', userCard)
+          console.log('Nenhum cartão associado encontrado para o usuário')
         }
         
         if (!userCard) {

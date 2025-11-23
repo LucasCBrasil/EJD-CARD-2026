@@ -44,12 +44,10 @@ export const salesRouter = router({
       const { user, supabase } = ctx
 
       // 1. Verificar permissão específica para a categoria
-      // Permission check would go here: const categoryPermission = `sales:create_${category}` as const
       const hasPermissionForCategory = ctx.user.role === 'admin' || 
-        ctx.user.role === 'genios_card' ||
-        (category === 'lojinha' && ['coord_lojinha', 'vendedor_lojinha'].includes(ctx.user.role)) ||
-        (category === 'lanchonete' && ['coord_lanchonete', 'vendedor_lanchonete'].includes(ctx.user.role)) ||
-        (category === 'sapatinho' && ['admin', 'genios_card'].includes(ctx.user.role))
+        (category === 'lojinha' && ctx.user.role === 'lojinha') ||
+        (category === 'lanchonete' && ctx.user.role === 'lanchonete') ||
+        (category === 'sapatinho' && ['admin', 'lojinha', 'lanchonete', 'comunicacao'].includes(ctx.user.role))
 
       if (!hasPermissionForCategory) {
         throw new TRPCError({
@@ -269,9 +267,8 @@ export const salesRouter = router({
       // Verificar permissão para a categoria
       if (category) {
         const hasPermissionForCategory = ctx.user.role === 'admin' || 
-          ctx.user.role === 'genios_card' ||
-          (category === 'lojinha' && ['coord_lojinha', 'vendedor_lojinha'].includes(ctx.user.role)) ||
-          (category === 'lanchonete' && ['coord_lanchonete', 'vendedor_lanchonete'].includes(ctx.user.role))
+          (category === 'lojinha' && ctx.user.role === 'lojinha') ||
+          (category === 'lanchonete' && ctx.user.role === 'lanchonete')
 
         if (!hasPermissionForCategory) {
           throw new TRPCError({

@@ -18,15 +18,11 @@ interface User {
 const getRoleBadge = (role: UserRole) => {
   const badges: Record<UserRole, { color: string; text: string; emoji: string }> = {
     admin: { color: 'bg-purple-100 text-purple-700', text: 'Admin', emoji: '👑' },
-    genios_card: { color: 'bg-yellow-100 text-yellow-700', text: 'Genios Card', emoji: '✨' },
-    coord_lojinha: { color: 'bg-blue-100 text-blue-700', text: 'Coord Lojinha', emoji: '🏪' },
-    coord_lanchonete: { color: 'bg-orange-100 text-orange-700', text: 'Coord Lanchonete', emoji: '🍔' },
+    lojinha: { color: 'bg-blue-100 text-blue-700', text: 'Lojinha', emoji: '🏪' },
+    lanchonete: { color: 'bg-orange-100 text-orange-700', text: 'Lanchonete', emoji: '🍔' },
     comunicacao: { color: 'bg-green-100 text-green-700', text: 'Comunicação', emoji: '📢' },
-    vendedor_lojinha: { color: 'bg-cyan-100 text-cyan-700', text: 'Vendedor Lojinha', emoji: '💼' },
-    entregador_lojinha: { color: 'bg-yellow-100 text-yellow-700', text: 'Entregador Lojinha', emoji: '🚴' },
-    vendedor_lanchonete: { color: 'bg-orange-100 text-orange-700', text: 'Vendedor Lanchonete', emoji: '🍕' },
+    servico: { color: 'bg-yellow-100 text-yellow-700', text: 'Serviço', emoji: '🔧' },
     encontrista: { color: 'bg-gray-100 text-gray-700', text: 'Encontrista', emoji: '👤' },
-    guest: { color: 'bg-gray-200 text-gray-600', text: 'Convidado', emoji: '👥' },
   }
   return badges[role] || badges.encontrista
 }
@@ -100,7 +96,7 @@ const UserManagement: React.FC = () => {
       }
 
       // Validar que a role é válida
-      const validRoles: UserRole[] = ['admin', 'genios_card', 'coord_lojinha', 'coord_lanchonete', 'comunicacao', 'vendedor_lojinha', 'entregador_lojinha', 'vendedor_lanchonete', 'encontrista', 'guest']
+      const validRoles: UserRole[] = ['admin', 'lojinha', 'lanchonete', 'comunicacao', 'servico', 'encontrista']
       if (!validRoles.includes(role)) {
         showError('Role inválido', 'O role selecionado não é válido.')
         return
@@ -246,7 +242,7 @@ const UserManagement: React.FC = () => {
                                 onChange={(e) => setNewRole(e.target.value as UserRole)}
                                 className="w-full max-w-full sm:w-56 px-3 py-2 md:px-4 md:py-3 border-2 border-emerald-300 rounded-lg bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors font-medium shadow-sm text-sm md:text-base"
                               >
-                                {(['admin', 'genios_card', 'coord_lojinha', 'coord_lanchonete', 'comunicacao', 'vendedor_lojinha', 'entregador_lojinha', 'vendedor_lanchonete', 'encontrista'] as UserRole[]).map((role) => {
+                                {(['admin', 'lojinha', 'lanchonete', 'comunicacao', 'servico', 'encontrista'] as UserRole[]).map((role) => {
                                   const b = getRoleBadge(role)
                                   return (
                                     <option key={role} value={role}>

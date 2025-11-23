@@ -102,12 +102,6 @@ const SapatinhoVelozPage: React.FC = () => {
       return
     }
 
-    // Validação: não pode enviar para si mesmo
-    if (senderTeam === recipientAddress) {
-      showError('Erro', 'Você não pode enviar um pedido para si mesmo')
-      return
-    }
-
     const items = getSelectedItems()
     if (items.length === 0) {
       showError('Erro', 'Selecione pelo menos um produto')

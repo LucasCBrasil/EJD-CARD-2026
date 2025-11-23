@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation } from '@tanstack/react-router'
-import { Header, Button, Card, ConfirmationModal } from '../../components/shared'
+import { Button, ConfirmationModal } from '../../components/shared'
 import { productService, Product } from '../../services/productService'
 import type { SaleItem } from '../../types'
 import { useToastContext } from '../../contexts/ToastContext'
@@ -13,7 +13,6 @@ type ContextType = 'lojinha' | 'lanchonete'
 const SalesPage: React.FC = () => {
   const { getCardByNumber, makeSale, getCoupons } = useSupabaseData()
   const location = useLocation()
-  // const navigate = useNavigate()
   const { showSuccess, showError, showWarning } = useToastContext()
 
   const context: ContextType = location.pathname.endsWith('/lojinha') ? 'lojinha' : 'lanchonete'
@@ -34,6 +33,10 @@ const SalesPage: React.FC = () => {
   const [couponError, setCouponError] = useState<string | null>(null)
   const itemsPerPage = 6
 
+  // Cores por contexto
+  const accentColor = context === 'lojinha' ? 'blue' : 'orange'
+  const borderColor = context === 'lojinha' ? 'border-blue-300' : 'border-orange-300'
+
   useEffect(() => {
     loadProducts()
     loadCoupons()
@@ -53,13 +56,11 @@ const SalesPage: React.FC = () => {
 
   const loadCoupons = async () => {
     const loadedCoupons = await getCoupons()
-    console.log('Cupons carregados:', loadedCoupons)
     const resolvedCoupons = Array.isArray(loadedCoupons) 
       ? await Promise.all(loadedCoupons) 
       : []
     setCoupons(resolvedCoupons)
   }
-
 
   // Filtrar produtos por nome
   const filteredProducts = useMemo(() => {
@@ -76,7 +77,6 @@ const SalesPage: React.FC = () => {
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
 
-  // Resetar para primeira página quando filtro mudar
   useEffect(() => {
     setCurrentPage(1)
   }, [searchFilter])
@@ -99,7 +99,6 @@ const SalesPage: React.FC = () => {
 
   const discountedTotal = useMemo(() => {
     if (isCouponApplied && couponCode) {
-      console.log('Aplicando cupom:', couponCode)
       return Math.max(0, total - 10)
     } return total
   }, [total, isCouponApplied, couponCode]) 
@@ -235,50 +234,49 @@ const SalesPage: React.FC = () => {
   const config = context === 'lojinha' ? {
     title: '🛍️ Vendas - Lojinha',
     subtitle: 'Adicione itens ao carrinho e finalize a venda',
-    backPath: '/lojinha'
+    icon: '🏪'
   } : {
     title: '🍔 Vendas - Lanchonete',
     subtitle: 'Adicione itens ao carrinho e finalize o pedido',
-    backPath: '/lanchonete'
+    icon: '🍔'
   }
 
   return (
-    <div className="space-y-6">
-      <Header 
-        title={config.title}
-        subtitle={config.subtitle}
-        showLogo={false}
-      />
+    <div className={`bg-white rounded-2xl shadow-xl border-2 ${borderColor} p-6 md:p-8`}>
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">{config.title}</h2>
+        <p className="text-base text-gray-600">{config.subtitle}</p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Lista de Produtos */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
           {/* Campo de busca */}
-          <div className="mb-4">
-            <input
-              type="text"
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="🔍 Buscar produto por nome..."
-              className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 font-farmhand"
-            />
-          </div>
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            placeholder="🔍 Buscar produto..."
+            className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg
+                      focus:border-gray-500 focus:outline-none transition-colors
+                      text-gray-900"
+          />
 
           {/* Grid de Produtos */}
           {paginatedProducts.length === 0 ? (
-            <Card className="bg-white/80 border-yellow-200">
-              <div className="p-6 text-center">
-                <p className="text-gray-600 font-farmhand">
-                  {searchFilter ? 'Nenhum produto encontrado com esse nome.' : 'Nenhum produto disponível.'}
-                </p>
-              </div>
-            </Card>
+            <div className="bg-gray-50 rounded-lg border-2 border-gray-200 p-8 text-center">
+              <div className="text-6xl mb-4">📭</div>
+              <p className="text-gray-500">
+                {searchFilter ? 'Nenhum produto encontrado.' : 'Nenhum produto disponível.'}
+              </p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {paginatedProducts.map(p => (
-                <Card key={p.id} className="bg-white/80 border-yellow-200 hover:shadow-lg transition-shadow duration-200">
-                  <div className="p-3">
-                    <div className="h-36 w-full bg-gray-100 rounded-md overflow-hidden flex items-center justify-center mb-3">
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedProducts.map(p => (
+                  <div key={p.id} className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                    <div className="h-36 bg-gray-100 flex items-center justify-center">
                       <OptimizedImage
                         src={p.image_url || ''}
                         alt={p.name}
@@ -286,277 +284,264 @@ const SalesPage: React.FC = () => {
                         context={context}
                       />
                     </div>
-                    <h4 className="font-semibold text-emerald-700 truncate font-cardinal">{p.name}</h4>
-                    <p className="text-sm text-sky-900 font-farmhand">R$ {formatPrice(p.price)}</p>
-                    <div className="mt-3">
-                      <Button onClick={() => handleAddToCart(p)} className="w-full bg-emerald-500 hover:bg-emerald-600 font-cardinal text-sm py-2">
+                    <div className="p-3">
+                      <h4 className="font-bold text-gray-900 text-sm mb-1 truncate">{p.name}</h4>
+                      <p className="text-lg font-bold text-emerald-600 mb-3">R$ {formatPrice(p.price)}</p>
+                      <button 
+                        onClick={() => handleAddToCart(p)} 
+                        className={`w-full ${
+                          context === 'lojinha' 
+                            ? 'bg-blue-500 hover:bg-blue-600' 
+                            : 'bg-orange-500 hover:bg-orange-600'
+                        } text-white font-semibold py-2 px-4 rounded-lg transition-colors`}
+                      >
                         ➕ Adicionar
-                      </Button>
+                      </button>
                     </div>
                   </div>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* Paginação */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-2 mt-6">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-yellow-500 hover:bg-yellow-600 text-black"
-              >
-                ← Anterior
-              </button>
-
-              <div className="flex space-x-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                      currentPage === page 
-                        ? 'bg-sky-200 hover:bg-sky-300 shadow-lg' 
-                        : 'bg-white hover:bg-emerald-100 shadow'
-                    }`}
-                    style={{ minWidth: '40px' }}
-                  >
-                    {page}
-                  </button>
                 ))}
               </div>
 
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500 hover:bg-emerald-600 text-black"
-              >
-                Próximo →
-              </button>
-            </div>
-          )}
+              {/* Paginação */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 pt-4">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 ${
+                      context === 'lojinha' 
+                        ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
+                        : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
+                    } text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors`}
+                  >
+                    ← Anterior
+                  </button>
 
-          {/* Informações de Paginação */}
-          {filteredProducts.length > 0 && (
-            <div className="text-center text-gray-600 font-farmhand mt-4">
-              Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredProducts.length)} de {filteredProducts.length} produtos
-            </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      const page = i + 1
+                      const isActive = currentPage === page
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-10 h-10 rounded-lg font-bold transition-colors ${
+                            isActive
+                              ? context === 'lojinha'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-orange-500 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className={`px-4 py-2 ${
+                      context === 'lojinha' 
+                        ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
+                        : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
+                    } text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors`}
+                  >
+                    Próximo →
+                  </button>
+                </div>
+              )}
+
+              {/* Info de Paginação */}
+              <div className="text-center text-sm text-gray-600">
+                Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredProducts.length)} de {filteredProducts.length} produtos
+              </div>
+            </>
           )}
         </div>
 
         {/* Carrinho */}
-      <div>
-        <Card className="bg-white/80 border-yellow-200">
-          <div className="p-4">
-            <h3 className="text-lg font-bold text-emerald-700 mb-3 font-cardinal">🛒 Carrinho</h3>
+        <div className="lg:col-span-1">
+          <div className="bg-gray-50 rounded-lg border-2 border-gray-300 p-3 sticky top-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-3">
+              🛒 Carrinho
+            </h3>
 
             {/* Campo de cartão */}
-            <div className="mb-4">
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label htmlFor="cardNumber" className="block text-sm font-semibold text-black mb-2">Número do Cartão</label>
-                  <input
-                    id="cardNumber"
-                    type="text"
-                    value={cardNumber}
-                    onChange={handleCardNumberChange}
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
-                    placeholder="001"
-                    maxLength={16}
-                  />
+            <div className="mb-3 space-y-2">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Número do Cartão</label>
+              <input
+                type="text"
+                value={cardNumber}
+                onChange={handleCardNumberChange}
+                className="w-full px-2.5 py-1.5 border-2 border-gray-300 rounded-md
+                          focus:border-gray-500 focus:outline-none bg-white text-gray-900 text-sm"
+                placeholder="001"
+                maxLength={16}
+              />
+              
+              {selectedCard ? (
+                <div className="bg-emerald-50 rounded-md p-2 border border-emerald-200">
+                  <p className="text-xs text-gray-900">
+                    <strong>Nome:</strong> {selectedCard.user_name}
+                  </p>
+                  <p className="text-xs text-gray-900">
+                    <strong>Saldo:</strong> R$ {selectedCard.balance.toFixed(2)}
+                  </p>
+                  <p className={`text-xs font-semibold ${
+                    discountedTotal > selectedCard.balance ? 'text-red-600' : 'text-emerald-600'
+                  }`}>
+                    <strong>Após:</strong> R$ {(selectedCard.balance - discountedTotal).toFixed(2)}
+                  </p>
                 </div>
-                <div>
-                  {selectedCard ? (
-                    <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-3">
-                      <p className="text-black"><strong>Nome:</strong> {selectedCard.user_name || 'N/A'}</p>
-                      <p className="text-black">
-                        <strong>Número:</strong>{' '}
-                        {selectedCard.card_number
-                          ? selectedCard.card_number.toString().replace(/(\d{4})(?=\d)/g, '$1 ')
-                          : 'N/A'}
-                      </p>
-                      <p className="text-black">
-                        <strong>Saldo:</strong> R${' '}
-                        {typeof selectedCard.balance === 'number'
-                          ? selectedCard.balance.toFixed(2).replace('.', ',')
-                          : '0,00'}
-                      </p>
-                      <p
-                        className={`text-black mt-1 ${
-                          discountedTotal > (selectedCard.balance || 0) ? 'text-red-600' : ''
-                        }`}
-                      >
-                        <strong>Após compra:</strong> R${' '}
-                        {typeof selectedCard.balance === 'number'
-                          ? (selectedCard.balance - discountedTotal).toFixed(2).replace('.', ',')
-                          : '0,00'}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-600 font-farmhand">
-                      {error || 'Informe um número de cartão válido.'}
-                    </p>
-                  )}
-                </div>
-              </div>
-              </div>
-
-              {/* Itens do carrinho */}
-              {Object.keys(cartItems).length === 0 ? (
-                <p className="text-sm text-gray-600 font-farmhand">Nenhum item no carrinho.</p>
               ) : (
-                <div className="space-y-3">
+                <p className="text-xs text-gray-500">
+                  {error || 'Informe um cartão'}
+                </p>
+              )}
+            </div>
+
+            {/* Itens do carrinho */}
+            {Object.keys(cartItems).length === 0 ? (
+              <div className="text-center py-6">
+                <div className="text-3xl mb-1">🛒</div>
+                <p className="text-gray-500 text-xs">Carrinho vazio</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Lista de itens */}
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
                   {Object.entries(cartItems).map(([productId, qty]) => {
                     const p = products.find(pr => pr.id === productId)!
                     return (
-                      <div key={productId} className="flex items-center gap-2">
-                        <OptimizedImage
-                          src={p.image_url || ''}
-                          alt={p.name}
-                          className="w-10 h-10 rounded object-cover flex-shrink-0"
-                          context={context}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-emerald-700 font-cardinal">{p.name}</p>
-                          <p className="text-xs text-sky-900 font-farmhand">R$ {formatPrice(p.price)}</p>
+                      <div key={productId} className="bg-white p-1.5 rounded border border-gray-200">
+                        <div className="flex items-center gap-1.5">
+                          <OptimizedImage
+                            src={p.image_url || ''}
+                            alt={p.name}
+                            className="w-10 h-10 rounded object-cover flex-shrink-0"
+                            context={context}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-900 truncate leading-tight">{p.name}</p>
+                            <p className="text-xs text-gray-600">R$ {formatPrice(p.price)}</p>
+                          </div>
                         </div>
-                        <div className="items-center space-x-1 flex-shrink-0">
-                          <div className="text-sm font-semibold text-sky-900 w-20 text-right flex-shrink-0">
+                        <div className="flex items-center justify-between mt-1.5">
+                          <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleDecrease(productId)}
-                              className="!px-1.5 !py-0.5 mr-1 rounded bg-gray-200 hover:bg-gray-300 text-xs"
+                              className="w-5 h-5 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xs"
                             >
                               -
                             </button>
-                            <span className="w-5 text-center text-xs">{qty}</span>
+                            <span className="w-5 text-center text-xs font-semibold">{qty}</span>
                             <button
                               onClick={() => handleIncrease(productId)}
-                              className="!px-1.5 !py-0.5 ml-1 rounded bg-gray-200 hover:bg-gray-300 text-xs"
+                              className="w-5 h-5 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xs"
                             >
                               +
                             </button>
                           </div>
-                          <div className="text-sm font-semibold text-sky-900 w-20 text-right flex-shrink-0">
+                          <div className="text-xs font-bold text-gray-900">
                             R$ {formatPrice(p.price * qty)}
                           </div>
                         </div>
                       </div>
                     )
                   })}
+                </div>
 
-                  {/* Campo de cupom (somente lojinha) */}
-                  {context === 'lojinha' && (
-                    <div className="pt-3 border-t">
-                      <label className="block text-sm font-semibold text-black mb-2">
-                        Cupom de desconto
-                      </label>
-                      <div className="flex gap-2 items-center">
-                        <select
-                          value={couponCode}
-                          onChange={e => setCouponCode(e.target.value)}
-                          disabled={isCouponApplied || total < 150 || coupons.length === 0}
-                          className={`w-3/4 h-[48px] px-3 border rounded-md text-sm font-farmhand transition-colors duration-200
-                            ${total < 150 
-                              ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed' 
-                              : 'bg-white/90 border-emerald-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200'}
-                          `}
-                        >
-                          <option value="">Selecione um cupom</option>
-                          {coupons.map((coupon, idx) => (
-                            <option key={idx} value={coupon}>
-                              {coupon}
-                            </option>
-                          ))}
-                        </select>
-                        <Button
-                          className={`w-1/4 h-[48px] px-3 rounded-md font-cardinal text-sm flex items-center justify-center leading-none transition-colors duration-200
-                            ${total < 150 || isCouponApplied
-                              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                              : 'bg-emerald-500 hover:bg-emerald-600 text-white'}
-                          `}
-                          disabled={isCouponApplied || total < 150}
-                          onClick={() => {
-                            if (isCouponApplied || total < 150) return
-                              setIsCouponApplied(true)
-                              setCouponError(null)
-                              showSuccess('Cupom aplicado!', 'Desconto de R$10,00 adicionado.')
-                            }
+                {/* Cupom (lojinha) */}
+                {context === 'lojinha' && (
+                  <div className="pt-2 border-t border-gray-300">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Cupom</label>
+                    <div className="flex gap-1.5">
+                      <select
+                        value={couponCode}
+                        onChange={e => setCouponCode(e.target.value)}
+                        disabled={isCouponApplied || total < 150}
+                        className="flex-1 px-2 py-1.5 border-2 border-gray-300 rounded text-xs bg-white disabled:bg-gray-100"
+                      >
+                        <option value="">Selecione</option>
+                        {coupons.map((coupon, idx) => (
+                          <option key={idx} value={coupon}>{coupon}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => {
+                          if (total >= 150 && !isCouponApplied) {
+                            setIsCouponApplied(true)
+                            showSuccess('Cupom aplicado!', 'Desconto de R$10,00')
                           }
-                        >
-                          Aplicar
-                        </Button>
+                        }}
+                        disabled={isCouponApplied || total < 150}
+                        className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white font-semibold rounded text-xs"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                    {total < 150 && <p className="text-xs text-amber-600 mt-1">Mínimo: R$150</p>}
+                    {isCouponApplied && <p className="text-xs text-emerald-700 font-semibold mt-1">✅ -R$ 10,00</p>}
+                  </div>
+                )}
+
+                {/* Total */}
+                <div className="pt-2 border-t border-gray-300 space-y-0.5">
+                  {isCouponApplied && context === 'lojinha' && (
+                    <>
+                      <div className="flex justify-between text-xs">
+                        <span>Subtotal</span>
+                        <span>R$ {formatPrice(total)}</span>
                       </div>
-
-                      {total < 150 && (
-                        <p className="text-sm text-amber-600 mt-1 font-farmhand">
-                          ⚠️ Valor mínimo para usar o cupom: R$150,00
-                        </p>
-                      )}
-
-                      {couponError && total >= 150 && (
-                        <p className="text-sm text-red-600 mt-1 font-farmhand">{couponError}</p>
-                      )}
-
-                      {isCouponApplied && total >= 150 && (
-                        <p className="text-sm text-emerald-700 mt-1 font-farmhand">
-                          ✅ Cupom aplicado: -R$ 10,00
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Totais */}
-                  <div className={`pt-3 space-y-1 ${
-                      context === 'lojinha' && isCouponApplied ? 'border-t' : ''
-                    }`}>
-                    {context === 'lojinha' && isCouponApplied && 
-                    (<div className="flex items-center justify-between">
-                      <span className="font-bold text-emerald-700 font-cardinal">Subtotal</span>
-                      <span className="font-bold text-sky-900">R$ {formatPrice(total)}</span>
-                    </div>
-                  )}
-                    {context === 'lojinha' && isCouponApplied && (
-                      <div className="flex items-center justify-between text-sm text-emerald-700">
-                        <span>Desconto (cupom)</span>
+                      <div className="flex justify-between text-xs text-emerald-600">
+                        <span>Desconto</span>
                         <span>- R$ 10,00</span>
                       </div>
-                    )}
-                    <div className="flex items-center justify-between border-t pt-2">
-                      <span className="font-bold text-emerald-700 font-cardinal">Valor Final</span>
-                      <span className="font-bold text-sky-900">
-                        R$ {formatPrice(context === 'lojinha' && isCouponApplied ? total - 10 : total)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Botões */}
-                  <div className="flex space-x-2 pt-3">
-                    <Button onClick={handleClearCart} className="flex-1 bg-ruby-500 hover:bg-ruby-600">
-                      Limpar
-                    </Button>
-                    <Button
-                      onClick={handleOpenConfirmation}
-                      className="flex-1 bg-emerald-500 hover:bg-emerald-600"
-                      disabled={isSaving}
-                    >
-                      {isSaving ? 'Salvando...' : 'Finalizar'}
-                    </Button>
+                    </>
+                  )}
+                  <div className="flex justify-between items-center pt-1.5">
+                    <span className="font-bold text-gray-900 text-sm">Total</span>
+                    <span className="text-lg font-bold text-emerald-600">
+                      R$ {formatPrice(discountedTotal)}
+                    </span>
                   </div>
                 </div>
-              )}
-            </div>
-          </Card>
+
+                {/* Botões */}
+                <div className="flex gap-2 pt-2">
+                  <button 
+                    onClick={handleClearCart} 
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg text-sm"
+                  >
+                    Limpar
+                  </button>
+                  <button
+                    onClick={handleOpenConfirmation}
+                    disabled={isSaving}
+                    className={`flex-1 ${
+                      context === 'lojinha' 
+                        ? 'bg-blue-500 hover:bg-blue-600' 
+                        : 'bg-orange-500 hover:bg-orange-600'
+                    } text-white font-semibold py-2 rounded-lg disabled:bg-gray-400 text-sm`}
+                  >
+                    {isSaving ? 'Salvando...' : 'Finalizar'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Modal de Confirmação do Pedido */}
+      {/* Modal de Confirmação */}
       <ConfirmationModal
         isOpen={showConfirmation}
         onClose={handleCancelConfirmation}
         onConfirm={() => { setShowConfirmation(false); handleConfirmSale() }}
         title={context === 'lojinha' ? 'Confirmar Venda' : 'Confirmar Pedido'}
-        icon={context === 'lojinha' ? '🛍️' : '🍔'}
+        icon={config.icon}
         card={selectedCard}
         transactionType="debit" 
         amount={discountedTotal.toFixed(2)}
@@ -572,5 +557,3 @@ const SalesPage: React.FC = () => {
 }
 
 export default SalesPage
-
-
