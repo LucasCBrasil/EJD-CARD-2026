@@ -55,12 +55,43 @@ CREATE TABLE IF NOT EXISTS sales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     card_id UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
     seller_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
-    sale_id TEXT UNIQUE NOT NULL,
+    sale_number BIGSERIAL NOT NULL,
     category TEXT NOT NULL CHECK (category IN ('lojinha', 'lanchonete')),
     total NUMERIC(10,2) NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('completed', 'delivered')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    delivered_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
+
+-- Criar sequências separadas por categoria
+CREATE SEQUENCE IF NOT EXISTS sales_lojinha_seq;
+CREATE SEQUENCE IF NOT EXISTS sales_lanchonete_seq;
+
+-- Remover o default BIGSERIAL do PostgreSQL
+ALTER TABLE public.sales
+ALTER COLUMN sale_number DROP DEFAULT;
+
+-- Função para escolher a sequência com base na categoria
+CREATE OR REPLACE FUNCTION public.get_sale_number_for_category()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.category = 'lanchonete' THEN
+    NEW.sale_number := nextval('sales_lanchonete_seq');
+  ELSE
+    NEW.sale_number := nextval('sales_lojinha_seq');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Criar trigger que aplica o próximo número automaticamente
+DROP TRIGGER IF EXISTS trg_sales_sale_number ON public.sales;
+
+CREATE TRIGGER trg_sales_sale_number
+BEFORE INSERT ON public.sales
+FOR EACH ROW
+WHEN (NEW.sale_number IS NULL)
+EXECUTE FUNCTION public.get_sale_number_for_category();
 
 -- Índices para sales
 CREATE INDEX IF NOT EXISTS idx_sales_card_id ON sales(card_id);
