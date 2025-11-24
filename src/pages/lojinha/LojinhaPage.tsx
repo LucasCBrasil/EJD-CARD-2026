@@ -1,109 +1,95 @@
-import { useNavigate } from '@tanstack/react-router'
-import { Card, Button, Header } from '../../components/shared'
+import React from 'react'
+import { InternalCard } from '../../components/shared'
+import { usePermissions } from '../../hooks/usePermissions'
 
 const LojinhaPage = () => {
-  const navigate = useNavigate()
+  const {
+    canSellLojinha,
+    canManageProductsLojinha,
+    canViewSalesHistoryLojinha,
+    canViewOpenOrders
+  } = usePermissions()
+
+  const cards = [
+    {
+      icon: '🛒',
+      title: 'Realizar Venda',
+      description: 'Processar vendas de produtos da lojinha',
+      path: '/lojinha/select',
+      color: 'from-green-100 to-green-200',
+      gradient: 'border-green-300',
+      canAccess: canSellLojinha
+    },
+    {
+      icon: '📊',
+      title: 'Histórico de Vendas',
+      description: 'Consultar vendas realizadas',
+      path: '/historico/lojinha',
+      color: 'from-blue-100 to-blue-200',
+      gradient: 'border-blue-300',
+      canAccess: canViewSalesHistoryLojinha
+    },
+    {
+      icon: '📦',
+      title: 'Cadastrar Produto',
+      description: 'Adicionar novo produto ao estoque',
+      path: '/lojinha/products/create',
+      color: 'from-emerald-100 to-emerald-200',
+      gradient: 'border-emerald-300',
+      canAccess: canManageProductsLojinha
+    },
+    {
+      icon: '📋',
+      title: 'Listar Produtos',
+      description: 'Gerenciar produtos cadastrados',
+      path: '/lojinha/products',
+      color: 'from-compass-100 to-compass-200',
+      gradient: 'border-compass-300',
+      canAccess: canManageProductsLojinha
+    },
+    {
+      icon: '📥',
+      title: 'Pedidos Abertos',
+      description: 'Ver pedidos pendentes de entrega',
+      path: '/pedidos-lojinha',
+      color: 'from-wizard-100 to-wizard-200',
+      gradient: 'border-wizard-300',
+      canAccess: canViewOpenOrders
+    }
+  ]
+
+  const accessibleCards = cards.filter(card => card.canAccess)
 
   return (
     <div className="space-y-6">
-      <Header 
-            title="🛍️ Lojinha Mágica"
-            subtitle="Gerencie os produtos e vendas da lojinha"
-            showLogo={false}
-        />
-      {/* Cards de Funcionalidades da Lojinha */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Gerenciar Produtos */}
-        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer" onClick={() => navigate({ to: '/lojinha/products' as any, search: {} as any })}>
-          <div className="text-center">
-            <div className="text-5xl mb-4">🛍️</div>
-            <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-              Gerenciar Produtos
-            </h3>
-            <p className="text-black-700 mb-4 font-farmhand">
-              Cadastre, edite e visualize produtos da lojinha
-            </p>
-            <Button 
-              size="lg"
-              className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-emerald-200"
-              onClick={(event) => {
-                event.stopPropagation()
-                navigate({ to: '/lojinha/select' as any, search: {} as any })
-              }}
-            >
-              🛍️ Gerenciar Produtos
-            </Button>
-          </div>
-        </Card>
-        
-        {/* Vendas */}
-        <Card className="bg-gradient-to-br from-sky-50 to-sky-100 border-sky-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer" onClick={() => navigate({ to: '/vendas/lojinha' as any, search: {} as any })}>
-          <div className="text-center">
-            <div className="text-5xl mb-4">💰</div>
-            <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-              Vendas
-            </h3>
-            <p className="text-black-700 mb-4 font-farmhand">
-              Processe vendas e gerencie o caixa
-            </p>
-            <Button 
-              size="lg"
-              className="bg-sky-500 hover:bg-sky-600 text-white shadow-lg hover:shadow-emerald-200"
-              onClick={(event) => {
-                event.stopPropagation()
-                navigate({ to: '/vendas/lojinha' as any, search: {} as any })
-              }}
-            >
-              💰 Vendas
-            </Button>
-          </div>
-        </Card>
+      <div className="text-center mb-8">
+        <h2 className="text-3xl md:text-4xl font-bold text-black mb-3 font-cardinal drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
+          🏪 Lojinha Mágica
+        </h2>
+        <p className="text-lg text-gray-700 font-farmhand drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+          Vendas, produtos, histórico e pedidos da lojinha
+        </p>
+        {/* Linha decorativa */}
+        <div className="flex justify-center items-center mt-4 space-x-2">
+          <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-green-400 to-transparent"></div>
+          <span className="text-green-400 text-xl">✨</span>
+          <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-green-400 to-transparent"></div>
+        </div>
+      </div>
 
-        {/* Gerenciar Produtos - Sapatinho Veloz */}
-        <Card className="bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer" onClick={() => navigate({ to: '/sapatinho-veloz/products' as any, search: {} as any })}>
-          <div className="text-center">
-            <div className="text-5xl mb-4">👠</div>
-            <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-              Gerenciar Produtos Sapatinho
-            </h3>
-            <p className="text-black-700 mb-4 font-farmhand">
-              Cadastre, edite e visualize itens do Sapatinho Veloz
-            </p>
-            <Button 
-              size="lg"
-              className="bg-pink-500 hover:bg-pink-600 text-white shadow-lg hover:shadow-pink-200"
-              onClick={(event) => {
-                event.stopPropagation()
-                navigate({ to: '/sapatinho-veloz/select' as any, search: {} as any })
-              }}
-            >
-              👠 Produtos Sapatinho
-            </Button>
-          </div>
-        </Card>
-
-        {/* Vendas - Sapatinho Veloz */}
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer" onClick={() => navigate({ to: '/sapatinho-veloz/sales' as any, search: {} as any })}>
-          <div className="text-center">
-            <div className="text-5xl mb-4">💜</div>
-            <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-              Vendas Sapatinho
-            </h3>
-            <p className="text-black-700 mb-4 font-farmhand">
-              Acompanhe e registre vendas do Sapatinho Mágico
-            </p>
-            <Button 
-              size="lg"
-              className="bg-purple-500 hover:bg-purple-600 text-white shadow-lg hover:shadow-purple-200"
-              onClick={(event) => {
-                event.stopPropagation()
-                navigate({ to: '/sapatinho-veloz/sales' as any, search: {} as any })
-              }}
-            >
-              💜 Vendas Sapatinho
-            </Button>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        {accessibleCards.map((card, index) => (
+          <InternalCard
+            key={card.path}
+            icon={card.icon}
+            title={card.title}
+            description={card.description}
+            path={card.path}
+            color={card.color}
+            gradient={card.gradient}
+            index={index}
+          />
+        ))}
       </div>
     </div>
   )

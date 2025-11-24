@@ -6,16 +6,12 @@
  */
 
 export type UserRole = 
-  | 'admin' 
-  | 'genios_card'
-  | 'coord_lojinha'
-  | 'coord_lanchonete'
+  | 'admin'
+  | 'lojinha'
+  | 'lanchonete'
   | 'comunicacao'
-  | 'vendedor_lojinha'
-  | 'entregador_lojinha'
-  | 'vendedor_lanchonete'
+  | 'servico'
   | 'encontrista'
-  | 'guest'
 
 export type Permission =
   // Cartões
@@ -48,6 +44,7 @@ export type Permission =
   // Pedidos
   | 'orders:view'
   | 'orders:mark_delivered'
+  | 'orders:place_sapatinho'  // Fazer pedidos no Sapatinho
   // Admin
   | 'admin:manage_users'
   | 'admin:view_reports'
@@ -61,60 +58,39 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'products:delete_lojinha', 'products:delete_lanchonete', 'products:delete_sapatinho',
     'sales:create_lojinha', 'sales:create_lanchonete', 'sales:create_sapatinho',
     'sales:view_history_lojinha', 'sales:view_history_lanchonete', 'sales:view_history_sapatinho',
-    'orders:view', 'orders:mark_delivered',
+    'orders:view', 'orders:mark_delivered', 'orders:place_sapatinho',
     'admin:manage_users', 'admin:view_reports'
   ],
   
-  genios_card: [
-    'cards:view_all', 'cards:create', 'cards:update', 'cards:delete',
-    'cards:add_balance', 'cards:debit_balance',
-    'products:view', 'products:create_lojinha', 'products:create_lanchonete', 'products:create_sapatinho',
-    'products:update_lojinha', 'products:update_lanchonete', 'products:update_sapatinho',
-    'products:delete_lojinha', 'products:delete_lanchonete', 'products:delete_sapatinho',
-    'sales:create_lojinha', 'sales:create_lanchonete', 'sales:create_sapatinho',
-    'sales:view_history_lojinha', 'sales:view_history_lanchonete', 'sales:view_history_sapatinho',
-    'orders:view', 'orders:mark_delivered',
-    'admin:manage_users', 'admin:view_reports'
-  ],
-  
-  coord_lojinha: [
+  lojinha: [
     'cards:view_all',
     'products:view', 'products:create_lojinha', 'products:update_lojinha', 'products:delete_lojinha',
     'sales:create_lojinha', 'sales:view_history_lojinha',
+    'orders:place_sapatinho',
   ],
   
-  coord_lanchonete: [
+  lanchonete: [
     'cards:view_all',
     'products:view', 'products:create_lanchonete', 'products:update_lanchonete', 'products:delete_lanchonete',
     'sales:create_lanchonete', 'sales:view_history_lanchonete',
+    'orders:place_sapatinho',
   ],
   
   comunicacao: [
-    'cards:view_all', 'cards:add_balance',
+    'cards:view_all', 'cards:create', 'cards:update', 'cards:add_balance',
+    'orders:place_sapatinho',
   ],
   
-  vendedor_lojinha: [
-    'cards:view_all',
-    'products:view',
-    'sales:create_lojinha',
-  ],
-  
-  entregador_lojinha: [
-    'orders:view', 'orders:mark_delivered',
-  ],
-  
-  vendedor_lanchonete: [
-    'cards:view_all',
-    'products:view',
-    'sales:create_lanchonete',
+  servico: [
+    'cards:view_own',
+    'sales:view_own',
+    'orders:place_sapatinho',  // ✅ Pode fazer pedidos no sapatinho
   ],
   
   encontrista: [
     'cards:view_own',
     'sales:view_own',
   ],
-  
-  guest: []
 }
 
 export function hasPermission(role: UserRole, permission: Permission): boolean {

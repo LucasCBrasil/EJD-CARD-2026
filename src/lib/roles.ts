@@ -1,15 +1,11 @@
 
 export type UserRole = 
-  | 'admin' 
-  | 'genios_card'
-  | 'coord_lojinha'
-  | 'coord_lanchonete'
+  | 'admin'
+  | 'lojinha'
+  | 'lanchonete'
   | 'comunicacao'
-  | 'vendedor_lojinha'
-  | 'entregador_lojinha'
-  | 'vendedor_lanchonete'
+  | 'servico'
   | 'encontrista'
-  | 'guest'
 
 export interface RolePermissions {
   // Cartões
@@ -30,15 +26,17 @@ export interface RolePermissions {
   // Vendas (realizar vendas)
   canSellLojinha: boolean
   canSellLanchonete: boolean
+  canSellSapatinho: boolean  // Vender produtos do sapatinho
   
   // Histórico de vendas (ver relatórios)
   canViewSalesHistoryLojinha: boolean
   canViewSalesHistoryLanchonete: boolean
   canViewSalesHistorySapatinho: boolean
   
-  // Pedidos Lojinha
-  canViewOpenOrders: boolean
-  canMarkAsDelivered: boolean
+  // Pedidos Sapatinho
+  canPlaceOrderSapatinho: boolean  // FAZER pedido no sapatinho (como cliente)
+  canViewOpenOrders: boolean       // Ver pedidos abertos (lojinha + sapatinho)
+  canMarkAsDelivered: boolean      // Marcar pedidos como entregue
   
   // Admin
   canManageUsers: boolean
@@ -61,134 +59,96 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canManageProductsLanchonete: true,
     canSellLojinha: true,
     canSellLanchonete: true,
+    canSellSapatinho: true,              // ✅ Pode vender
     canViewSalesHistoryLojinha: true,
     canViewSalesHistoryLanchonete: true,
-    canViewSalesHistorySapatinho: true,
-    canViewOpenOrders: true,
+    canViewSalesHistorySapatinho: true,  // ✅ Vê histórico
+    canPlaceOrderSapatinho: true,        // ✅ Pode fazer pedidos
+    canViewOpenOrders: true,             // ✅ Vê pedidos
     canMarkAsDelivered: true,
     canManageUsers: true,
     canViewAdmin: true,
     canViewReports: true,
   },
   
-  // Genios Card - Acesso total (igual admin)
-  genios_card: {
+  // Lojinha - Acesso total à lojinha + sapatinho
+  lojinha: {
+    canViewCards: true,
+    canCreateCards: false,
+    canEditCards: false,
+    canDeleteCards: false,
+    canAddBalance: false,
+    canViewOwnBalance: true,
+    canViewAllBalances: false,
+    canManageProductsLojinha: true,
+    canManageProductsLanchonete: false,
+    canSellLojinha: true,
+    canSellLanchonete: false,
+    canSellSapatinho: true,              // ✅ Pode vender
+    canViewSalesHistoryLojinha: true,
+    canViewSalesHistoryLanchonete: false,
+    canViewSalesHistorySapatinho: true,  // ✅ Vê histórico
+    canPlaceOrderSapatinho: true,        // ✅ Pode fazer pedidos
+    canViewOpenOrders: true,              // ✅ Vê pedidos (lojinha + sapatinho)
+    canMarkAsDelivered: true,             // ✅ Marca entregue
+    canManageUsers: false,
+    canViewAdmin: false,
+    canViewReports: false,
+  },
+  
+  // Lanchonete - Acesso total à lanchonete + pode vender sapatinho
+  lanchonete: {
+    canViewCards: true,
+    canCreateCards: false,
+    canEditCards: false,
+    canDeleteCards: false,
+    canAddBalance: false,
+    canViewOwnBalance: true,
+    canViewAllBalances: false,
+    canManageProductsLojinha: false,
+    canManageProductsLanchonete: true,
+    canSellLojinha: false,
+    canSellLanchonete: true,
+    canSellSapatinho: true,              // ✅ Pode vender
+    canViewSalesHistoryLojinha: false,
+    canViewSalesHistoryLanchonete: true,
+    canViewSalesHistorySapatinho: false, // ❌ NÃO vê histórico
+    canPlaceOrderSapatinho: true,        // ✅ Pode fazer pedidos
+    canViewOpenOrders: false,             // ❌ NÃO vê pedidos
+    canMarkAsDelivered: false,
+    canManageUsers: false,
+    canViewAdmin: false,
+    canViewReports: false,
+  },
+  
+  // Comunicação - CRUD de cartões + saldo + pode vender sapatinho
+  comunicacao: {
     canViewCards: true,
     canCreateCards: true,
     canEditCards: true,
-    canDeleteCards: true,
+    canDeleteCards: false,
     canAddBalance: true,
     canViewOwnBalance: true,
     canViewAllBalances: true,
-    canManageProductsLojinha: true,
-    canManageProductsLanchonete: true,
-    canSellLojinha: true,
-    canSellLanchonete: true,
-    canViewSalesHistoryLojinha: true,
-    canViewSalesHistoryLanchonete: true,
-    canViewSalesHistorySapatinho: true,
-    canViewOpenOrders: true,
-    canMarkAsDelivered: true,
-    canManageUsers: true,
-    canViewAdmin: true,
-    canViewReports: true,
-  },
-  
-  // Coordenador Lojinha - Gerenciar produtos lojinha + ver histórico + realizar vendas
-  coord_lojinha: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
-    canAddBalance: false,
-    canViewOwnBalance: true,
-    canViewAllBalances: false,
-    canManageProductsLojinha: true,
-    canManageProductsLanchonete: false,
-    canSellLojinha: true,
-    canSellLanchonete: false,
-    canViewSalesHistoryLojinha: true,
-    canViewSalesHistoryLanchonete: false,
-    canViewSalesHistorySapatinho: false,
-    canViewOpenOrders: false,
-    canMarkAsDelivered: false,
-    canManageUsers: false,
-    canViewAdmin: false,
-    canViewReports: false,
-  },
-  
-  // Coordenador Lanchonete - Gerenciar produtos lanchonete + ver histórico + realizar vendas
-  coord_lanchonete: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
-    canAddBalance: false,
-    canViewOwnBalance: true,
-    canViewAllBalances: false,
-    canManageProductsLojinha: false,
-    canManageProductsLanchonete: true,
-    canSellLojinha: false,
-    canSellLanchonete: true,
-    canViewSalesHistoryLojinha: false,
-    canViewSalesHistoryLanchonete: true,
-    canViewSalesHistorySapatinho: false,
-    canViewOpenOrders: false,
-    canMarkAsDelivered: false,
-    canManageUsers: false,
-    canViewAdmin: false,
-    canViewReports: false,
-  },
-  
-  // Comunicação - Ver cartões + adicionar saldo
-  comunicacao: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
-    canAddBalance: true,
-    canViewOwnBalance: true,
-    canViewAllBalances: false,
     canManageProductsLojinha: false,
     canManageProductsLanchonete: false,
     canSellLojinha: false,
     canSellLanchonete: false,
+    canSellSapatinho: true,              // ✅ Pode vender
     canViewSalesHistoryLojinha: false,
     canViewSalesHistoryLanchonete: false,
-    canViewSalesHistorySapatinho: false,
-    canViewOpenOrders: false,
+    canViewSalesHistorySapatinho: false, // ❌ NÃO vê histórico
+    canPlaceOrderSapatinho: true,        // ✅ Pode fazer pedidos
+    canViewOpenOrders: false,             // ❌ NÃO vê pedidos
     canMarkAsDelivered: false,
     canManageUsers: false,
     canViewAdmin: false,
     canViewReports: false,
   },
   
-  // Vendedor Lojinha - Realizar vendas lojinha
-  vendedor_lojinha: {
+  // Serviço - Ver próprio cartão + pode fazer pedidos no Sapatinho
+  servico: {
     canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
-    canAddBalance: false,
-    canViewOwnBalance: true,
-    canViewAllBalances: false,
-    canManageProductsLojinha: false,
-    canManageProductsLanchonete: false,
-    canSellLojinha: true,
-    canSellLanchonete: false,
-    canViewSalesHistoryLojinha: false,
-    canViewSalesHistoryLanchonete: false,
-    canViewSalesHistorySapatinho: false,
-    canViewOpenOrders: false,
-    canMarkAsDelivered: false,
-    canManageUsers: false,
-    canViewAdmin: false,
-    canViewReports: false,
-  },
-  
-  // Entregador Lojinha - Ver pedidos + marcar entregue
-  entregador_lojinha: {
-    canViewCards: false,
     canCreateCards: false,
     canEditCards: false,
     canDeleteCards: false,
@@ -199,32 +159,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canManageProductsLanchonete: false,
     canSellLojinha: false,
     canSellLanchonete: false,
+    canSellSapatinho: false,             // ❌ NÃO vende
     canViewSalesHistoryLojinha: false,
     canViewSalesHistoryLanchonete: false,
     canViewSalesHistorySapatinho: false,
-    canViewOpenOrders: true,
-    canMarkAsDelivered: true,
-    canManageUsers: false,
-    canViewAdmin: false,
-    canViewReports: false,
-  },
-  
-  // Vendedor Lanchonete - Realizar vendas lanchonete
-  vendedor_lanchonete: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
-    canAddBalance: false,
-    canViewOwnBalance: true,
-    canViewAllBalances: false,
-    canManageProductsLojinha: false,
-    canManageProductsLanchonete: false,
-    canSellLojinha: false,
-    canSellLanchonete: true,
-    canViewSalesHistoryLojinha: false,
-    canViewSalesHistoryLanchonete: false,
-    canViewSalesHistorySapatinho: false,
+    canPlaceOrderSapatinho: true,        // ✅ PODE fazer pedidos
     canViewOpenOrders: false,
     canMarkAsDelivered: false,
     canManageUsers: false,
@@ -232,7 +171,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewReports: false,
   },
   
-  // Encontrista - Ver próprio saldo e cartão
+  // Encontrista - Ver próprio saldo e cartão (NÃO usa sapatinho)
   encontrista: {
     canViewCards: true,
     canCreateCards: false,
@@ -245,30 +184,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canManageProductsLanchonete: false,
     canSellLojinha: false,
     canSellLanchonete: false,
+    canSellSapatinho: false,             // ❌ NÃO pode vender
     canViewSalesHistoryLojinha: false,
     canViewSalesHistoryLanchonete: false,
     canViewSalesHistorySapatinho: false,
-    canViewOpenOrders: false,
-    canMarkAsDelivered: false,
-    canManageUsers: false,
-    canViewAdmin: false,
-    canViewReports: false,
-  },
-  guest: {
-    canViewCards: false,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
-    canAddBalance: false,
-    canViewOwnBalance: false,
-    canViewAllBalances: false,
-    canManageProductsLojinha: false,
-    canManageProductsLanchonete: false,
-    canSellLojinha: false,
-    canSellLanchonete: false,
-    canViewSalesHistoryLojinha: false,
-    canViewSalesHistoryLanchonete: false,
-    canViewSalesHistorySapatinho: false,
+    canPlaceOrderSapatinho: false,       // ❌ NÃO faz pedidos
     canViewOpenOrders: false,
     canMarkAsDelivered: false,
     canManageUsers: false,
@@ -279,7 +199,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
 
 // Função para obter permissões de um role
 export const getUserPermissions = (role: UserRole): RolePermissions => {
-  return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.guest
+  return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.encontrista
 }
 
 // Função para verificar se um usuário tem uma permissão específica

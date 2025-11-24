@@ -12,8 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as LayoutTestSimpleRouteImport } from './routes/_layout/test-simple'
-import { Route as LayoutTestPocRouteImport } from './routes/_layout/test-poc'
 import { Route as LayoutPedidosSapatinhoVelozRouteImport } from './routes/_layout/pedidos-sapatinho-veloz'
 import { Route as LayoutPedidosLojinhaRouteImport } from './routes/_layout/pedidos-lojinha'
 import { Route as LayoutMycardRouteImport } from './routes/_layout/mycard'
@@ -58,16 +56,6 @@ const LayoutRoute = LayoutRouteImport.update({
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutTestSimpleRoute = LayoutTestSimpleRouteImport.update({
-  id: '/test-simple',
-  path: '/test-simple',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutTestPocRoute = LayoutTestPocRouteImport.update({
-  id: '/test-poc',
-  path: '/test-poc',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutPedidosSapatinhoVelozRoute =
@@ -247,8 +235,6 @@ export interface FileRoutesByFullPath {
   '/mycard': typeof LayoutMycardRoute
   '/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
   '/pedidos-sapatinho-veloz': typeof LayoutPedidosSapatinhoVelozRoute
-  '/test-poc': typeof LayoutTestPocRoute
-  '/test-simple': typeof LayoutTestSimpleRoute
   '/': typeof LayoutIndexRoute
   '/cards/add': typeof LayoutCardsAddRoute
   '/cards/associate': typeof LayoutCardsAssociateRoute
@@ -284,8 +270,6 @@ export interface FileRoutesByTo {
   '/mycard': typeof LayoutMycardRoute
   '/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
   '/pedidos-sapatinho-veloz': typeof LayoutPedidosSapatinhoVelozRoute
-  '/test-poc': typeof LayoutTestPocRoute
-  '/test-simple': typeof LayoutTestSimpleRoute
   '/': typeof LayoutIndexRoute
   '/cards/add': typeof LayoutCardsAddRoute
   '/cards/associate': typeof LayoutCardsAssociateRoute
@@ -323,8 +307,6 @@ export interface FileRoutesById {
   '/_layout/mycard': typeof LayoutMycardRoute
   '/_layout/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
   '/_layout/pedidos-sapatinho-veloz': typeof LayoutPedidosSapatinhoVelozRoute
-  '/_layout/test-poc': typeof LayoutTestPocRoute
-  '/_layout/test-simple': typeof LayoutTestSimpleRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/cards/add': typeof LayoutCardsAddRoute
   '/_layout/cards/associate': typeof LayoutCardsAssociateRoute
@@ -362,8 +344,6 @@ export interface FileRouteTypes {
     | '/mycard'
     | '/pedidos-lojinha'
     | '/pedidos-sapatinho-veloz'
-    | '/test-poc'
-    | '/test-simple'
     | '/'
     | '/cards/add'
     | '/cards/associate'
@@ -399,8 +379,6 @@ export interface FileRouteTypes {
     | '/mycard'
     | '/pedidos-lojinha'
     | '/pedidos-sapatinho-veloz'
-    | '/test-poc'
-    | '/test-simple'
     | '/'
     | '/cards/add'
     | '/cards/associate'
@@ -437,8 +415,6 @@ export interface FileRouteTypes {
     | '/_layout/mycard'
     | '/_layout/pedidos-lojinha'
     | '/_layout/pedidos-sapatinho-veloz'
-    | '/_layout/test-poc'
-    | '/_layout/test-simple'
     | '/_layout/'
     | '/_layout/cards/add'
     | '/_layout/cards/associate'
@@ -495,20 +471,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof LayoutIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/test-simple': {
-      id: '/_layout/test-simple'
-      path: '/test-simple'
-      fullPath: '/test-simple'
-      preLoaderRoute: typeof LayoutTestSimpleRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/test-poc': {
-      id: '/_layout/test-poc'
-      path: '/test-poc'
-      fullPath: '/test-poc'
-      preLoaderRoute: typeof LayoutTestPocRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/pedidos-sapatinho-veloz': {
@@ -736,8 +698,6 @@ interface LayoutRouteChildren {
   LayoutMycardRoute: typeof LayoutMycardRoute
   LayoutPedidosLojinhaRoute: typeof LayoutPedidosLojinhaRoute
   LayoutPedidosSapatinhoVelozRoute: typeof LayoutPedidosSapatinhoVelozRoute
-  LayoutTestPocRoute: typeof LayoutTestPocRoute
-  LayoutTestSimpleRoute: typeof LayoutTestSimpleRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutCardsAddRoute: typeof LayoutCardsAddRoute
   LayoutCardsAssociateRoute: typeof LayoutCardsAssociateRoute
@@ -773,8 +733,6 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutMycardRoute: LayoutMycardRoute,
   LayoutPedidosLojinhaRoute: LayoutPedidosLojinhaRoute,
   LayoutPedidosSapatinhoVelozRoute: LayoutPedidosSapatinhoVelozRoute,
-  LayoutTestPocRoute: LayoutTestPocRoute,
-  LayoutTestSimpleRoute: LayoutTestSimpleRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutCardsAddRoute: LayoutCardsAddRoute,
   LayoutCardsAssociateRoute: LayoutCardsAssociateRoute,

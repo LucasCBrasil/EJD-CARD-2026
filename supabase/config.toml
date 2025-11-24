@@ -1,0 +1,29 @@
+# Configuração do Supabase Local (opcional)
+# Este arquivo é usado pelo Supabase CLI
+
+project_id = "exppyrjeqxjglwdcijsk"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+
+[functions]
+# Configuração das Edge Functions
+# As variáveis de ambiente serão lidas do arquivo .env
+

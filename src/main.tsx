@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -59,8 +59,4 @@ const cachedRoot = elementWithRoot.__appRoot
 const root = cachedRoot ?? ReactDOM.createRoot(elementWithRoot)
 elementWithRoot.__appRoot = root
 
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-)
+root.render(<App />)

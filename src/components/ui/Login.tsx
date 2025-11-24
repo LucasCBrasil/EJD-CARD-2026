@@ -21,7 +21,7 @@ const Login: React.FC = () => {
   // Redirecionar se já estiver logado
   useEffect(() => {
     if (user) {
-      safeNavigate('/mycard')
+      safeNavigate('/')
     }
   }, [user, router])
 
@@ -36,28 +36,82 @@ const Login: React.FC = () => {
         // Aguardar um pouco para garantir que o contexto do router seja atualizado
         await new Promise(resolve => setTimeout(resolve, 100))
         // Navegar após login bem-sucedido
-        safeNavigate('/mycard')
+        safeNavigate('/')
       } else {
         await register(email, password, name)
         // Após registro, fazer login automaticamente
         await login(email, password)
         // Aguardar um pouco para garantir que o contexto do router seja atualizado
         await new Promise(resolve => setTimeout(resolve, 100))
-        safeNavigate('/mycard')
+        safeNavigate('/')
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login/registro')
+      // Melhorar mensagens de erro para serem mais claras
+      let errorMessage = 'Erro ao fazer login/registro'
+      
+      if (err.message) {
+        const message = err.message.toLowerCase()
+        
+        // Erros de senha
+        if (message.includes('password') && message.includes('letter') && message.includes('number')) {
+          errorMessage = 'A senha deve conter pelo menos uma letra e um número'
+        } else if (message.includes('password') && message.includes('letter')) {
+          errorMessage = 'A senha deve conter pelo menos uma letra'
+        } else if (message.includes('password') && message.includes('number')) {
+          errorMessage = 'A senha deve conter pelo menos um número'
+        } else if (message.includes('password') && message.includes('length') || message.includes('6 characters')) {
+          errorMessage = 'A senha deve ter no mínimo 6 caracteres'
+        } else if (message.includes('password') && message.includes('weak')) {
+          errorMessage = 'A senha é muito fraca. Use uma combinação de letras, números e caracteres especiais'
+        } else if (message.includes('password')) {
+          errorMessage = 'Senha inválida. A senha deve ter no mínimo 6 caracteres e conter pelo menos uma letra e um número'
+        }
+        // Erros de email
+        else if (message.includes('email') && message.includes('invalid')) {
+          errorMessage = 'Email inválido. Verifique o formato do email'
+        } else if (message.includes('email') && message.includes('already') || message.includes('exists') || message.includes('cadastrado')) {
+          errorMessage = 'Este email já está cadastrado. Tente fazer login ou use outro email'
+        } else if (message.includes('email')) {
+          errorMessage = 'Email inválido'
+        }
+        // Erros de autenticação
+        else if (message.includes('invalid') && message.includes('credentials') || message.includes('email') && message.includes('password')) {
+          errorMessage = 'Email ou senha incorretos. Verifique suas credenciais'
+        } else if (message.includes('user not found')) {
+          errorMessage = 'Usuário não encontrado. Verifique o email ou cadastre-se'
+        } else if (message.includes('too many requests')) {
+          errorMessage = 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente'
+        }
+        // Outros erros
+        else {
+          errorMessage = err.message
+        }
+      }
+      
+      setError(errorMessage)
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen w-full relative flex items-center justify-center" style={{
-      background: 'linear-gradient(135deg, #f0fdf4 0%, #fef3c7 25%, #faf5ff 50%, #f0f9ff 75%, #fdf2f8 100%)',
-      backgroundAttachment: 'fixed',
-      backgroundSize: 'cover',
-      backgroundRepeat: 'no-repeat'
-    }}>
+    <div className="min-h-screen w-full relative flex items-center justify-center">
+      {/* Imagem de fundo - Estrada Dourada e Cidade Esmeralda */}
+      <div 
+        className="fixed inset-0"
+        style={{
+          backgroundImage: 'url(/background-emerald-city.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+          zIndex: -1,
+          pointerEvents: 'none'
+        }}
+      >
+        {/* Overlay sutil para melhorar legibilidade do formulário */}
+        <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] pointer-events-none"></div>
+      </div>
+      
       {/* Bordas decorativas douradas */}
       <div className="absolute top-0 left-0 w-20 h-20 border-t-4 border-l-4 border-yellow-400 rounded-br-lg z-20"></div>
       <div className="absolute top-0 right-0 w-20 h-20 border-t-4 border-r-4 border-yellow-400 rounded-bl-lg z-20"></div>
@@ -72,7 +126,7 @@ const Login: React.FC = () => {
             className="max-w-xs mx-auto h-auto mb-6"
           />
           <h1 className="text-3xl font-bold text-black mb-2 font-cardinal">
-            🧙‍♂️ Bem-vindo ao Mágico de Oz
+            🧙‍♂️ Bem-vindo aos caminhos mágicos
           </h1>
           <p className="text-black font-farmhand italic">
             Entre na sua jornada mágica

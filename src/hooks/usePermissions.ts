@@ -4,7 +4,7 @@ import { getUserPermissions, hasPermission, hasAnyPermission, hasAllPermissions,
 export const usePermissions = () => {
   const { user } = useAuth()
   
-  const userRole: UserRole = (user?.role as UserRole) || 'guest'
+  const userRole: UserRole = (user?.role as UserRole) || 'encontrista'
   const permissions = getUserPermissions(userRole)
 
   return {
@@ -12,7 +12,7 @@ export const usePermissions = () => {
     userRole,
     permissions,
     isAdmin: userRole === 'admin',
-    isGuest: userRole === 'guest',
+    isEncontrista: userRole === 'encontrista',
     
     // Verificações de permissão
     hasPermission: (permission: keyof RolePermissions) => hasPermission(userRole, permission),
@@ -37,11 +37,15 @@ export const usePermissions = () => {
     // Vendas
     canSellLojinha: hasPermission(userRole, 'canSellLojinha'),
     canSellLanchonete: hasPermission(userRole, 'canSellLanchonete'),
+    canSellSapatinho: hasPermission(userRole, 'canSellSapatinho'),
     
     // Histórico
     canViewSalesHistoryLojinha: hasPermission(userRole, 'canViewSalesHistoryLojinha'),
     canViewSalesHistoryLanchonete: hasPermission(userRole, 'canViewSalesHistoryLanchonete'),
     canViewSalesHistorySapatinho: hasPermission(userRole, 'canViewSalesHistorySapatinho'),
+    
+    // Pedidos Sapatinho
+    canPlaceOrderSapatinho: hasPermission(userRole, 'canPlaceOrderSapatinho'),
     
     // Entregas
     canViewOpenOrders: hasPermission(userRole, 'canViewOpenOrders'),

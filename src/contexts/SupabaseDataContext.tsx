@@ -39,7 +39,7 @@ export interface Sale {
   sellerId: string
   saleId?: string
   sale_id?: string
-  category: 'lojinha' | 'lanchonete'
+  category: 'lojinha' | 'lanchonete' | 'sapatinho'
   items: SaleItem[]
   total: number
   status: 'completed' | 'delivered'
@@ -49,11 +49,17 @@ export interface Sale {
     card_number?: string
     user_name?: string
   }
+  seller?: {
+    id: string
+    name: string
+    email: string
+  }
 }
 
 export interface Order {
   id: string
   saleId: string
+  orderCode?: string
   sale?: any
   userId: string
   customerName: string
@@ -110,7 +116,8 @@ interface SupabaseDataContextType {
   
   // Funções de vendas
   makeSale: (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => Promise<string>
-  getSales: (category?: 'lojinha' | 'lanchonete') => Promise<Sale[]>
+  getSales: (category?: 'lojinha' | 'lanchonete' | 'sapatinho', limit?: number) => Promise<Sale[]>
+  getSalesByCardId: (cardId: string, limit?: number) => Promise<Sale[]>
   
   // Funções de pedidos
   getOpenOrders: () => Promise<Order[]>
@@ -173,6 +180,9 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       setIsLoading(true)
       setError(null)
 
+      // Carregar apenas dados essenciais no início (cards e produtos)
+      // Vendas, transações e pedidos serão carregados sob demanda
+      
       // Carregar cartões
       const { data: cards, error: cardsError } = await supabase
         .from('cards')
@@ -190,33 +200,6 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
       if (productsError) throw productsError
 
-      // Carregar transações
-      const { data: transactions, error: transactionsError } = await supabase
-        .from('transactions')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (transactionsError) throw transactionsError
-
-      // Carregar vendas
-      const { data: sales, error: salesError } = await supabase
-        .from('sales')
-        .select(`
-          *,
-          sale_items (*)
-        `)
-        .order('created_at', { ascending: false })
-
-      if (salesError) throw salesError
-
-      // Carregar pedidos
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (ordersError) throw ordersError
-
       // Carregar cupons
       const { data: coupons, error: couponsError } = await supabase
         .from('coupons')
@@ -225,32 +208,14 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
       if (couponsError) throw couponsError
 
-      // Processar dados
+      // Processar apenas dados essenciais carregados
       const balances = new Map<string, { balance: number; transactions: Transaction[] }>()
       
-      // Agrupar transações por usuário
-      transactions?.forEach(tx => {
-        if (!balances.has(tx.card_id)) {
-          balances.set(tx.card_id, { balance: 0, transactions: [] })
-        }
-        const userData = balances.get(tx.card_id)!
-        userData.transactions.push({
-          id: tx.id,
-          userId: tx.card_id,
-          amount: tx.amount,
-          type: tx.type,
-          description: tx.description,
-          createdBy: tx.created_by,
-          createdAt: tx.created_at
-        })
-      })
-
-      // Calcular saldos
+      // Inicializar saldos dos cartões
       cards?.forEach(card => {
         if (!balances.has(card.id)) {
-          balances.set(card.id, { balance: 0, transactions: [] })
+          balances.set(card.id, { balance: card.balance || 0, transactions: [] })
         }
-        balances.get(card.id)!.balance = card.balance
       })
 
       // Processar produtos
@@ -258,38 +223,6 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         lojinha: products?.filter(p => p.category === 'lojinha') || [],
         lanchonete: products?.filter(p => p.category === 'lanchonete') || []
       }
-
-      // Processar vendas
-      const processedSales: Sale[] = sales?.map(sale => ({
-        id: sale.id,
-        userId: sale.card_id,
-        sellerId: sale.seller_id,
-        category: sale.category,
-        saleId: sale.sale_id,
-        items: sale.sale_items.map((item: any) => ({
-          id: item.id,
-          productId: item.product_id,
-          productName: item.product_name,
-          quantity: item.quantity,
-          price: item.price
-        })),
-        total: sale.total,
-        status: sale.status,
-        createdAt: sale.created_at
-      })) || []
-
-      // Processar pedidos
-      const processedOrders: Order[] = orders?.map(order => ({
-        id: order.id,
-        saleId: order.sale_id,
-        userId: order.card_id,
-        customerName: order.customer_name,
-        items: [], // TODO: Buscar items separadamente se necessário
-        total: order.total,
-        status: order.status,
-        createdAt: order.created_at,
-        deliveredAt: order.delivered_at
-      })) || []
 
       // Mapear cartões do formato Supabase (snake_case) para formato Card (camelCase)
       const mappedCards: Card[] = (cards || []).map((card: any) => ({
@@ -306,8 +239,8 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       setData({
         balances,
         products: productsByCategory,
-        sales: processedSales,
-        orders: processedOrders,
+        sales: [], // Será carregado sob demanda via getSales()
+        orders: [], // Será carregado sob demanda via getOpenOrders()
         cards: mappedCards,
         coupons: coupons?.map(c => c.name) || []
       })
@@ -378,18 +311,27 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   // Funções de produtos
   const addProduct = async (product: Omit<Product, 'id' | 'createdAt'>) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .insert({
+      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
+      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+        method: 'POST',
+        body: {
           name: product.name,
           price: product.price,
           category: product.category,
           description: product.description,
-          stock: product.stock,
-          active: product.active
-        })
+          stock: product.stock
+        }
+      })
 
-      if (error) throw error
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Erro ao adicionar produto')
+      }
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao adicionar produto')
+      }
+
       await loadData()
     } catch (err) {
       console.error('Erro ao adicionar produto:', err)
@@ -399,15 +341,24 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
+      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
+      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+        method: 'PUT',
+        body: {
+          id,
+          ...updates
+        }
+      })
 
-      if (error) throw error
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Erro ao atualizar produto')
+      }
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao atualizar produto')
+      }
+
       await loadData()
     } catch (err) {
       console.error('Erro ao atualizar produto:', err)
@@ -417,12 +368,21 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   const deleteProduct = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .update({ active: false, updated_at: new Date().toISOString() })
-        .eq('id', id)
+      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
+      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+        method: 'DELETE',
+        body: { id }
+      })
 
-      if (error) throw error
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Erro ao deletar produto')
+      }
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao deletar produto')
+      }
+
       await loadData()
     } catch (err) {
       console.error('Erro ao deletar produto:', err)
@@ -436,161 +396,359 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   // Funções de vendas
   const makeSale = async (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
-    const { data, error } = await supabase.rpc('make_sale_tx', {
-      p_user_id: userId,
-      p_items: items,
-      p_category: category,
-      p_coupon: coupon,
-      p_discounted_total: discountedTotal
-    });
+    // ✅ AGORA USA EDGE FUNCTION (SEGURO!)
+    // Chama função na nuvem que valida tudo antes de criar a venda
+    const { data: response, error } = await supabase.functions.invoke('make-sale', {
+      body: {
+        cardId: userId,
+        items: items.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        category,
+        coupon,
+        discountedTotal
+      }
+    })
 
-    if (error) throw error;
+    if (error) {
+      console.error('Edge function error:', error)
+      throw new Error(error.message || 'Erro ao criar venda')
+    }
 
-    // data é o id da venda criada
-    return data;
+    if (!response?.success) {
+      throw new Error(response?.error || 'Erro ao criar venda')
+    }
+
+    // Recarregar dados após venda
+    await loadData()
+
+    // Retornar ID da venda criada
+    return response.data.saleId
   }
 
-  const getSales = async (category?: 'lojinha' | 'lanchonete' | 'sapatinho'): Promise<Sale[]> => {
+  const getSales = async (category?: 'lojinha' | 'lanchonete' | 'sapatinho', limit: number = 100): Promise<Sale[]> => {
     if (category) {
-      // Para sapatinho, usar tabelas diferentes
+      // Para sapatinho, usar tabelas diferentes COM JOINs (evita N+1)
       if (category === 'sapatinho') {
         const { data: salesData, error: salesError } = await supabase
           .from('sapatinho_sales')
-          .select('*')
+          .select(`
+            *,
+            card: cards!sapatinho_sales_card_id_fkey (
+              id,
+              card_number,
+              user_name
+            ),
+            items: sapatinho_sale_items (
+              id,
+              product_id,
+              product_name,
+              quantity,
+              price
+            ),
+            order: sapatinho_veloz_orders!sapatinho_veloz_orders_sale_id_fkey (
+              message,
+              sender_name,
+              sender_team,
+              recipient_name,
+              recipient_address
+            )
+          `)
           .order('created_at', { ascending: false })
+          .limit(limit)
         
-        if (salesError) throw salesError
+        if (salesError) {
+          console.error('Erro ao buscar vendas do sapatinho:', salesError)
+          throw salesError
+        }
         
-        // Buscar cards, itens e pedido relacionado separadamente para garantir que funcionem
-        const salesWithDetails = await Promise.all(
-          (salesData || []).map(async (sale: any) => {
-            // Buscar card
-            const { data: cardData } = await supabase
-              .from('cards')
-              .select('id, card_number, user_name')
-              .eq('id', sale.card_id)
-              .single()
-            
-            // Buscar itens
-            const { data: itemsData } = await supabase
-              .from('sapatinho_sale_items')
-              .select('id, product_id, product_name, quantity, price')
-              .eq('sale_id', sale.id)
-            
-            // Buscar pedido relacionado para pegar a mensagem
-            const { data: orderData } = await supabase
-              .from('sapatinho_veloz_orders')
-              .select('message, sender_name, sender_team, recipient_name, recipient_address')
-              .eq('sale_id', sale.id)
-              .maybeSingle()
-            
-            return {
-              ...sale,
-              sale_id: sale.id, // Para compatibilidade
-              category: 'sapatinho',
-              card: cardData || null,
-              items: (itemsData || []).map((item: any) => ({
-                id: item.id,
-                productId: item.product_id,
-                productName: item.product_name,
-                product_name: item.product_name,
-                quantity: item.quantity,
-                price: parseFloat(item.price) || 0
-              })),
-              message: orderData?.message || null,
-              senderName: orderData?.sender_name || null,
-              senderTeam: orderData?.sender_team || null,
-              recipientName: orderData?.recipient_name || null,
-              recipientAddress: orderData?.recipient_address || null,
-              seller: {
-                id: sale.seller_id,
-                name: sale.seller_id, // Fallback se não tiver nome
-                email: ''
-              }
-            }
-          })
-        )
+        // Processar dados já carregados em 1 query
+        const salesWithDetails = (salesData || []).map((sale: any) => ({
+          ...sale,
+          sale_id: sale.id,
+          category: 'sapatinho',
+          card: sale.card || null,
+          items: (sale.items || []).map((item: any) => ({
+            id: item.id,
+            productId: item.product_id,
+            productName: item.product_name,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            price: parseFloat(item.price) || 0
+          })),
+          message: sale.order?.message || null,
+          senderName: sale.order?.sender_name || null,
+          senderTeam: sale.order?.sender_team || null,
+          recipientName: sale.order?.recipient_name || null,
+          recipientAddress: sale.order?.recipient_address || null,
+          seller: {
+            id: sale.seller_id,
+            name: sale.seller_id,
+            email: ''
+          }
+        }))
         
         return salesWithDetails
       }
       
-      // Para lojinha e lanchonete, usar tabela sales normal
+      // Para lojinha e lanchonete, usar tabela sales normal COM JOIN de seller (evita N+1)
       const { data: salesData, error: salesError } = await supabase
         .from('sales')
         .select(`
           *,
-          card: cards(
+          card: cards!sales_card_id_fkey (
             id,
             card_number,
             user_name
           ),
           items: sale_items (
-              product_name,
-              quantity,
-              price
+            id,
+            product_id,
+            product_name,
+            quantity,
+            price
+          ),
+          seller: app_users!sales_seller_id_fkey (
+            id,
+            name,
+            email
           )
         `)
         .eq('category', category)
         .order('created_at', { ascending: false })
+        .limit(limit)
       
-      if (salesError) throw salesError
+      if (salesError) {
+        console.error('Erro ao buscar vendas:', salesError)
+        throw salesError
+      }
       
-      // Buscar informações do vendedor separadamente para garantir que o nome seja retornado
-      const salesWithSeller = await Promise.all(
-        (salesData || []).map(async (sale: any) => {
-          const { data: sellerData } = await supabase
-            .from('app_users')
-            .select('id, name, email')
-            .eq('id', sale.seller_id)
-            .single()
-          
-          return {
-            ...sale,
-            seller: sellerData || {
-              id: sale.seller_id,
-              name: sale.seller_id, // Fallback se não encontrar
-              email: ''
-            }
-          }
-        })
-      )
+      // Processar dados já carregados em 1 query (sem N+1!)
+      const processedSales = (salesData || []).map((sale: any) => ({
+        id: sale.id,
+        userId: sale.user_id,
+        sellerId: sale.seller_id,
+        category: sale.category,
+        items: (sale.items || []).map((item: any) => ({
+          productId: item.product_id || '',
+          productName: item.product_name,
+          quantity: item.quantity,
+          price: parseFloat(item.price) || 0
+        })),
+        total: parseFloat(sale.total) || 0,
+        status: sale.status,
+        createdAt: sale.created_at,
+        card: sale.card || null,
+        seller: sale.seller ? {
+          id: sale.seller.id,
+          name: sale.seller.name || sale.seller.email || 'Vendedor',
+          email: sale.seller.email || ''
+        } : undefined
+      }))
       
-      return salesWithSeller
+      return processedSales
     }
-    return data.sales
+    
+    // Se não especificou categoria, retornar vazio (não carregar tudo)
+    console.warn('getSales() chamado sem categoria - retornando array vazio')
+    return []
+  }
+
+  // Buscar vendas de um cartão específico (todas as categorias)
+  const getSalesByCardId = async (cardId: string, limit: number = 50): Promise<Sale[]> => {
+    try {
+      const allSales: Sale[] = []
+
+      // Buscar vendas normais (lojinha e lanchonete)
+      const { data: regularSales, error: regularError } = await supabase
+        .from('sales')
+        .select(`
+          *,
+          card: cards!sales_card_id_fkey (
+            id,
+            card_number,
+            user_name
+          ),
+          items: sale_items (
+            id,
+            product_id,
+            product_name,
+            quantity,
+            price
+          )
+        `)
+        .eq('card_id', cardId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (regularError) throw regularError
+
+      // Processar vendas normais
+      if (regularSales) {
+        allSales.push(...regularSales.map((sale: any) => ({
+          id: sale.id,
+          userId: sale.card_id,
+          sellerId: sale.seller_id,
+          category: sale.category,
+          items: (sale.items || []).map((item: any) => ({
+            productId: item.product_id || '',
+            productName: item.product_name,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          total: sale.total,
+          status: sale.status,
+          createdAt: sale.created_at,
+          card: sale.card
+        })))
+      }
+
+      // Buscar vendas do sapatinho veloz
+      const { data: sapatinhoSales, error: sapatinhoError } = await supabase
+        .from('sapatinho_sales')
+        .select(`
+          *,
+          card: cards!sapatinho_sales_card_id_fkey (
+            id,
+            card_number,
+            user_name
+          ),
+          items: sapatinho_sale_items (
+            id,
+            product_id,
+            product_name,
+            quantity,
+            price
+          )
+        `)
+        .eq('card_id', cardId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (sapatinhoError) throw sapatinhoError
+
+      // Processar vendas do sapatinho
+      if (sapatinhoSales) {
+        allSales.push(...sapatinhoSales.map((sale: any) => ({
+          id: sale.id,
+          userId: sale.card_id,
+          sellerId: sale.seller_id,
+          category: 'sapatinho' as const,
+          items: (sale.items || []).map((item: any) => ({
+            productId: item.product_id,
+            productName: item.product_name,
+            quantity: item.quantity,
+            price: parseFloat(item.price) || 0
+          })),
+          total: sale.total,
+          status: sale.status,
+          createdAt: sale.created_at,
+          card: sale.card
+        })))
+      }
+
+      // Ordenar todas as vendas por data (mais recentes primeiro)
+      return allSales.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ).slice(0, limit)
+
+    } catch (error) {
+      console.error('Erro ao buscar vendas do cartão:', error)
+      return []
+    }
   }
 
   // Funções de pedidos
+  // Função helper para gerar código sequencial de pedido
+  const generateOrderCode = async (): Promise<string> => {
+    try {
+      // Buscar o último código de pedido
+      const { data: lastOrder, error } = await supabase
+        .from('orders')
+        .select('order_code')
+        .not('order_code', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      let nextNumber = 1
+      
+      if (!error && lastOrder?.order_code) {
+        // Extrair o número do último código (ex: "00001" -> 1)
+        const lastNumber = parseInt(lastOrder.order_code, 10)
+        if (!isNaN(lastNumber)) {
+          nextNumber = lastNumber + 1
+        }
+      }
+
+      // Formatar como 5 dígitos com zeros à esquerda
+      return nextNumber.toString().padStart(5, '0')
+    } catch (err) {
+      console.error('Error generating order code:', err)
+      // Fallback: usar timestamp se houver erro
+      return Date.now().toString().slice(-5)
+    }
+  }
+
  const getOpenOrders = async (): Promise<Order[]> => {
   try {
     console.log('Fetching open orders...')
     
-    const { data, error } = await supabase
+    const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
-      .select(`
-        *,
-        sale:sales (
-          id,
-          sale_id,
-          sale_items (
-            product_name,
-            quantity
-          )
-        )
-      `)
+      .select('*')
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching open orders:', error)
-      throw error
+    if (ordersError) {
+      console.error('Error fetching open orders:', ordersError)
+      throw ordersError
     }
 
-    // Transform the data to match the expected format
-    const formattedOrders = data?.map(order => ({
-      ...order,
-      items: order.sale?.sale_items || []
-    })) || []
+    if (!ordersData || ordersData.length === 0) {
+      return []
+    }
+
+    // Buscar itens de cada pedido através da venda
+    const formattedOrders = await Promise.all((ordersData || []).map(async (order: any) => {
+      let items: any[] = []
+      
+      // Buscar itens da venda relacionada
+      if (order.sale_id) {
+        const { data: saleItems, error: itemsError } = await supabase
+          .from('sale_items')
+          .select('*')
+          .eq('sale_id', order.sale_id)
+        
+        if (!itemsError && saleItems) {
+          items = saleItems.map((item: any) => ({
+            productId: item.product_id,
+            productName: item.product_name,
+            quantity: item.quantity,
+            price: parseFloat(item.price) || 0
+          }))
+        }
+      }
+
+      // Usar código existente (pedidos antigos sem código usarão fallback na exibição)
+      const orderCode = order.order_code || null
+
+      return {
+        id: order.id,
+        saleId: order.sale_id,
+        orderCode: orderCode,
+        userId: order.card_id,
+        customerName: order.customer_name || 'Cliente',
+        items: items,
+        total: parseFloat(order.total) || 0,
+        status: order.status,
+        createdAt: order.created_at,
+        deliveredAt: order.delivered_at
+      }
+    }))
 
     console.log('Formatted orders:', formattedOrders)
     return formattedOrders
@@ -603,7 +761,17 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   const markAsDelivered = async (orderId: string) => {
     try {
-      const { error } = await supabase
+      // Primeiro, buscar o pedido para obter o sale_id
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select('sale_id')
+        .eq('id', orderId)
+        .single()
+
+      if (orderError) throw orderError
+
+      // Atualizar o pedido
+      const { error: updateOrderError } = await supabase
         .from('orders')
         .update({
           status: 'delivered',
@@ -611,7 +779,23 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         })
         .eq('id', orderId)
 
-      if (error) throw error
+      if (updateOrderError) throw updateOrderError
+
+      // Se houver uma venda relacionada, atualizar seu status também
+      if (order?.sale_id) {
+        const { error: updateSaleError } = await supabase
+          .from('sales')
+          .update({
+            status: 'delivered'
+          })
+          .eq('id', order.sale_id)
+
+        if (updateSaleError) {
+          console.warn('Erro ao atualizar status da venda:', updateSaleError)
+          // Não lançar erro aqui, pois o pedido já foi atualizado com sucesso
+        }
+      }
+
       await loadData()
     } catch (err) {
       console.error('Erro ao marcar como entregue:', err)
@@ -745,47 +929,24 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   // Atualizar saldo do cartão
   const updateCardBalance = async (cardId: string, amount: number, type: 'credit' | 'debit', description?: string): Promise<void> => {
     try {
-      // Buscar cartão atual
-      const { data: card, error: cardError } = await supabase
-        .from('cards')
-        .select('balance')
-        .eq('id', cardId)
-        .single()
-      
-      if (cardError) throw cardError
-      
-      // Calcular novo saldo
-      const newBalance = type === 'credit' 
-        ? (card.balance + amount)
-        : (card.balance - amount)
-      
-      if (newBalance < 0) {
-        throw new Error('Saldo insuficiente')
+      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
+      const { data: response, error } = await supabase.functions.invoke('update-balance', {
+        body: {
+          cardId,
+          amount,
+          type,
+          description
+        }
+      })
+
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Erro ao atualizar saldo')
       }
 
-      // Atualizar saldo
-      const { error: updateError } = await supabase
-        .from('cards')
-        .update({
-          balance: newBalance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', cardId)
-
-      if (updateError) throw updateError
-
-      // Criar transação
-      const { error: transactionError } = await supabase
-        .from('transactions')
-        .insert({
-          card_id: cardId,
-          amount: type === 'credit' ? amount : -amount,
-          type,
-          description: description || `${type === 'credit' ? 'Crédito' : 'Débito'} no cartão`,
-          created_by: 'admin'
-        })
-
-      if (transactionError) throw transactionError
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao atualizar saldo')
+      }
 
       await loadData()
     } catch (err) {
@@ -851,6 +1012,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     makeSale,
     getCoupons,
     getSales,
+    getSalesByCardId,
     getOpenOrders,
     markAsDelivered,
     getCardByUserId,

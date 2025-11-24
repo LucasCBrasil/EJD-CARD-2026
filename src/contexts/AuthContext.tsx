@@ -5,7 +5,7 @@ interface User {
   id: string
   email: string
   name?: string | null
-  role: 'admin' | 'genios_card' | 'coord_lojinha' | 'coord_lanchonete' | 'comunicacao' | 'vendedor_lojinha' | 'entregador_lojinha' | 'vendedor_lanchonete' | 'encontrista'
+  role: 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista'
 }
 
 interface AuthContextType {
@@ -212,7 +212,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     await supabase.auth.signOut()
     setUser(null)
-    window.location.href = '/'
+    // O redirecionamento será feito automaticamente pelo __root.tsx
   }
 
   const value: AuthContextType = {

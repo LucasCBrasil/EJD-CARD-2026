@@ -44,12 +44,10 @@ export const salesRouter = router({
       const { user, supabase } = ctx
 
       // 1. Verificar permissão específica para a categoria
-      // Permission check would go here: const categoryPermission = `sales:create_${category}` as const
       const hasPermissionForCategory = ctx.user.role === 'admin' || 
-        ctx.user.role === 'genios_card' ||
-        (category === 'lojinha' && ['coord_lojinha', 'vendedor_lojinha'].includes(ctx.user.role)) ||
-        (category === 'lanchonete' && ['coord_lanchonete', 'vendedor_lanchonete'].includes(ctx.user.role)) ||
-        (category === 'sapatinho' && ['admin', 'genios_card'].includes(ctx.user.role))
+        (category === 'lojinha' && ctx.user.role === 'lojinha') ||
+        (category === 'lanchonete' && ctx.user.role === 'lanchonete') ||
+        (category === 'sapatinho' && ['admin', 'lojinha', 'lanchonete', 'comunicacao'].includes(ctx.user.role))
 
       if (!hasPermissionForCategory) {
         throw new TRPCError({
@@ -87,7 +85,7 @@ export const salesRouter = router({
       const productTable = category === 'sapatinho' ? 'sapatinho_products' : 'products'
       let productsQuery = supabase
         .from(productTable)
-        .select('id, name, price, active')
+        .select('id, name, price, active, stock')
         .in('id', productIds)
 
       // Adicionar filtro de categoria se não for sapatinho
@@ -123,6 +121,16 @@ export const salesRouter = router({
             code: 'BAD_REQUEST',
             message: `Produto ${item.productId} não está disponível`,
           })
+        }
+
+        // Validar estoque (se o produto tiver controle de estoque)
+        if (product.stock !== null && product.stock !== undefined) {
+          if (product.stock < item.quantity) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Estoque insuficiente para ${product.name}. Disponível: ${product.stock}, Solicitado: ${item.quantity}`,
+            })
+          }
         }
 
         const subtotal = product.price * item.quantity
@@ -188,7 +196,26 @@ export const salesRouter = router({
 
         if (itemsError) throw itemsError
 
-        // 6.3 Debitar saldo
+        // 6.3 Diminuir estoque dos produtos
+        for (const item of saleItems) {
+          const product = productsMap.get(item.productId)
+          
+          if (product && product.stock !== null && product.stock !== undefined) {
+            const newStock = product.stock - item.quantity
+            
+            const { error: stockError } = await supabase
+              .from('products')
+              .update({ stock: newStock })
+              .eq('id', item.productId)
+            
+            if (stockError) {
+              console.error('Erro ao atualizar estoque:', stockError)
+              // Não falhar a venda por causa do estoque, apenas logar
+            }
+          }
+        }
+
+        // 6.4 Debitar saldo
         const { error: balanceError } = await supabase
           .from('cards')
           .update({
@@ -199,7 +226,7 @@ export const salesRouter = router({
 
         if (balanceError) throw balanceError
 
-        // 6.4 Criar transação
+        // 6.5 Criar transação
         const { error: transactionError } = await supabase
           .from('transactions')
           .insert({
@@ -212,8 +239,26 @@ export const salesRouter = router({
 
         if (transactionError) throw transactionError
 
-        // 6.5 Se lojinha, criar pedido
+        // 6.6 Se lojinha, criar pedido
         if (category === 'lojinha') {
+          // Gerar código sequencial de 5 dígitos
+          const { data: lastOrder } = await supabase
+            .from('orders')
+            .select('order_code')
+            .not('order_code', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          
+          let nextNumber = 1
+          if (lastOrder?.order_code) {
+            const lastNumber = parseInt(lastOrder.order_code, 10)
+            if (!isNaN(lastNumber)) {
+              nextNumber = lastNumber + 1
+            }
+          }
+          const orderCode = nextNumber.toString().padStart(5, '0')
+          
           const { error: orderError } = await supabase
             .from('orders')
             .insert({
@@ -222,6 +267,7 @@ export const salesRouter = router({
               customer_name: card.user_name,
               total,
               status: 'completed',
+              order_code: orderCode
             })
 
           if (orderError) throw orderError
@@ -269,9 +315,8 @@ export const salesRouter = router({
       // Verificar permissão para a categoria
       if (category) {
         const hasPermissionForCategory = ctx.user.role === 'admin' || 
-          ctx.user.role === 'genios_card' ||
-          (category === 'lojinha' && ['coord_lojinha', 'vendedor_lojinha'].includes(ctx.user.role)) ||
-          (category === 'lanchonete' && ['coord_lanchonete', 'vendedor_lanchonete'].includes(ctx.user.role))
+          (category === 'lojinha' && ctx.user.role === 'lojinha') ||
+          (category === 'lanchonete' && ctx.user.role === 'lanchonete')
 
         if (!hasPermissionForCategory) {
           throw new TRPCError({

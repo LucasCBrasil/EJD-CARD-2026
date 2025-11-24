@@ -1,10 +1,8 @@
 // @ts-nocheck
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import HomePage from '../../pages/HomePage'
 
 export const Route = createFileRoute('/_layout/')({
-  beforeLoad: () => {
-    // Redirect root to mycard page
-    throw redirect({ to: '/mycard' })
-  },
+  component: HomePage,
 })
 

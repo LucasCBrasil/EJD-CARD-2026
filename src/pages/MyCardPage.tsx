@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../components/shared'
 import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
@@ -25,6 +26,7 @@ interface Purchase {
 
 const MyCardPage: React.FC = () => {
   const { user } = useAuth()
+  const navigate = useNavigate()
   
   // Usar apenas o contexto apropriado
   let localData: any = null
@@ -48,60 +50,68 @@ const MyCardPage: React.FC = () => {
   const [showPixInfo, setShowPixInfo] = useState(false)
   const [pixPayment, setPixPayment] = useState<PixPayment | null>(null)
   const [isCheckingPayment, setIsCheckingPayment] = useState(false)
+  const [isLoadingData, setIsLoadingData] = useState(false)
 
   // Carregar dados do usuário
   useEffect(() => {
     if (!user?.id) return
 
     loadUserData()
+    
+    // ✅ Recarregar quando a página ficar visível novamente
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadUserData()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [user?.id]) // Recarregar sempre que o user mudar
 
   const loadUserData = async () => {
+    if (isLoadingData) return // Evita chamadas duplicadas
+    
     try {
+      setIsLoadingData(true)
+      
       if (supabaseData && isSupabaseConfigured()) {
-        // Primeiro tentar buscar do contexto (mais rápido)
-        let userCard = supabaseData.getCardByUserId(user?.id || '')
+        // ✅ SEMPRE buscar direto do Supabase para ter dados frescos
+        const { data: cardData, error } = await supabase
+          .from('cards')
+          .select('*')
+          .eq('user_id', user?.id || '')
+          .eq('is_associated', true)
+          .maybeSingle()
         
-        // Se não encontrar no contexto, buscar diretamente no Supabase
-        if (!userCard) {
-          console.log('Cartão não encontrado no contexto, buscando diretamente no Supabase para user:', user?.id)
-          const { data: cardData, error } = await supabase
-            .from('cards')
-            .select('*')
-            .eq('user_id', user?.id || '')
-            .eq('is_associated', true)
-            .maybeSingle()
-          
-          if (error) {
+        if (error) {
+          // Ignorar erros de "nenhum resultado encontrado"
+          if (error.code !== 'PGRST116' && !error.message?.includes('No rows') && !error.message?.includes('Cannot coerce')) {
             console.error('Erro ao buscar cartão:', error)
           }
-          
-          if (cardData) {
-            console.log('Cartão encontrado no Supabase:', cardData)
-            // Mapear do formato Supabase para Card
-            userCard = {
-              id: cardData.id,
-              userId: cardData.user_id || '',
-              userName: cardData.user_name || '',
-              cardNumber: cardData.card_number || '',
-              phoneNumber: cardData.phone_number || '',
-              balance: parseFloat(cardData.balance) || 0,
-              createdAt: cardData.created_at || '',
-              updatedAt: cardData.updated_at || ''
-            }
-          } else {
-            console.log('Nenhum cartão associado encontrado para o usuário')
-          }
-        } else {
-          console.log('Cartão encontrado no contexto:', userCard)
         }
         
-        if (!userCard) {
-          // Sem cartão associado: redirecionar para associação
-          console.log('Redirecionando para página de associação...')
-          window.location.href = '/cards/associate'
+        // Se não houver cartão, apenas definir como null (não redirecionar)
+        // A página mostrará uma mensagem amigável
+        if (!cardData) {
+          setCard(null)
           return
+        }
+
+        // Mapear do formato Supabase para Card
+        const userCard = {
+          id: cardData.id,
+          userId: cardData.user_id || '',
+          userName: cardData.user_name || '',
+          cardNumber: cardData.card_number || '',
+          phoneNumber: cardData.phone_number || '',
+          balance: parseFloat(cardData.balance) || 0,
+          createdAt: cardData.created_at || '',
+          updatedAt: cardData.updated_at || ''
         }
 
         setCard({
@@ -112,12 +122,11 @@ const MyCardPage: React.FC = () => {
           phoneNumber: userCard.phoneNumber || ''
         })
 
-        // Carregar histórico de compras
-        const sales = await supabaseData.getSales()
+        // Carregar histórico de compras do cartão (otimizado - busca apenas vendas deste cartão)
+        const sales = await supabaseData.getSalesByCardId(userCard.id, 20)
         
         // Converter vendas em compras do usuário
         const userPurchases: Purchase[] = (sales || [])
-          .filter((sale: any) => sale.userId === userCard.id)
           .map((sale: any) => ({
             id: sale.id,
             date: sale.createdAt.split('T')[0],
@@ -167,6 +176,8 @@ const MyCardPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro ao carregar dados do usuário:', error)
+    } finally {
+      setIsLoadingData(false)
     }
   }
 
@@ -341,10 +352,27 @@ const MyCardPage: React.FC = () => {
             💳 Meu Cartão
           </h2>
           
-          {!card ? (
+          {isLoadingData ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto mb-4"></div>
               <p className="text-gray-600">Carregando informações do cartão...</p>
+            </div>
+          ) : !card ? (
+            <div className="text-center py-8">
+              <div className="text-6xl mb-4">💳</div>
+              <h3 className="text-xl font-bold text-black mb-4 font-cardinal">
+                Nenhum cartão associado
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Você ainda não possui um cartão associado à sua conta.
+              </p>
+              <Button
+                onClick={() => navigate({ to: '/cards/associate' })}
+                size="lg"
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-emerald-200 font-semibold"
+              >
+                🔗 Associar Cartão
+              </Button>
             </div>
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -376,90 +404,94 @@ const MyCardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Abastecimento via PIX */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
-        <h3 className="text-xl font-semibold text-black mb-6 text-center font-cardinal">
-          💰 Abastecer via PIX
-        </h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="amount" className="block text-sm font-semibold text-black mb-2">
-              💰 Valor a Abastecer (R$)
-            </label>
-            <input
-              type="number"
-              id="amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              min="0.01"
-              step="0.01"
-              className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              placeholder="0,00"
-            />
-          </div>
-
-          <Button
-            onClick={handlePixPayment}
-            size="lg"
-            className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-emerald-200 font-semibold"
-            disabled={isLoading || !amount || parseFloat(amount) <= 0}
-          >
-            {isLoading ? (
-              <>
-                <span className="animate-spin mr-2">✨</span>
-                Gerando PIX...
-              </>
-            ) : (
-              <>
-                💳 Gerar PIX para Abastecimento
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Histórico de Compras */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
-        <h3 className="text-xl font-semibold text-black mb-6 text-center font-cardinal">
-          📋 Histórico de Compras
-        </h3>
-        
-        {purchases.length > 0 ? (
+      {/* Abastecimento via PIX - apenas se tiver cartão */}
+      {card && (
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
+          <h3 className="text-xl font-semibold text-black mb-6 text-center font-cardinal">
+            💰 Abastecer via PIX
+          </h3>
+          
           <div className="space-y-4">
-            {purchases.map((purchase) => (
-              <div 
-                key={purchase.id}
-                className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-2xl">
-                        {purchase.type === 'lojinha' ? '🏪' : purchase.type === 'lanchonete' ? '🍔' : '👠'}
-                      </span>
-                      <h4 className="font-semibold text-black">{purchase.product}</h4>
+            <div>
+              <label htmlFor="amount" className="block text-sm font-semibold text-black mb-2">
+                💰 Valor a Abastecer (R$)
+              </label>
+              <input
+                type="number"
+                id="amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                min="0.01"
+                step="0.01"
+                className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0,00"
+              />
+            </div>
+
+            <Button
+              onClick={handlePixPayment}
+              size="lg"
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-emerald-200 font-semibold"
+              disabled={isLoading || !amount || parseFloat(amount) <= 0}
+            >
+              {isLoading ? (
+                <>
+                  <span className="animate-spin mr-2">✨</span>
+                  Gerando PIX...
+                </>
+              ) : (
+                <>
+                  💳 Gerar PIX para Abastecimento
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Histórico de Compras - apenas se tiver cartão */}
+      {card && (
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
+          <h3 className="text-xl font-semibold text-black mb-6 text-center font-cardinal">
+            📋 Histórico de Compras
+          </h3>
+          
+          {purchases.length > 0 ? (
+            <div className="space-y-4">
+              {purchases.map((purchase) => (
+                <div 
+                  key={purchase.id}
+                  className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-2xl">
+                          {purchase.type === 'lojinha' ? '🏪' : purchase.type === 'lanchonete' ? '🍔' : '👠'}
+                        </span>
+                        <h4 className="font-semibold text-black">{purchase.product}</h4>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {purchase.store} • {formatDate(purchase.date)}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {purchase.store} • {formatDate(purchase.date)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-black">
-                      R$ {purchase.amount.toFixed(2).replace('.', ',')}
-                    </p>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-black">
+                        R$ {purchase.amount.toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="text-4xl mb-4">🛒</div>
-            <p className="text-gray-600">Nenhuma compra realizada ainda</p>
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-4">🛒</div>
+              <p className="text-gray-600">Nenhuma compra realizada ainda</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal de PIX */}
       {showPixInfo && (

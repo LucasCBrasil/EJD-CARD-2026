@@ -46,7 +46,17 @@ export const ordersApi = {
   },
 
   markAsDelivered: async (orderId: string): Promise<void> => {
-    const { error } = await supabase
+    // Primeiro, buscar o pedido para obter o sale_id
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('sale_id')
+      .eq('id', orderId)
+      .single()
+
+    if (orderError) throw orderError
+
+    // Atualizar o pedido
+    const { error: updateOrderError } = await supabase
       .from('orders')
       .update({
         status: 'delivered',
@@ -54,7 +64,22 @@ export const ordersApi = {
       })
       .eq('id', orderId)
 
-    if (error) throw error
+    if (updateOrderError) throw updateOrderError
+
+    // Se houver uma venda relacionada, atualizar seu status também
+    if (order?.sale_id) {
+      const { error: updateSaleError } = await supabase
+        .from('sales')
+        .update({
+          status: 'delivered'
+        })
+        .eq('id', order.sale_id)
+
+      if (updateSaleError) {
+        console.warn('Erro ao atualizar status da venda:', updateSaleError)
+        // Não lançar erro aqui, pois o pedido já foi atualizado com sucesso
+      }
+    }
   }
 }
 

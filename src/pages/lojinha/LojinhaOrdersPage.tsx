@@ -73,26 +73,27 @@ const [isConfirming, setIsConfirming] = useState(false)
   }
 
   return (
-    <div className="container mx-auto">
-      <Header title="📦 Pedidos Pendentes - Lojinha"
-        subtitle={"Confirme as entregas dos pedidos realizados na lojinha"}
-        showLogo={false}/>
+    <div className="space-y-6">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-yellow-200 p-6 md:p-8">
+        <Header title="📦 Pedidos Pendentes - Lojinha"
+          subtitle={"Confirme as entregas dos pedidos realizados na lojinha"}
+          showLogo={false}/>
 
-      {orders.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">Nenhum pedido pendente</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [grid-auto-rows:1fr]">
-    {orders.map(order => (
-        <div
-        key={order.id}
-        className="bg-white shadow-md rounded-xl p-4 flex flex-col justify-between h-full"
-        >
+        {orders.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">Nenhum pedido pendente</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [grid-auto-rows:1fr]">
+            {orders.map(order => (
+              <div
+                key={order.id}
+                className="bg-white shadow-md rounded-xl p-4 flex flex-col justify-between h-full"
+              >
         <div>
             <div className="flex justify-between items-start mb-4">
             <div>
-                <h3 className="font-bold">Pedido #{order.saleId}</h3>
+                <h3 className="font-bold">Pedido #{order.saleId ? order.saleId.slice(0, 8) : order.id.slice(0, 8)}</h3>
                 <p className="text-sm text-gray-600">{order.customerName}</p>
             </div>
             <span className="text-lg font-semibold">
@@ -123,22 +124,22 @@ const [isConfirming, setIsConfirming] = useState(false)
             ✅ Confirmar Entrega
             </Button>
         </div>
-        </div>
-        ))}
-    </div>
-    )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <ConfirmationModal
         isOpen={showConfirmation}
         onClose={() => {
-          console.log('Closing modal')
           setShowConfirmation(false)
           setSelectedOrder(null)
         }}
         onConfirm={handleConfirmDelivery}
         title="Confirmar Entrega"
         variant="delivery-confirmation"
-        message={selectedOrder ? `Deseja confirmar a entrega do pedido #${selectedOrder.saleId} de ${selectedOrder.customerName}?` : ''}
+        message={selectedOrder ? `Deseja confirmar a entrega do pedido #${selectedOrder.saleId ? selectedOrder.saleId.slice(0, 8) : selectedOrder.id.slice(0, 8)} de ${selectedOrder.customerName}?` : ''}
         card={null}
         amount={selectedOrder ? selectedOrder.total.toString() : '0'}
         formattedAmount={selectedOrder ? selectedOrder.total.toFixed(2).replace('.', ',') : '0,00'}

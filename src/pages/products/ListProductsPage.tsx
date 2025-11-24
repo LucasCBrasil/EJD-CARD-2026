@@ -75,18 +75,7 @@ const ListProductsPage = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
   const currentProducts = products.slice(indexOfFirstItem, indexOfLastItem)
 
-  // Debug temporário (remover depois)
-  // console.log('Paginação Debug:', {
-  //   totalProdutos: products.length,
-  //   paginaAtual: currentPage,
-  //   totalPaginas: totalPages,
-  //   indexInicio: indexOfFirstItem,
-  //   indexFim: indexOfLastItem,
-  //   produtosPagina: currentProducts.length,
-  //   produtos: currentProducts.map(p => p.name)
-  // })
-
-  // Debug: verificar se a página atual é válida
+  // Verificar se a página atual é válida
   useEffect(() => {
     if (products.length > 0 && currentPage > totalPages) {
       setCurrentPage(totalPages)
@@ -142,7 +131,6 @@ const ListProductsPage = () => {
 
   const getDefaultImage = (context: 'lojinha' | 'lanchonete' | 'sapatinho'): string => {
     let svg: string
-    console.log('Gerando imagem padrão para contexto:', context)
     switch (context) {
       case 'lanchonete':
       svg = `
@@ -224,7 +212,6 @@ const ListProductsPage = () => {
           </svg>`
         break
     }
-    console.log('SVG gerado para contexto', context, ':', svg)
     return `data:image/svg+xml,${encodeURIComponent(svg)}`
   }
 
