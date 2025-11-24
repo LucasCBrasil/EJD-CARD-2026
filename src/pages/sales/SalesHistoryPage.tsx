@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { Sale, useSupabaseData } from '../../contexts/SupabaseDataContext'
 
@@ -6,38 +6,43 @@ import { Sale, useSupabaseData } from '../../contexts/SupabaseDataContext'
 type ContextType = 'lojinha' | 'lanchonete'
 
 const SalesHistoryPage: React.FC = () => {
-  const { getSales } = useSupabaseData()
   const location = useLocation()
   const navigate = useNavigate()
-  const context: ContextType = location.pathname.endsWith('/lojinha') ? 'lojinha' : 'lanchonete'
-
+  
+  // TODOS OS HOOKS DEVEM SER CHAMADOS ANTES DE QUALQUER RETURN CONDICIONAL
+  const { getSales } = useSupabaseData()
   const [allSales, setAllSales] = useState<Sale[]>([])
   const [searchName, setSearchName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
-  useEffect(() => {
-    loadSales()
-    setCurrentPage(1)
-  }, [context])
+  // Verificar se está na rota correta
+  const isCorrectRoute = location.pathname.includes('/historico/lojinha') || location.pathname.includes('/historico/lanchonete')
+  const context: ContextType = location.pathname.endsWith('/lojinha') ? 'lojinha' : 'lanchonete'
 
-  const loadSales = async () => {
+  const loadSales = useCallback(async () => {
     if (isLoading) return
     
     try {
       setIsLoading(true)
-      // Carregar até 200 vendas (10 páginas)
-      const fetchedSales = await getSales(context, 200)
-      console.log('Vendas carregadas:', fetchedSales.length)
-      console.log('Primeira venda:', fetchedSales[0])
-      setAllSales(fetchedSales)
+        // Carregar até 200 vendas (10 páginas)
+        const fetchedSales = await getSales(context, 200)
+        setAllSales(fetchedSales)
     } catch (error) {
       console.error('Erro ao carregar vendas:', error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [isLoading, getSales, context])
+
+  useEffect(() => {
+    // Só carregar vendas se estiver na rota correta
+    if (isCorrectRoute) {
+      loadSales()
+      setCurrentPage(1)
+    }
+  }, [context, location.pathname, isCorrectRoute, loadSales])
 
   const filteredSales = useMemo(() => {
     if (!searchName.trim()) return allSales
@@ -100,6 +105,11 @@ const SalesHistoryPage: React.FC = () => {
   }
   
   const formatPrice = (price: number) => price.toFixed(2)
+
+  // Se não estiver na rota correta, não renderizar nada (DEPOIS de todos os hooks)
+  if (!isCorrectRoute) {
+    return null
+  }
 
   return (
     <div className={`bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border-2 ${borderColor} p-10`}>

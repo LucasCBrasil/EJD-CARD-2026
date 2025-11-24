@@ -34,6 +34,8 @@ export function useCardByUserId(userId: string, enabled = true) {
     queryKey: cardKeys.byUserId(userId),
     queryFn: () => cardsApi.getByUserId(userId),
     enabled: enabled && !!userId,
+    retry: false, // Não tentar novamente se falhar
+    throwOnError: false, // Não lançar erro, apenas retornar null
   })
 }
 

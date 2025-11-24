@@ -212,7 +212,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     await supabase.auth.signOut()
     setUser(null)
-    window.location.href = '/'
+    // O redirecionamento será feito automaticamente pelo __root.tsx
   }
 
   const value: AuthContextType = {

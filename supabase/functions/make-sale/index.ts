@@ -89,10 +89,17 @@ Deno.serve(async (req) => {
 
     // 6. VALIDAR PREÇOS DOS PRODUTOS (anti-fraude!)
     const productIds = items.map(item => item.productId)
-    const { data: products, error: productsError } = await supabase
+    let productsQuery = supabase
       .from('products')
-      .select('id, name, price, active')
+      .select('id, name, price, active, stock, category')
       .in('id', productIds)
+    
+    // Filtrar por categoria se fornecida
+    if (category && category !== 'sapatinho') {
+      productsQuery = productsQuery.eq('category', category)
+    }
+    
+    const { data: products, error: productsError } = await productsQuery
 
     if (productsError || !products) {
       console.error('Products not found:', productsError)
@@ -151,6 +158,22 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         )
+      }
+
+      // Validar estoque (se o produto tiver controle de estoque)
+      if (product.stock !== null && product.stock !== undefined) {
+        if (product.stock < item.quantity) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Estoque insuficiente para ${product.name}. Disponível: ${product.stock}, Solicitado: ${item.quantity}`
+            } as ApiResponse),
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
       }
 
       calculatedTotal += product.price * item.quantity
@@ -253,7 +276,27 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 10. ATUALIZAR SALDO DO CARTÃO
+    // 10. DIMINUIR ESTOQUE DOS PRODUTOS
+    for (const item of items) {
+      const product = products.find(p => p.id === item.productId)
+      
+      if (product && product.stock !== null && product.stock !== undefined) {
+        const newStock = product.stock - item.quantity
+        
+        const { error: stockError } = await supabase
+          .from('products')
+          .update({ stock: newStock })
+          .eq('id', item.productId)
+        
+        if (stockError) {
+          console.error('Stock update error:', stockError)
+          // Não falhar a venda por causa do estoque, apenas logar
+          // (a venda já foi criada, então o estoque deve ser atualizado manualmente se necessário)
+        }
+      }
+    }
+
+    // 11. ATUALIZAR SALDO DO CARTÃO
     const { error: balanceError } = await supabase
       .from('cards')
       .update({ balance: card.balance - finalTotal })
@@ -277,7 +320,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 11. CRIAR TRANSAÇÃO NO HISTÓRICO
+    // 12. CRIAR TRANSAÇÃO NO HISTÓRICO
     const { error: transactionError } = await supabase
       .from('transactions')
       .insert({
@@ -292,7 +335,7 @@ Deno.serve(async (req) => {
       // Não falhar a venda por causa do histórico, apenas logar
     }
 
-    // 12. RETORNAR SUCESSO
+    // 13. RETORNAR SUCESSO
     return new Response(
       JSON.stringify({
         success: true,

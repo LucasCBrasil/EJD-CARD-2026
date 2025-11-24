@@ -21,10 +21,7 @@
     min-height: 100vh;
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #f0fdf4 0%, #fef3c7 25%, #faf5ff 50%, #f0f9ff 75%, #fdf2f8 100%) !important;
-    background-attachment: fixed !important;
-    background-size: cover !important;
-    background-repeat: no-repeat !important;
+    background: transparent !important;
   }
   
   #root {

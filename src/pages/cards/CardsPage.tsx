@@ -1,109 +1,90 @@
-import { useNavigate } from '@tanstack/react-router'
-import { Card, Button, Header } from '../../components/shared'
+import React from 'react'
+import { InternalCard } from '../../components/shared'
+import { usePermissions } from '../../hooks/usePermissions'
 
 const CardsPage = () => {
-  const navigate = useNavigate()
+  const { canViewCards, canAddBalance } = usePermissions()
+
+  const cards = [
+    {
+      icon: '➕',
+      title: 'Criar Cartão',
+      description: 'Cadastrar novo encontrista no sistema',
+      path: '/cards/create',
+      color: 'from-emerald-100 to-emerald-200',
+      gradient: 'border-emerald-300',
+      canAccess: canViewCards
+    },
+    {
+      icon: '🔗',
+      title: 'Associar Cartão',
+      description: 'Vincular cartão a um usuário existente',
+      path: '/cards/associate',
+      color: 'from-blue-100 to-blue-200',
+      gradient: 'border-blue-300',
+      canAccess: canViewCards
+    },
+    {
+      icon: '💰',
+      title: 'Adicionar Saldo',
+      description: 'Creditar valores em cartões',
+      path: '/cards/add',
+      color: 'from-golden-100 to-golden-200',
+      gradient: 'border-golden-300',
+      canAccess: canAddBalance
+    },
+    {
+      icon: '🔍',
+      title: 'Consultar Saldo',
+      description: 'Ver saldo disponível em cartões',
+      path: '/cards/balance',
+      color: 'from-compass-100 to-compass-200',
+      gradient: 'border-compass-300',
+      canAccess: canViewCards
+    },
+    {
+      icon: '💸',
+      title: 'Débito Manual',
+      description: 'Debitar valores de cartões',
+      path: '/cards/debit',
+      color: 'from-ruby-100 to-ruby-200',
+      gradient: 'border-ruby-300',
+      canAccess: canAddBalance
+    }
+  ]
+
+  const accessibleCards = cards.filter(card => card.canAccess)
 
   return (
     <div className="space-y-6">
-      <Header 
-            title="💳 Comunicação"
-            subtitle="Crie e gerencie seus cartões mágicos"
-            showLogo={false}
-            showBackButton={false}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl md:text-4xl font-bold text-black mb-3 font-cardinal drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
+          📢 Comunicação
+        </h2>
+        <p className="text-lg text-gray-700 font-farmhand drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+          Gerenciar cartões, criar, associar e adicionar saldo
+        </p>
+        {/* Linha decorativa */}
+        <div className="flex justify-center items-center mt-4 space-x-2">
+          <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent"></div>
+          <span className="text-emerald-400 text-xl">✨</span>
+          <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent"></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        {accessibleCards.map((card, index) => (
+          <InternalCard
+            key={card.path}
+            icon={card.icon}
+            title={card.title}
+            description={card.description}
+            path={card.path}
+            color={card.color}
+            gradient={card.gradient}
+            index={index}
           />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Criar Cartão */}
-        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer" onClick={() => navigate({ to: '/cards/create' as any, search: {} as any })}>
-          <div className="text-center">
-            <div className="text-5xl mb-4">💳</div>
-            <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-              Criar Cartão
-            </h3>
-            <p className="text-black-700 mb-4 font-farmhand">
-              Emita um novo cartão de débito mágico
-            </p>
-            <Button 
-              size="lg"
-              className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-emerald-200"
-              onClick={(event) => {
-                event.stopPropagation()
-                navigate({ to: '/cards/create' as any, search: {} as any })
-              }}
-            >
-              💳 Criar Novo Cartão
-            </Button>
-          </div>
-        </Card>
-        
-        {/* Consultar Saldo */}
-        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer" onClick={() => navigate({ to: '/cards/balance' as any, search: {} as any })}>
-          <div className="text-center">
-            <div className="text-5xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-              Consultar Saldo
-            </h3>
-            <p className="text-black-700 mb-4 font-farmhand">
-              Verifique o saldo do seu cartão
-            </p>
-            <Button 
-              size="lg"
-              className="bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg hover:shadow-yellow-200"
-              onClick={(event) => {
-                event.stopPropagation()
-                navigate({ to: '/cards/balance' as any, search: {} as any })
-              }}
-            >
-              🔍 Consultar Saldo
-            </Button>
-          </div>
-        </Card>
-
-        {/* Inserir Valor */}
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer" onClick={() => navigate({ to: '/cards/add' as any, search: {} as any })}>
-          <div className="text-center">
-            <div className="text-5xl mb-4">💰</div>
-            <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-              Inserir Valor
-            </h3>
-            <p className="text-black-700 mb-4 font-farmhand">
-              Adicione valor ao seu cartão
-            </p>
-            <Button 
-              size="lg"
-              className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-blue-200"
-              onClick={(event) => {
-                event.stopPropagation()
-                navigate({ to: '/cards/add' as any, search: {} as any })
-              }}
-            >
-              💰 Inserir Valor
-            </Button>
-          </div>
-        </Card>
-
-        {/* Debitar Cartão */}
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer" onClick={() => navigate({ to: '/cards/debit' as any, search: {} as any })}>
-          <div className="text-center">
-            <div className="text-5xl mb-4">💸</div>
-            <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-              Debitar Cartão
-            </h3>
-            <p className="text-black-700 mb-4 font-farmhand">
-              Realize um débito no seu cartão
-            </p>
-            <Button 
-              size="lg"
-              className="bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-red-200"
-              onClick={(event) => {
-                event.stopPropagation()
-                navigate({ to: '/cards/debit' as any, search: {} as any })
-              }}
-            >
-              💸 Debitar Cartão
-            </Button>
-          </div>
-        </Card>
+        ))}
       </div>
     </div>
   )

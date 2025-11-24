@@ -101,7 +101,7 @@ const SapatinhoVelozOrdersPage: React.FC = () => {
               <div className="flex justify-between items-start mb-5">
                 <div>
                   <div className="flex items-center space-x-4 mb-3">
-                    <h3 className="text-2xl font-bold text-black">Pedido #{order.id.slice(0, 8)}</h3>
+                    <h3 className="text-2xl font-bold text-black">Pedido #{order.id.slice(-5)}</h3>
                     {getStatusBadge(order.status)}
                   </div>
                   <p className="text-base text-gray-700">

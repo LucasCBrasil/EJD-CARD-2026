@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { createFileRoute, redirect, Outlet } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import AppLayout from '../components/layouts/AppLayout'
 import { supabase } from '../lib/supabase'
 

@@ -59,6 +59,7 @@ export interface Sale {
 export interface Order {
   id: string
   saleId: string
+  orderCode?: string
   sale?: any
   userId: string
   customerName: string
@@ -661,36 +662,93 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   }
 
   // Funções de pedidos
+  // Função helper para gerar código sequencial de pedido
+  const generateOrderCode = async (): Promise<string> => {
+    try {
+      // Buscar o último código de pedido
+      const { data: lastOrder, error } = await supabase
+        .from('orders')
+        .select('order_code')
+        .not('order_code', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      let nextNumber = 1
+      
+      if (!error && lastOrder?.order_code) {
+        // Extrair o número do último código (ex: "00001" -> 1)
+        const lastNumber = parseInt(lastOrder.order_code, 10)
+        if (!isNaN(lastNumber)) {
+          nextNumber = lastNumber + 1
+        }
+      }
+
+      // Formatar como 5 dígitos com zeros à esquerda
+      return nextNumber.toString().padStart(5, '0')
+    } catch (err) {
+      console.error('Error generating order code:', err)
+      // Fallback: usar timestamp se houver erro
+      return Date.now().toString().slice(-5)
+    }
+  }
+
  const getOpenOrders = async (): Promise<Order[]> => {
   try {
     console.log('Fetching open orders...')
     
-    const { data, error } = await supabase
+    const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
-      .select(`
-        *,
-        sale:sales (
-          id,
-          sale_id,
-          sale_items (
-            product_name,
-            quantity
-          )
-        )
-      `)
+      .select('*')
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching open orders:', error)
-      throw error
+    if (ordersError) {
+      console.error('Error fetching open orders:', ordersError)
+      throw ordersError
     }
 
-    // Transform the data to match the expected format
-    const formattedOrders = data?.map(order => ({
-      ...order,
-      items: order.sale?.sale_items || []
-    })) || []
+    if (!ordersData || ordersData.length === 0) {
+      return []
+    }
+
+    // Buscar itens de cada pedido através da venda
+    const formattedOrders = await Promise.all((ordersData || []).map(async (order: any) => {
+      let items: any[] = []
+      
+      // Buscar itens da venda relacionada
+      if (order.sale_id) {
+        const { data: saleItems, error: itemsError } = await supabase
+          .from('sale_items')
+          .select('*')
+          .eq('sale_id', order.sale_id)
+        
+        if (!itemsError && saleItems) {
+          items = saleItems.map((item: any) => ({
+            productId: item.product_id,
+            productName: item.product_name,
+            quantity: item.quantity,
+            price: parseFloat(item.price) || 0
+          }))
+        }
+      }
+
+      // Usar código existente (pedidos antigos sem código usarão fallback na exibição)
+      const orderCode = order.order_code || null
+
+      return {
+        id: order.id,
+        saleId: order.sale_id,
+        orderCode: orderCode,
+        userId: order.card_id,
+        customerName: order.customer_name || 'Cliente',
+        items: items,
+        total: parseFloat(order.total) || 0,
+        status: order.status,
+        createdAt: order.created_at,
+        deliveredAt: order.delivered_at
+      }
+    }))
 
     console.log('Formatted orders:', formattedOrders)
     return formattedOrders
@@ -703,7 +761,17 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   const markAsDelivered = async (orderId: string) => {
     try {
-      const { error } = await supabase
+      // Primeiro, buscar o pedido para obter o sale_id
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select('sale_id')
+        .eq('id', orderId)
+        .single()
+
+      if (orderError) throw orderError
+
+      // Atualizar o pedido
+      const { error: updateOrderError } = await supabase
         .from('orders')
         .update({
           status: 'delivered',
@@ -711,7 +779,23 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         })
         .eq('id', orderId)
 
-      if (error) throw error
+      if (updateOrderError) throw updateOrderError
+
+      // Se houver uma venda relacionada, atualizar seu status também
+      if (order?.sale_id) {
+        const { error: updateSaleError } = await supabase
+          .from('sales')
+          .update({
+            status: 'delivered'
+          })
+          .eq('id', order.sale_id)
+
+        if (updateSaleError) {
+          console.warn('Erro ao atualizar status da venda:', updateSaleError)
+          // Não lançar erro aqui, pois o pedido já foi atualizado com sucesso
+        }
+      }
+
       await loadData()
     } catch (err) {
       console.error('Erro ao marcar como entregue:', err)

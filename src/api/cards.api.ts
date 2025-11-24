@@ -53,11 +53,22 @@ export const cardsApi = {
         .from('cards')
         .select('*')
         .eq('user_id', userId)
-        .single()
+        .eq('is_associated', true)
+        .maybeSingle()
       
-      if (error) throw new Error(error.message)
+      if (error) {
+        // Se for erro de "nenhum resultado", retornar null normalmente
+        if (error.code === 'PGRST116' || error.message.includes('No rows')) {
+          return null
+        }
+        throw new Error(error.message)
+      }
       return data ? mapToCard(data) : null
-    } catch (error) {
+    } catch (error: any) {
+      // Ignorar erros de "nenhum resultado encontrado"
+      if (error?.code === 'PGRST116' || error?.message?.includes('No rows') || error?.message?.includes('Cannot coerce')) {
+        return null
+      }
       console.error('Erro ao buscar cartão do usuário:', error)
       return null
     }

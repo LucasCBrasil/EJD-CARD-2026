@@ -114,6 +114,9 @@ export const salesApi = {
 
     // Criar pedido se for lojinha
     if (config.createOrder) {
+      const { generateOrderCode } = await import('../utils/orderCode')
+      const orderCode = await generateOrderCode()
+      
       await supabase
         .from('orders')
         .insert({
@@ -121,7 +124,8 @@ export const salesApi = {
           card_id: card.id,
           customer_name: `Cliente ${params.userId}`,
           total,
-          status: 'completed'
+          status: 'completed',
+          order_code: orderCode
         })
     }
 

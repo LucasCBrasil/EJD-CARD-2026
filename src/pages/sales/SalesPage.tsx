@@ -15,7 +15,7 @@ const SalesPage: React.FC = () => {
   const location = useLocation()
   const { showSuccess, showError, showWarning } = useToastContext()
 
-  const context: ContextType = location.pathname.endsWith('/lojinha') ? 'lojinha' : 'lanchonete'
+  const context: ContextType = location.pathname.includes('/lojinha') ? 'lojinha' : 'lanchonete'
 
   const [products, setProducts] = useState<Product[]>([])
   const [coupons, setCoupons] = useState<string[]>([])
@@ -242,7 +242,7 @@ const SalesPage: React.FC = () => {
   }
 
   return (
-    <div className={`bg-white rounded-2xl shadow-xl border-2 ${borderColor} p-6 md:p-8`}>
+    <div className={`bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 ${borderColor} p-6 md:p-8`}>
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">{config.title}</h2>

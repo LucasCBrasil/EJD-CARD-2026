@@ -19,7 +19,6 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
       setIsLoading(true)
       // Carregar até 200 vendas (10 páginas)
       const fetchedSales = await getSales('sapatinho', 200)
-      console.log('Vendas do sapatinho carregadas:', fetchedSales.length)
       setAllSales(fetchedSales)
     } catch (error) {
       console.error('Erro ao carregar vendas:', error)
