@@ -76,24 +76,28 @@ export const cardsApi = {
 
   // Mutations
   create: async (params: { name: string; cardNumber: string; cardCode: string; phoneNumber: string; initialBalance?: number }): Promise<Card> => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Usuário não autenticado')
-    
-    const { data, error } = await supabase
-      .from('cards')
-      .insert({
-        user_id: user.id,
-        user_name: params.name,
-        card_number: params.cardNumber,
-        phone_number: params.phoneNumber,
-        balance: params.initialBalance || 0,
-        card_code: params.cardCode
-      })
-      .select()
-      .single()
-    
-    if (error) throw new Error(error.message)
-    return mapToCard(data)
+    // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins/comunicacao!)
+    const { data: response, error } = await supabase.functions.invoke('update-balance', {
+      body: {
+        action: 'create',
+        name: params.name,
+        cardNumber: params.cardNumber,
+        cardCode: params.cardCode,
+        phoneNumber: params.phoneNumber,
+        initialBalance: params.initialBalance || 0,
+        description: params.initialBalance ? `Saldo inicial de R$ ${params.initialBalance.toFixed(2)}` : undefined
+      }
+    })
+
+    if (error) {
+      throw new Error(error.message || 'Erro ao criar cartão')
+    }
+
+    if (!response?.success) {
+      throw new Error(response?.error || 'Erro ao criar cartão')
+    }
+
+    return mapToCard(response.data.card)
   },
 
   associate: async (params: { cardNumber: string; cardCode: string }): Promise<Card> => {

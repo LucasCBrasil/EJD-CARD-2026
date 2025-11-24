@@ -33,6 +33,12 @@ export const getAuthUser = async (req: Request): Promise<AuthUser | null> => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
 
     if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase credentials:', {
+        hasUrl: !!supabaseUrl,
+        hasAnonKey: !!supabaseAnonKey,
+        urlLength: supabaseUrl?.length || 0,
+        anonKeyLength: supabaseAnonKey?.length || 0
+      })
       throw new Error('Missing Supabase credentials')
     }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useLocation } from '@tanstack/react-router'
 import { Button, ConfirmationModal } from '../../components/shared'
 import { productService, Product } from '../../services/productService'
@@ -46,6 +46,13 @@ const SalesPage: React.FC = () => {
     setSelectedCard(null)
     setSearchFilter('')
     setCurrentPage(1)
+    
+    // Limpar timeout ao desmontar ou mudar contexto
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
   }, [context])
 
   const loadProducts = async () => {
@@ -106,6 +113,23 @@ const SalesPage: React.FC = () => {
   const handleAddToCart = (product: Product) => {
     const pid = product.id
     if (!pid) return
+    
+    // Validar estoque antes de adicionar
+    if (product.stock !== null && product.stock !== undefined) {
+      const currentQuantity = cartItems[pid] || 0
+      if (product.stock === 0) {
+        showWarning('Produto indisponível', `O produto "${product.name}" não está mais disponível em estoque.`)
+        return
+      }
+      if (product.stock < currentQuantity + 1) {
+        showWarning(
+          'Estoque insuficiente', 
+          `Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''} de "${product.name}". Você já tem ${currentQuantity} no carrinho.`
+        )
+        return
+      }
+    }
+    
     setCartItems(prev => ({
       ...prev,
       [pid]: (prev[pid] || 0) + 1
@@ -127,6 +151,25 @@ const SalesPage: React.FC = () => {
   }
 
   const handleIncrease = (productId: string) => {
+    const product = products.find(p => p.id === productId)
+    if (!product) return
+    
+    // Validar estoque antes de aumentar
+    if (product.stock !== null && product.stock !== undefined) {
+      const currentQuantity = cartItems[productId] || 0
+      if (product.stock === 0) {
+        showWarning('Produto indisponível', `O produto "${product.name}" não está mais disponível em estoque.`)
+        return
+      }
+      if (product.stock < currentQuantity + 1) {
+        showWarning(
+          'Estoque insuficiente', 
+          `Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''} de "${product.name}". Você já tem ${currentQuantity} no carrinho.`
+        )
+        return
+      }
+    }
+    
     setCartItems(prev => ({
       ...prev,
       [productId]: (prev[productId] || 0) + 1
@@ -140,39 +183,80 @@ const SalesPage: React.FC = () => {
     setIsCouponApplied(false)
   }
 
+  // Ref para cancelar requisições anteriores
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+  const lastSearchRef = React.useRef<string>('')
+  const currentInputRef = React.useRef<string>('')
+
   const handleCardNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const value = e.target.value.trim();
     setCardNumber(value);
+    currentInputRef.current = value; // Atualizar ref com valor atual
     
-    try {
-      setIsLoading(true);
+    // Limpar timeout anterior
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    if (!value) {
+      setSelectedCard(null);
       setError(null);
+      lastSearchRef.current = '';
+      return;
+    }
+
+    // Debounce: esperar 500ms após parar de digitar
+    searchTimeoutRef.current = setTimeout(async () => {
+      const searchValue = currentInputRef.current.trim();
       
-      if (!value.trim()) {
-        setSelectedCard(null);
+      // Verificar se o valor ainda é o mesmo (evitar race conditions)
+      if (!searchValue || searchValue !== value) {
         return;
       }
 
-      const card = await getCardByNumber(value);
-      if (card) {
-        setSelectedCard(card);
-        setError(null);
-      } else {
-        setSelectedCard(null);
-        setError('Cartão não encontrado');
+      // Evitar buscar o mesmo número novamente
+      if (searchValue === lastSearchRef.current) {
+        return;
       }
-    } catch (err: any) {
-      console.error('Erro ao buscar cartão:', err);
-      setError(err?.message || 'Erro ao buscar cartão');
-      setSelectedCard(null);
-    } finally {
-      setIsLoading(false);
-    }
+
+      lastSearchRef.current = searchValue;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const card = await getCardByNumber(searchValue);
+        
+        // Verificar novamente se o valor ainda é o mesmo quando a resposta chega
+        if (currentInputRef.current.trim() !== searchValue) {
+          return;
+        }
+
+        if (card) {
+          setSelectedCard(card);
+          setError(null);
+        } else {
+          setSelectedCard(null);
+          setError('Cartão não encontrado');
+        }
+      } catch (err: any) {
+        // Verificar novamente se o valor ainda é o mesmo
+        if (currentInputRef.current.trim() !== searchValue) {
+          return;
+        }
+        console.error('Erro ao buscar cartão:', err);
+        setError(err?.message || 'Erro ao buscar cartão');
+        setSelectedCard(null);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 500); // 500ms de debounce
   }
 
   const handleConfirmSale = async () => {
     setError(null)
-    setIsLoading(true)
+    
+    // VALIDAÇÃO ANTES DE FINALIZAR
     const items: SaleItem[] = Object.entries(cartItems)
       .filter(([productId]) => productId !== null)
       .map(([productId, quantity]) => {
@@ -187,9 +271,37 @@ const SalesPage: React.FC = () => {
         }
       })
 
+    // Validar estoque ANTES de chamar a função
+    const stockErrors: string[] = []
+    for (const item of items) {
+      const product = products.find(p => p.id === item.productId)
+      if (!product) {
+        stockErrors.push(`Produto "${item.productName}" não encontrado`)
+        continue
+      }
+      
+      if (product.stock !== null && product.stock !== undefined) {
+        if (product.stock === 0) {
+          stockErrors.push(`O produto "${product.name}" não está mais disponível em estoque`)
+        } else if (product.stock < item.quantity) {
+          stockErrors.push(`Estoque insuficiente para "${product.name}". Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''}, mas você está tentando comprar ${item.quantity}`)
+        }
+      }
+    }
+
+    if (stockErrors.length > 0) {
+      const errorMessage = stockErrors.length === 1 
+        ? stockErrors[0]
+        : `Não é possível finalizar a venda:\n${stockErrors.map((e, i) => `${i + 1}. ${e}`).join('\n')}`
+      setError(errorMessage)
+      showError('Erro no estoque', errorMessage)
+      return
+    }
+
+    setIsLoading(true)
     try {
       await makeSale(
-        selectedCard.user_id,
+        selectedCard.id,
         items,
         context,
         couponCode,
@@ -204,7 +316,9 @@ const SalesPage: React.FC = () => {
       setSelectedCard(null)
       handleClearCart()
     } catch (err: any) {
-      setError(err?.message || 'Erro ao realizar venda')
+      const errorMessage = err?.message || 'Erro ao realizar venda'
+      setError(errorMessage)
+      showError('Erro na venda', errorMessage)
       console.error('Erro ao realizar venda:', err)
     } finally {
       setIsLoading(false)

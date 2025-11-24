@@ -695,62 +695,72 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
  const getOpenOrders = async (): Promise<Order[]> => {
   try {
-    console.log('Fetching open orders...')
-    
-    const { data: ordersData, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
+    // Buscar vendas da lojinha com status 'completed' (ainda não entregues)
+    const { data: salesData, error: salesError } = await supabase
+      .from('sales')
+      .select(`
+        *,
+        card: cards!sales_card_id_fkey (
+          id,
+          user_name,
+          card_number
+        )
+      `)
+      .eq('category', 'lojinha')
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
 
-    if (ordersError) {
-      console.error('Error fetching open orders:', ordersError)
-      throw ordersError
+    if (salesError) {
+      console.error('Erro ao buscar pedidos pendentes:', salesError)
+      throw salesError
     }
-
-    if (!ordersData || ordersData.length === 0) {
+    
+    if (!salesData || salesData.length === 0) {
       return []
     }
-
-    // Buscar itens de cada pedido através da venda
-    const formattedOrders = await Promise.all((ordersData || []).map(async (order: any) => {
-      let items: any[] = []
+    
+    // Buscar itens e formatar pedidos
+    const formattedOrders = await Promise.all((salesData || []).map(async (sale: any) => {
+      // Buscar itens da venda
+      const { data: saleItems, error: itemsError } = await supabase
+        .from('sale_items')
+        .select('*')
+        .eq('sale_id', sale.id)
       
-      // Buscar itens da venda relacionada
-      if (order.sale_id) {
-        const { data: saleItems, error: itemsError } = await supabase
-          .from('sale_items')
-          .select('*')
-          .eq('sale_id', order.sale_id)
-        
-        if (!itemsError && saleItems) {
-          items = saleItems.map((item: any) => ({
-            productId: item.product_id,
-            productName: item.product_name,
-            quantity: item.quantity,
-            price: parseFloat(item.price) || 0
-          }))
-        }
+      if (itemsError) {
+        console.error(`Erro ao buscar itens da venda ${sale.id}:`, itemsError)
       }
+      
+      const items = (!itemsError && saleItems) ? saleItems.map((item: any) => ({
+        productId: item.product_id,
+        productName: item.product_name,
+        quantity: item.quantity,
+        price: parseFloat(item.price) || 0
+      })) : []
 
-      // Usar código existente (pedidos antigos sem código usarão fallback na exibição)
-      const orderCode = order.order_code || null
+      // Buscar código do pedido na tabela orders (se existir)
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('order_code, delivered_at')
+        .eq('sale_id', sale.id)
+        .maybeSingle()
+
+      const customerName = sale.card?.user_name || 'Cliente'
 
       return {
-        id: order.id,
-        saleId: order.sale_id,
-        orderCode: orderCode,
-        userId: order.card_id,
-        customerName: order.customer_name || 'Cliente',
+        id: sale.id,
+        saleId: sale.id,
+        orderCode: orderData?.order_code || null,
+        userId: sale.card_id,
+        customerName: customerName,
         items: items,
-        total: parseFloat(order.total) || 0,
-        status: order.status,
-        createdAt: order.created_at,
-        deliveredAt: order.delivered_at
+        total: parseFloat(sale.total) || 0,
+        status: 'completed' as const,
+        createdAt: sale.created_at,
+        deliveredAt: orderData?.delivered_at || null
       }
     }))
 
-    console.log('Formatted orders:', formattedOrders)
     return formattedOrders
 
   } catch (err) {
@@ -761,38 +771,38 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   const markAsDelivered = async (orderId: string) => {
     try {
-      // Primeiro, buscar o pedido para obter o sale_id
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .select('sale_id')
-        .eq('id', orderId)
-        .single()
-
-      if (orderError) throw orderError
-
-      // Atualizar o pedido
-      const { error: updateOrderError } = await supabase
-        .from('orders')
+      // orderId é o ID da venda na tabela sales
+      // Atualizar status da venda para 'delivered'
+      const { error: updateSaleError } = await supabase
+        .from('sales')
         .update({
-          status: 'delivered',
-          delivered_at: new Date().toISOString()
+          status: 'delivered'
         })
         .eq('id', orderId)
 
-      if (updateOrderError) throw updateOrderError
+      if (updateSaleError) {
+        console.error('Erro ao atualizar venda:', updateSaleError)
+        throw updateSaleError
+      }
 
-      // Se houver uma venda relacionada, atualizar seu status também
-      if (order?.sale_id) {
-        const { error: updateSaleError } = await supabase
-          .from('sales')
+      // Também atualizar o pedido na tabela orders (se existir) para manter consistência
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('sale_id', orderId)
+        .maybeSingle()
+
+      if (orderData) {
+        const { error: updateOrderError } = await supabase
+          .from('orders')
           .update({
-            status: 'delivered'
+            status: 'delivered',
+            delivered_at: new Date().toISOString()
           })
-          .eq('id', order.sale_id)
+          .eq('id', orderData.id)
 
-        if (updateSaleError) {
-          console.warn('Erro ao atualizar status da venda:', updateSaleError)
-          // Não lançar erro aqui, pois o pedido já foi atualizado com sucesso
+        if (updateOrderError) {
+          console.warn('Erro ao atualizar pedido (não crítico):', updateOrderError)
         }
       }
 
@@ -810,24 +820,30 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   const createCard = async (params: { name: string; cardNumber: string; cardCode: string; phoneNumber: string; initialBalance?: number }): Promise<Card> => {
     try {
-      const { data: card, error } = await supabase
-        .from('cards')
-        .insert({
-          card_number: params.cardNumber,
-          card_code: params.cardCode,
-          user_name: params.name,
-          phone_number: params.phoneNumber,
-          balance: params.initialBalance || 0,
-          is_associated: false, // Por padrão não associado
-          user_id: null // Não associado a nenhum usuário ainda
-        })
-        .select()
-        .single()
+      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins/comunicacao!)
+      const { data: response, error } = await supabase.functions.invoke('update-balance', {
+        body: {
+          action: 'create',
+          name: params.name,
+          cardNumber: params.cardNumber,
+          cardCode: params.cardCode,
+          phoneNumber: params.phoneNumber,
+          initialBalance: params.initialBalance || 0,
+          description: params.initialBalance ? `Saldo inicial de R$ ${params.initialBalance.toFixed(2)}` : undefined
+        }
+      })
 
-      if (error) throw error
+      if (error) {
+        console.error('Edge function error:', error)
+        throw new Error(error.message || 'Erro ao criar cartão')
+      }
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao criar cartão')
+      }
 
       await loadData()
-      return card as any
+      return response.data.card as any
     } catch (err) {
       console.error('Erro ao criar cartão:', err)
       throw err

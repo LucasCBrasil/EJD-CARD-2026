@@ -71,7 +71,7 @@ const HomePage: React.FC = () => {
       id: 'comunicacao',
       title: 'COMUNICAÇÃO',
       icon: '📢',
-      description: 'Gerenciar cartões, criar, associar e adicionar saldo',
+      description: 'Gerenciar cartões, criar e adicionar saldo',
       color: 'from-emerald-100 to-emerald-200',
       gradient: 'border-emerald-300',
       path: '/cards',

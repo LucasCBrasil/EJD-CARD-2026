@@ -16,15 +16,6 @@ const CardsPage = () => {
       canAccess: canViewCards
     },
     {
-      icon: '🔗',
-      title: 'Associar Cartão',
-      description: 'Vincular cartão a um usuário existente',
-      path: '/cards/associate',
-      color: 'from-blue-100 to-blue-200',
-      gradient: 'border-blue-300',
-      canAccess: canViewCards
-    },
-    {
       icon: '💰',
       title: 'Adicionar Saldo',
       description: 'Creditar valores em cartões',
@@ -62,7 +53,7 @@ const CardsPage = () => {
           📢 Comunicação
         </h2>
         <p className="text-lg text-gray-700 font-farmhand drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
-          Gerenciar cartões, criar, associar e adicionar saldo
+          Gerenciar cartões, criar e adicionar saldo
         </p>
         {/* Linha decorativa */}
         <div className="flex justify-center items-center mt-4 space-x-2">
