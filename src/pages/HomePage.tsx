@@ -101,7 +101,7 @@ const HomePage: React.FC = () => {
       id: 'sapatinho',
       title: 'SAPATINHO MÁGICO',
       icon: '👠',
-      description: 'Vendas, pedidos, produtos e histórico do sapatinho',
+      description: 'torne o dia de alguem ainda mais magico',
       color: 'from-ruby-100 to-ruby-200',
       gradient: 'border-ruby-300',
       path: '/sapatinho-veloz',
@@ -221,6 +221,42 @@ const HomePage: React.FC = () => {
             canAccess: canViewOpenOrders,
             color: 'from-wizard-100 to-wizard-200',
             gradient: 'border-wizard-300'
+          },
+          {
+            icon: '👟',
+            title: 'Cadastrar Produto Sapatinho',
+            description: 'Adicionar novo produto do sapatinho',
+            path: '/sapatinho-veloz/products/create',
+            canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha',
+            color: 'from-ruby-100 to-ruby-200',
+            gradient: 'border-ruby-300'
+          },
+          {
+            icon: '📋',
+            title: 'Listar Produtos Sapatinho',
+            description: 'Gerenciar produtos do sapatinho',
+            path: '/sapatinho-veloz/products',
+            canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha',
+            color: 'from-ruby-100 to-ruby-200',
+            gradient: 'border-ruby-300'
+          },
+          {
+            icon: '📦',
+            title: 'Pedidos Sapatinho',
+            description: 'Ver pedidos pendentes do sapatinho',
+            path: '/pedidos-sapatinho-veloz',
+            canAccess: canViewOpenOrders && (canSellSapatinho || userRole === 'admin' || userRole === 'lojinha'),
+            color: 'from-ruby-100 to-ruby-200',
+            gradient: 'border-ruby-300'
+          },
+          {
+            icon: '📊',
+            title: 'Histórico Sapatinho',
+            description: 'Consultar vendas do sapatinho',
+            path: '/historico/sapatinho',
+            canAccess: canViewSalesHistorySapatinho || userRole === 'admin' || userRole === 'lojinha',
+            color: 'from-ruby-100 to-ruby-200',
+            gradient: 'border-ruby-300'
           }
         ]
       
