@@ -223,7 +223,7 @@ const HomePage: React.FC = () => {
             gradient: 'border-wizard-300'
           },
           {
-            icon: '👟',
+            icon: '👠',
             title: 'Cadastrar Produto Sapatinho',
             description: 'Adicionar novo produto do sapatinho',
             path: '/sapatinho-veloz/products/create',
@@ -339,7 +339,7 @@ const HomePage: React.FC = () => {
             gradient: 'border-golden-300'
           },
           {
-            icon: '👟',
+            icon: '👠',
             title: 'Cadastrar Produto',
             description: 'Adicionar novo produto',
             path: '/sapatinho-veloz/products/create',

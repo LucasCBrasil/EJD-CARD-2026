@@ -5,8 +5,8 @@ import { useCardByUserId } from '../../hooks/useCards'
 import { useAuth } from '../../contexts/AuthContext'
 
 interface TabNavigationProps {
-  activeTab: 'cards' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'historicoSapatinho' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'sapatinho-veloz' | 'pedidos-sapatinho-veloz'
-  onTabChange: (tab: 'cards' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'historicoSapatinho' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'sapatinho-veloz' | 'pedidos-sapatinho-veloz') => void
+  activeTab: 'cards' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'historicoSapatinho' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'sapatinho-veloz' | 'pedidos-sapatinho-veloz' | 'sapatinho-veloz-products-create' | 'sapatinho-veloz-products'
+  onTabChange: (tab: 'cards' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'historicoSapatinho' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'sapatinho-veloz' | 'pedidos-sapatinho-veloz' | 'sapatinho-veloz-products-create' | 'sapatinho-veloz-products') => void
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange }) => {
@@ -21,6 +21,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
     canViewAdmin,
     canSellLojinha,
     canSellLanchonete,
+    canSellSapatinho,
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
     canViewSalesHistorySapatinho,
@@ -136,6 +137,31 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
             >
               👠 Sapatinho velOz
             </button>
+          )}
+          {/* Produtos Sapatinho - Cadastrar e Listar */}
+          {(canSellSapatinho || userRole === 'admin' || userRole === 'lojinha') && (
+            <>
+              <button
+                onClick={() => safeNavigate('/sapatinho-veloz/products/create')}
+                className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+                  activeTab === 'sapatinho-veloz-products-create'
+                    ? 'bg-emerald-300 text-white shadow-lg'
+                    : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
+                }`}
+              >
+                👠 Cadastrar Itens Sapatinho
+              </button>
+              <button
+                onClick={() => safeNavigate('/sapatinho-veloz/products')}
+                className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+                  activeTab === 'sapatinho-veloz-products'
+                    ? 'bg-emerald-300 text-white shadow-lg'
+                    : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
+                }`}
+              >
+                📋 Listar Itens Sapatinho
+              </button>
+            </>
           )}
           {canViewOpenOrders && (
             <button

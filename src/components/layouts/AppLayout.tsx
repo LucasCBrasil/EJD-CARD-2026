@@ -46,19 +46,28 @@ const AppLayout = () => {
     if (path.includes('/historico/lojinha')) return 'historicoLojinha'
     if (path.includes('/historico/lanchonete')) return 'historicoLanchonete'
     if (path.includes('/historico/sapatinho')) return 'historicoSapatinho'
+    if (path.includes('/pedidos-lojinha')) return 'lojinhaPedidos'
+    if (path.includes('/pedidos-sapatinho-veloz')) return 'pedidos-sapatinho-veloz'
+    if (path.includes('/sapatinho-veloz/products/create')) return 'sapatinho-veloz-products-create'
+    if (path.includes('/sapatinho-veloz/products')) return 'sapatinho-veloz-products'
     if (path.includes('/lojinha')) return 'lojinha'
     if (path.includes('/lanchonete')) return 'lanchonete'
     if (path.startsWith('/mycard')) return 'mycard'
     if (path.startsWith('/cards')) return 'cards'
-    if (path.includes('/pedidos-lojinha')) return 'lojinhaPedidos'
     if (path.startsWith('/admin')) return 'admin'
     if (path.startsWith('/sapatinho-veloz')) return 'sapatinho-veloz'
-    if (path.startsWith('/pedidos-sapatinho-veloz')) return 'pedidos-sapatinho-veloz'
     return 'mycard'
   }
 
-  const handleTabChange = (tab: 'cards' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'lojinhaPedidos' | 'historicoLanchonete' | 'historicoSapatinho' |'admin' | 'mycard' | 'sapatinho-veloz' | 'pedidos-sapatinho-veloz') => {
-    navigate({ to: `/${tab}` as any, search: {} as any })
+  const handleTabChange = (tab: 'cards' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'lojinhaPedidos' | 'historicoLanchonete' | 'historicoSapatinho' |'admin' | 'mycard' | 'sapatinho-veloz' | 'pedidos-sapatinho-veloz' | 'sapatinho-veloz-products-create' | 'sapatinho-veloz-products') => {
+    // Para as novas abas de produtos, navegar diretamente para o caminho correto
+    if (tab === 'sapatinho-veloz-products-create') {
+      navigate({ to: '/sapatinho-veloz/products/create' as any, search: {} as any })
+    } else if (tab === 'sapatinho-veloz-products') {
+      navigate({ to: '/sapatinho-veloz/products' as any, search: {} as any })
+    } else {
+      navigate({ to: `/${tab}` as any, search: {} as any })
+    }
   }
 
   const handleBackToContext = () => {

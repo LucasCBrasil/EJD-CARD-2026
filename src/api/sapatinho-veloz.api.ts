@@ -50,22 +50,37 @@ export const sapatinhoVelozApi = {
     
     if (error) throw error
     
-    // Buscar informações dos remetentes quando necessário
-    const ordersWithSenders = await Promise.all((data || []).map(async (order: any) => {
+    // ✅ OTIMIZAÇÃO: Buscar todos os cards de uma vez (evita N+1 queries)
+    const userIdsNeedingCards = (data || [])
+      .filter((order: any) => !order.sender_name && order.sender_user_id)
+      .map((order: any) => order.sender_user_id)
+      .filter((id: string, index: number, self: string[]) => self.indexOf(id) === index) // Remove duplicatas
+    
+    let cardsMap = new Map<string, string>()
+    
+    if (userIdsNeedingCards.length > 0) {
+      const { data: cards, error: cardsError } = await supabase
+        .from('cards')
+        .select('user_id, user_name')
+        .in('user_id', userIdsNeedingCards)
+      
+      if (!cardsError && cards) {
+        cards.forEach((card: any) => {
+          if (card.user_name) {
+            cardsMap.set(card.user_id, card.user_name)
+          }
+        })
+      }
+    }
+    
+    // Processar pedidos com os cards já carregados
+    const ordersWithSenders = (data || []).map((order: any) => {
       let senderName = order.sender_name
       let isAnonymous = false
       
-      // Se não tem sender_name, buscar do card pelo sender_user_id
+      // Se não tem sender_name, buscar do map de cards
       if (!senderName && order.sender_user_id) {
-        const { data: card } = await supabase
-          .from('cards')
-          .select('user_name')
-          .eq('user_id', order.sender_user_id)
-          .maybeSingle()
-        
-        if (card?.user_name) {
-          senderName = card.user_name
-        }
+        senderName = cardsMap.get(order.sender_user_id) || null
       }
       
       // Verificar se é anônimo (sender_name null)
@@ -97,7 +112,7 @@ export const sapatinhoVelozApi = {
         createdAt: order.created_at,
         deliveredAt: order.delivered_at
       }
-    }))
+    })
     
     return ordersWithSenders
   },
