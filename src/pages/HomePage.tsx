@@ -41,7 +41,8 @@ const HomePage: React.FC = () => {
     canViewSalesHistorySapatinho,
     canViewOpenOrders,
     canPlaceOrderSapatinho,
-    canSellSapatinho
+    canSellSapatinho,
+    isLoading: isPermissionsLoading 
   } = usePermissions()
 
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
@@ -53,6 +54,14 @@ const HomePage: React.FC = () => {
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
     }
+  }
+  
+  if (isPermissionsLoading) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center text-gray-500">
+        Carregando informações do sistema...
+      </div>
+    )
   }
 
   // Definir os cards principais
@@ -400,23 +409,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full py-4 md:py-8 px-3 md:px-4 relative overflow-hidden">
-      {/* Imagem de fundo - Estrada Dourada e Cidade Esmeralda */}
-      <div 
-        className="fixed inset-0"
-        style={{
-          backgroundImage: 'url(/background-emerald-city.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed',
-          zIndex: 0,
-          pointerEvents: 'none'
-        }}
-      >
-        {/* Overlay sutil para melhorar legibilidade do conteúdo */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 pointer-events-none"></div>
-      </div>
-
+      
       <div className="max-w-7xl mx-auto relative" style={{ zIndex: 10 }}>
 
         {/* Logo e Título */}
@@ -474,10 +467,10 @@ const HomePage: React.FC = () => {
             }
             
             return (
-              <div key={card.id} id={`card-${card.id}`} className={accessibleCards.length === 1 ? 'w-full max-w-md' : 'col-span-1'}>
+              <div key={card.id} id={`card-${card.id}`} className={`accessibleCards.length === 1 ? 'w-full max-w-md' : 'col-span-1'`}>
                 <button
                   onClick={handleClick}
-                  className={`group relative w-full min-h-[200px] flex flex-col justify-between backdrop-blur-xl bg-white/10 border-2 border-white/20 rounded-2xl p-4 md:p-5 shadow-[0_8px_32px_0_rgba(251,191,36,0.37)] hover:shadow-[0_8px_50px_0_rgba(251,191,36,0.6)] transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 active:scale-95 touch-manipulation select-none opacity-0 animate-slide-in-up delay-${Math.min(index, 6) * 100} overflow-hidden`}
+                  className={`!bg-white/80 group relative w-full min-h-[200px] flex flex-col justify-between backdrop-blur-xl bg-white/10 border-2 border-white/20 rounded-2xl p-4 md:p-5 shadow-[0_8px_32px_0_rgba(251,191,36,0.37)] hover:shadow-[0_8px_50px_0_rgba(251,191,36,0.6)] transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 active:scale-95 touch-manipulation select-none opacity-0 animate-slide-in-up delay-${Math.min(index, 6) * 100} overflow-hidden`}
                   type="button"
                   style={{
                     background: `linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%)`
@@ -510,49 +503,59 @@ const HomePage: React.FC = () => {
                   </div>
                 </button>
                 
-                {/* Menu de sub-opções - apenas se tiver múltiplas opções */}
-                {isExpanded && hasMultipleSubMenus && (
-                  <div className="mt-4 space-y-3 animate-fade-in">
-                    {subMenus.map((subMenu, subIndex) => (
-                      <button
-                        key={subMenu.path}
-                        onClick={() => handleSubCardClick(subMenu.path)}
-                        className={`group relative w-full backdrop-blur-xl bg-white/60 border-2 border-white/40 rounded-2xl p-4 md:p-5 shadow-[0_4px_16px_0_rgba(251,191,36,0.25)] hover:shadow-[0_4px_24px_0_rgba(251,191,36,0.5)] transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 active:scale-95 touch-manipulation select-none overflow-hidden`}
-                        type="button"
-                        style={{
-                          background: `linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.5) 100%)`,
-                          animationDelay: `${subIndex * 0.1}s`
-                        }}
-                      >
-                        {/* Borda interna colorida */}
-                        <div className={`absolute inset-0 rounded-2xl border-2 ${subMenu.gradient} opacity-40 pointer-events-none`}></div>
-                        
-                        {/* Efeito de brilho no hover */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-golden-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"></div>
-                        
-                        {/* Borda interna brilhante */}
-                        <div className="absolute inset-0 rounded-2xl border border-white/40 pointer-events-none"></div>
-                        
-                        <div className="flex items-center space-x-4 relative z-10">
-                          <div className="text-3xl md:text-4xl transform group-hover:scale-110 transition-transform duration-300 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
-                            {subMenu.icon}
-                          </div>
-                          <div className="flex-1 text-left">
-                            <h4 className="text-base md:text-lg font-bold text-white font-cardinal tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                              {subMenu.title}
-                            </h4>
-                            <p className="text-xs md:text-sm text-white/80 font-farmhand drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
-                              {subMenu.description}
-                            </p>
-                          </div>
-                          <div className="text-golden-400 text-xl group-hover:translate-x-1 transition-transform duration-300">
-                            →
-                          </div>
+               {/* Menu de sub-opções - apenas se tiver múltiplas opções */}
+              {isExpanded && hasMultipleSubMenus && (
+                <div className="mt-4 space-y-3 animate-fade-in">
+                  {subMenus.map((subMenu, subIndex) => (
+                    <button
+                      key={subMenu.path}
+                      onClick={() => handleSubCardClick(subMenu.path)}
+                      type="button"
+                      className={`
+                        !bg-white/80
+                        group relative w-full rounded-2xl p-4 md:p-5
+                        shadow-[0_4px_16px_0_rgba(251,191,36,0.25)]
+                        hover:shadow-[0_4px_24px_0_rgba(251,191,36,0.5)]
+                        transition-all duration-300 transform
+                        hover:scale-105 hover:-translate-y-1
+                        active:scale-95 touch-manipulation select-none overflow-hidden
+                      `}
+                      style={{
+                        animationDelay: `${subIndex * 0.1}s`
+                      }}
+                    >
+                      {/* Borda interna colorida */}
+                      <div
+                        className={`absolute inset-0 rounded-2xl border-2 ${subMenu.gradient} opacity-40 pointer-events-none`}
+                      ></div>
+
+                      {/* Efeito de brilho no hover */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-golden-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"></div>
+
+                      {/* Borda interna brilhante */}
+                      <div className="absolute inset-0 rounded-2xl border border-white/40 pointer-events-none"></div>
+
+                      {/* Conteúdo do card */}
+                      <div className="flex items-center space-x-4 relative z-10">
+                        <div className="text-3xl md:text-4xl transform group-hover:scale-110 transition-transform duration-300 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
+                          {subMenu.icon}
                         </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                        <div className="flex-1 text-left">
+                          <h4 className="text-base md:text-lg font-bold text-white font-cardinal tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+                            {subMenu.title}
+                          </h4>
+                          <p className="text-xs md:text-sm text-white/80 font-farmhand drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
+                            {subMenu.description}
+                          </p>
+                        </div>
+                        <div className="text-golden-400 text-xl group-hover:translate-x-1 transition-transform duration-300">
+                          →
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
               </div>
             )
           })}

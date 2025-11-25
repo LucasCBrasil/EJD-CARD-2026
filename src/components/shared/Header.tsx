@@ -42,7 +42,12 @@ const Header: React.FC<HeaderProps> = ({
           <img 
             src="/logo-encontrão-2025.png" 
             alt="Logo Encontrão 2025 - em CAMINHOZ MÁGICOS" 
-            className="max-w-md mx-auto h-auto"
+            className="
+              mx-auto h-auto
+              max-w-[280px]      /* 👈 limite no mobile */
+              sm:max-w-[320px]   /* 👈 telas um pouco maiores */
+              md:max-w-md        /* 👈 tamanho normal no desktop */
+            "
           />
         </div>
       )}

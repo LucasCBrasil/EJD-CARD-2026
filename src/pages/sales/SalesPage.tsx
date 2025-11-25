@@ -433,54 +433,88 @@ const SalesPage: React.FC = () => {
 
               {/* Paginação */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 pt-4">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className={`px-4 py-2 ${
-                      context === 'lojinha' 
-                        ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
-                        : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
-                    } text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors`}
-                  >
-                    ← Anterior
-                  </button>
+              <div 
+                className="
+                  flex justify-center items-center gap-2 pt-4 
+                  max-[413px]:gap-1    /* gaps menores no mobile */
+                "
+              >
+                {/* Botão Anterior */}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className={`
+                    px-4 py-2 
+                    ${context === 'lojinha' 
+                      ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
+                      : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
+                    } 
+                    text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors
 
-                  <div className="flex gap-1">
-                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                      const page = i + 1
-                      const isActive = currentPage === page
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-bold transition-colors ${
-                            isActive
-                              ? context === 'lojinha'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-orange-500 text-white'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      )
-                    })}
-                  </div>
+                    /* 👇 Estilos mobile */
+                    max-[413px]:!px-2
+                    max-[413px]:!py-2
+                    max-[413px]:!text-xs
+                    max-[413px]:!rounded-md
+                  `}
+                >
+                  ← Anterior
+                </button>
 
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className={`px-4 py-2 ${
-                      context === 'lojinha' 
-                        ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
-                        : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
-                    } text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors`}
-                  >
-                    Próximo →
-                  </button>
+                {/* Botões de página */}
+                <div className="flex gap-1 max-[413px]:gap-0.5">
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    const page = i + 1
+                    const isActive = currentPage === page
+
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`
+                          w-10 h-10 rounded-lg font-bold transition-colors
+                          ${isActive
+                            ? context === 'lojinha'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-orange-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }
+                          max-[413px]:!w-7
+                          max-[413px]:!h-9
+                          max-[413px]:!text-xs
+                          max-[413px]:!rounded
+                        `}
+                      >
+                        {page}
+                      </button>
+                    )
+                  })}
                 </div>
-              )}
+
+                {/* Botão Próximo */}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`
+                    px-4 py-2
+                    ${context === 'lojinha' 
+                      ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
+                      : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
+                    }
+                    text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors
+
+                    /* 👇 Estilos mobile */
+                    max-[413px]:!px-2
+                    max-[413px]:!py-2
+                    max-[413px]:!text-xs
+                    max-[413px]:!rounded-md
+                  `}
+                >
+                  Próximo →
+                </button>
+              </div>
+            )}
+
 
               {/* Info de Paginação */}
               <div className="text-center text-sm text-gray-600">
