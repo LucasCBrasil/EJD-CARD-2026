@@ -304,74 +304,88 @@ const ListProductsPage = () => {
 
           {/* Paginação */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-2 mt-8">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-4 py-2 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: currentPage === 1 ? '#d1d5db' : '#eab308',
-                  color: '#000000'
-                }}
-                onMouseEnter={(e) => {
-                  if (currentPage !== 1) {
-                    e.currentTarget.style.backgroundColor = '#ca8a04'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (currentPage !== 1) {
-                    e.currentTarget.style.backgroundColor = '#eab308'
-                  }
-                }}
+              <div 
+                className="
+                  flex justify-center items-center gap-2 pt-4 
+                  max-[413px]:gap-1    /* gaps menores no mobile */
+                "
               >
-                ← Anterior
-              </button>
+                {/* Botão Anterior */}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className={`
+                    px-4 py-2 
+                    ${context === 'lojinha' 
+                      ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
+                      : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
+                    } 
+                    text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors
 
-              <div className="flex space-x-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    data-btn-type="page-number"
-                    data-active={currentPage === page ? "true" : "false"}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                      currentPage === page 
-                        ? 'bg-sky-200 hover:bg-sky-300 shadow-lg' 
-                        : 'bg-white hover:bg-emerald-100 shadow'
-                    }`}
-                    style={{ 
-                      minWidth: '40px'
-                    }}
-                  >
-                    {page}
-                  </button>
-                ))}
+                    /* 👇 Estilos mobile */
+                    max-[413px]:!px-2
+                    max-[413px]:!py-2
+                    max-[413px]:!text-xs
+                    max-[413px]:!rounded-md
+                  `}
+                >
+                  ← Anterior
+                </button>
+
+                {/* Botões de página */}
+                <div className="flex gap-1 max-[413px]:gap-0.5">
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    const page = i + 1
+                    const isActive = currentPage === page
+
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`
+                          w-10 h-10 rounded-lg font-bold transition-colors
+                          ${isActive
+                            ? context === 'lojinha'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-orange-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }
+                          max-[413px]:!w-7
+                          max-[413px]:!h-9
+                          max-[413px]:!text-xs
+                          max-[413px]:!rounded
+                        `}
+                      >
+                        {page}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Botão Próximo */}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`
+                    px-4 py-2
+                    ${context === 'lojinha' 
+                      ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
+                      : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
+                    }
+                    text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors
+
+                    /* 👇 Estilos mobile */
+                    max-[413px]:!px-2
+                    max-[413px]:!py-2
+                    max-[413px]:!text-xs
+                    max-[413px]:!rounded-md
+                  `}
+                >
+                  Próximo →
+                </button>
               </div>
-
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: currentPage === totalPages ? '#d1d5db' : '#10b981',
-                  color: '#000000'
-                }}
-                onMouseEnter={(e) => {
-                  if (currentPage !== totalPages) {
-                    e.currentTarget.style.backgroundColor = '#059669'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (currentPage !== totalPages) {
-                    e.currentTarget.style.backgroundColor = '#10b981'
-                  }
-                }}
-              >
-                Próximo →
-              </button>
-            </div>
-          )}
-
+            )}
+            
           {/* Informações de Paginação */}
           <div className="text-center text-gray-600 font-farmhand">
             Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, products.length)} de {products.length} {context === 'lojinha' ? 'produtos' : 'itens'}

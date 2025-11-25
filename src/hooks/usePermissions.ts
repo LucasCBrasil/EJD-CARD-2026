@@ -2,10 +2,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { getUserPermissions, hasPermission, hasAnyPermission, hasAllPermissions, UserRole, RolePermissions } from '../lib/roles'
 
 export const usePermissions = () => {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   
   const userRole: UserRole = (user?.role as UserRole) || 'encontrista'
   const permissions = getUserPermissions(userRole)
+
+  const isLoading = authLoading || !user
 
   return {
     // Informações do usuário
@@ -13,7 +15,7 @@ export const usePermissions = () => {
     permissions,
     isAdmin: userRole === 'admin',
     isEncontrista: userRole === 'encontrista',
-    
+    isLoading,
     // Verificações de permissão
     hasPermission: (permission: keyof RolePermissions) => hasPermission(userRole, permission),
     hasAnyPermission: (permissions: (keyof RolePermissions)[]) => hasAnyPermission(userRole, permissions),
