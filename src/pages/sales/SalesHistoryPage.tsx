@@ -34,7 +34,7 @@ const SalesHistoryPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, getSales, context])
+  }, [getSales, context])
 
   useEffect(() => {
     // Só carregar vendas se estiver na rota correta
@@ -159,7 +159,7 @@ const SalesHistoryPage: React.FC = () => {
                 <div className="flex justify-between items-start mb-5">
                   <div>
                     <div className="flex items-center space-x-4 mb-3">
-                      <h3 className="text-2xl font-bold text-black">Venda #{sale.id.slice(0, 8)}</h3>
+                      <h3 className="text-2xl font-bold text-black">Venda #{sale.saleId}</h3>
                     </div>
                     <p className="text-base text-gray-700">
                       Criado em: {sale.createdAt ? formatDate(sale.createdAt) : 'Data não disponível'}
