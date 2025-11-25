@@ -134,7 +134,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
                   : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
               }`}
             >
-              👠 Sapatinho Veloz
+              👠 Sapatinho velOz
             </button>
           )}
           {canViewOpenOrders && (
@@ -156,7 +156,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
                 ? 'bg-emerald-300 text-white shadow-lg'
                 : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
             }`}            >
-              📦 Pedidos Sapatinho Veloz
+              📦 Pedidos Sapatinho velOz
             </button>
           )}
           {canViewAdmin && (

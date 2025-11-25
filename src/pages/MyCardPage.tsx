@@ -134,7 +134,7 @@ const MyCardPage: React.FC = () => {
               ? 'Lojinha Mágica'
               : sale.category === 'lanchonete'
                 ? 'Lanchonete do Feiticeiro'
-                : 'Sapatinho Veloz',
+                : 'Sapatinho velOz',
             product: sale.items.map((item: any) => item.productName).join(', '),
             amount: sale.total,
             type: sale.category

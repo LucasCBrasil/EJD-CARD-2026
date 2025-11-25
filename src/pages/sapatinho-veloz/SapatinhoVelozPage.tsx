@@ -132,7 +132,7 @@ const SapatinhoVelozPage: React.FC = () => {
         items
       })
 
-      showSuccess('Sucesso!', 'Pedido Sapatinho Veloz criado com sucesso! Sua encomenda chegará ao destinatário até o final do Encontrão.')
+      showSuccess('Sucesso!', 'Pedido Sapatinho velOz criado com sucesso! Sua encomenda chegará ao destinatário até o final do Encontrão.')
 
       // Limpar formulário
       setSenderTeam('')
@@ -155,7 +155,7 @@ const SapatinhoVelozPage: React.FC = () => {
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border-2 border-yellow-300 p-4 sm:p-6 md:p-10">
       <div className="mb-6 md:mb-8">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-3 md:mb-4">👠 Sapatinho Veloz</h2>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-3 md:mb-4">👠 Sapatinho velOz</h2>
         <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 sm:p-4 md:p-5 mb-4 md:mb-5 rounded-r-lg">
           <p className="text-sm sm:text-base font-bold text-gray-900 mb-2 md:mb-3">⚠️ Regras importantes:</p>
           <ul className="text-sm sm:text-base text-gray-800 space-y-1 sm:space-y-2 ml-4 sm:ml-5 list-disc leading-relaxed">

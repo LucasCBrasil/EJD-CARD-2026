@@ -81,7 +81,7 @@ const AppLayout = () => {
       ? 'Lojinha'
       : context === 'lanchonete'
         ? 'Lanchonete'
-        : 'Sapatinho Veloz'
+        : 'Sapatinho velOz'
     
     if (isInProductsSubpage) {
       return `← Voltar para Gerenciar Produtos`
