@@ -136,14 +136,11 @@ Deno.serve(async (req: Request) => {
 
     // 6. VALIDAR PREÇOS DOS PRODUTOS
     const productIds = items.map((item: any) => item.productId);
-    let productsQuery = supabase
+    const productsQuery = supabase
       .from('products')
       .select('id, name, price, active, stock, category')
-      .in('id', productIds);
-    
-    if (category && category !== 'sapatinho') {
-      productsQuery = productsQuery.eq('category', category);
-    }
+      .in('id', productIds)
+      .eq('category', category);
     
     const { data: products, error: productsError } = await productsQuery;
 
@@ -218,18 +215,110 @@ Deno.serve(async (req: Request) => {
 
     let finalTotal = calculatedTotal;
     if (coupon && discountedTotal < calculatedTotal) {
-      const { data: couponData } = await supabase
-        .from('coupons')
-        .select('name, discount_percent')
-        .eq('name', coupon)
-        .single();
+      if (category === 'lanchonete') {
+        // Cupons da lanchonete têm valor fixo
+        const { data: couponData, error: couponError } = await supabase
+          .from('lanchonete_coupons')
+          .select('name, discount_amount')
+          .eq('name', coupon)
+          .eq('active', true)
+          .maybeSingle();
 
-      if (couponData) {
-        const expectedDiscount = calculatedTotal * (couponData.discount_percent / 100);
-        const expectedTotal = calculatedTotal - expectedDiscount;
+        if (couponError) {
+          console.error('Error fetching lanchonete coupon:', couponError);
+          return new Response(JSON.stringify({
+            success: false,
+            error: `Erro ao validar cupom: ${couponError.message}`
+          }), {
+            status: 500,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
 
-        if (Math.abs(discountedTotal - expectedTotal) < 0.01) {
-          finalTotal = discountedTotal;
+        if (couponData) {
+          const discountAmount = parseFloat(couponData.discount_amount.toString());
+          const expectedTotal = calculatedTotal - discountAmount;
+
+          if (Math.abs(discountedTotal - expectedTotal) < 0.01) {
+            finalTotal = discountedTotal;
+          } else {
+            return new Response(JSON.stringify({
+              success: false,
+              error: `Valor do desconto inválido. Esperado: R$ ${expectedTotal.toFixed(2)}, Recebido: R$ ${discountedTotal.toFixed(2)}`
+            }), {
+              status: 400,
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+              }
+            });
+          }
+        } else {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Cupom não encontrado ou inativo'
+          }), {
+            status: 400,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+      } else {
+        // Cupons da lojinha têm desconto fixo de R$ 10,00
+        const { data: couponData, error: couponError } = await supabase
+          .from('coupons')
+          .select('name')
+          .eq('name', coupon)
+          .maybeSingle();
+
+        if (couponError) {
+          console.error('Error fetching lojinha coupon:', couponError);
+          return new Response(JSON.stringify({
+            success: false,
+            error: `Erro ao validar cupom: ${couponError.message}`
+          }), {
+            status: 500,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+
+        if (couponData) {
+          const discountAmount = 10.00; // Valor fixo para lojinha
+          const expectedTotal = calculatedTotal - discountAmount;
+
+          if (Math.abs(discountedTotal - expectedTotal) < 0.01) {
+            finalTotal = discountedTotal;
+          } else {
+            return new Response(JSON.stringify({
+              success: false,
+              error: `Valor do desconto inválido. Esperado: R$ ${expectedTotal.toFixed(2)}, Recebido: R$ ${discountedTotal.toFixed(2)}`
+            }), {
+              status: 400,
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+              }
+            });
+          }
+        } else {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Cupom não encontrado ou inativo'
+          }), {
+            status: 400,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
         }
       }
     }
@@ -249,16 +338,12 @@ Deno.serve(async (req: Request) => {
     }
 
     // 8. CRIAR VENDA
-    // A tabela sales tem: id, card_id, seller_id, sale_id, category, total, status, created_at
-    // NÃO tem: user_id, coupon (coupon está em tabela separada)
-    const saleIdUnique = `sale_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+    // sale_number é gerado automaticamente pelo trigger trg_set_sale_number no banco
     const { data: saleData, error: saleError } = await supabase
       .from('sales')
       .insert({
         card_id: cardId,
         seller_id: user.id,
-        sale_id: saleIdUnique,
         category: category,
         total: finalTotal,
         status: 'completed'
@@ -310,22 +395,110 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 10. DIMINUIR ESTOQUE DOS PRODUTOS
-    for (const item of items) {
-      const product = products.find((p: any) => p.id === item.productId);
+    // 10. DIMINUIR ESTOQUE DOS PRODUTOS (otimizado - busca todos de uma vez)
+    const productsWithStock = items
+      .map(item => {
+        const product = products.find((p: any) => p.id === item.productId);
+        return product && product.stock !== null && product.stock !== undefined 
+          ? { product, item } 
+          : null;
+      })
+      .filter((p): p is { product: any; item: any } => p !== null);
+
+    if (productsWithStock.length > 0) {
+      // Buscar estoques atuais de todos os produtos de uma vez
+      const productIdsToUpdate = productsWithStock.map(p => p.product.id);
+      const { data: currentProducts, error: fetchError } = await supabase
+        .from('products')
+        .select('id, stock, name')
+        .in('id', productIdsToUpdate);
       
-      if (product && product.stock !== null && product.stock !== undefined) {
-        const newStock = product.stock - item.quantity;
-        
-        const { error: stockError } = await supabase
+      if (fetchError || !currentProducts) {
+        console.error('Error fetching product stocks:', fetchError);
+        await supabase.from('sale_items').delete().eq('sale_id', saleId);
+        await supabase.from('sales').delete().eq('id', saleId);
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Erro ao verificar estoque dos produtos'
+        }), {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+
+      // Verificar estoque e preparar updates
+      const stockUpdates: Array<{ id: string; newStock: number; oldStock: number; name: string }> = [];
+      for (const { product, item } of productsWithStock) {
+        const currentProduct = currentProducts.find((p: any) => p.id === product.id);
+        if (!currentProduct) {
+          await supabase.from('sale_items').delete().eq('sale_id', saleId);
+          await supabase.from('sales').delete().eq('id', saleId);
+          return new Response(JSON.stringify({
+            success: false,
+            error: `Produto "${product.name}" não encontrado no banco`
+          }), {
+            status: 400,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+
+        // Verificar se ainda tem estoque suficiente
+        if (currentProduct.stock < item.quantity) {
+          await supabase.from('sale_items').delete().eq('sale_id', saleId);
+          await supabase.from('sales').delete().eq('id', saleId);
+          return new Response(JSON.stringify({
+            success: false,
+            error: `Estoque insuficiente para "${currentProduct.name}". Disponível: ${currentProduct.stock}, Solicitado: ${item.quantity}. A venda foi cancelada.`
+          }), {
+            status: 400,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+
+        stockUpdates.push({
+          id: product.id,
+          newStock: currentProduct.stock - item.quantity,
+          oldStock: currentProduct.stock,
+          name: currentProduct.name
+        });
+      }
+
+      // Atualizar todos os estoques em paralelo
+      const updatePromises = stockUpdates.map(({ id, newStock, oldStock, name }) =>
+        supabase
           .from('products')
           .update({ stock: newStock })
-          .eq('id', item.productId);
-        
-        if (stockError) {
-          console.error('Stock update error:', stockError);
-          // Não falhar a venda por causa do estoque, apenas logar
-        }
+          .eq('id', id)
+          .eq('stock', oldStock) // Optimistic locking
+          .then(({ error }) => ({ id, name, error }))
+      );
+
+      const updateResults = await Promise.all(updatePromises);
+      const failedUpdates = updateResults.filter(r => r.error);
+
+      if (failedUpdates.length > 0) {
+        console.error('Stock update errors:', failedUpdates);
+        await supabase.from('sale_items').delete().eq('sale_id', saleId);
+        await supabase.from('sales').delete().eq('id', saleId);
+        return new Response(JSON.stringify({
+          success: false,
+          error: `Erro ao atualizar estoque de: ${failedUpdates.map(u => u.name).join(', ')}. A venda foi cancelada.`
+        }), {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
       }
     }
 
@@ -354,12 +527,17 @@ Deno.serve(async (req: Request) => {
     }
 
     // 12. CRIAR TRANSAÇÃO
-    await supabase.from('transactions').insert({
+    const { error: transactionError } = await supabase.from('transactions').insert({
       card_id: cardId,
       amount: -finalTotal,
       type: 'debit',
       description: `Venda ${category} - ${items.length} itens`
     });
+
+    if (transactionError) {
+      console.error('Transaction creation error (não crítico):', transactionError);
+      // Não falhar a venda se a transação não for criada, apenas logar
+    }
 
     // 13. CRIAR PEDIDO SE FOR LOJINHA
     if (category === 'lojinha') {
@@ -417,9 +595,13 @@ Deno.serve(async (req: Request) => {
 
   } catch (error) {
     console.error('Unexpected error:', error);
+    const errorMessage = error instanceof Error 
+      ? `${error.message}${error.stack ? `\nStack: ${error.stack}` : ''}`
+      : String(error);
+    
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: `Erro interno: ${errorMessage}`
     }), {
       status: 500,
       headers: {
@@ -429,67 +611,3 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
-
-      console.error('Balance update error:', balanceError)
-      // Tentar deletar a venda se o saldo falhar
-      await supabase.from('sale_items').delete().eq('sale_id', saleId)
-      await supabase.from('sales').delete().eq('id', saleId)
-      
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Erro ao atualizar saldo: ${balanceError.message}`
-        } as ApiResponse),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
-    // 12. CRIAR TRANSAÇÃO NO HISTÓRICO
-    const { error: transactionError } = await supabase
-      .from('transactions')
-      .insert({
-        card_id: cardId,
-        amount: -finalTotal,
-        type: 'debit',
-        description: `Venda ${category} - ${items.length} itens`
-      })
-
-    if (transactionError) {
-      console.error('Transaction creation error:', transactionError)
-      // Não falhar a venda por causa do histórico, apenas logar
-    }
-
-    // 13. RETORNAR SUCESSO
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: {
-          saleId,
-          total: finalTotal,
-          message: 'Venda realizada com sucesso!'
-        }
-      } as ApiResponse),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
-
-  } catch (error) {
-    console.error('Unexpected error:', error)
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido'
-      } as ApiResponse),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
-  }
-})
-

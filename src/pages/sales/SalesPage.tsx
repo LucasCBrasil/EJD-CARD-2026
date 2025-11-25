@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useLocation } from '@tanstack/react-router'
-import { Button, ConfirmationModal } from '../../components/shared'
+import { Button, ConfirmationModal, LoadingSpinner } from '../../components/shared'
 import { productService, Product } from '../../services/productService'
 import type { SaleItem } from '../../types'
 import { useToastContext } from '../../contexts/ToastContext'
@@ -18,7 +18,7 @@ const SalesPage: React.FC = () => {
   const context: ContextType = location.pathname.includes('/lojinha') ? 'lojinha' : 'lanchonete'
 
   const [products, setProducts] = useState<Product[]>([])
-  const [coupons, setCoupons] = useState<string[]>([])
+  const [coupons, setCoupons] = useState<Array<{ name: string; discountAmount?: number }>>([])
   const [cartItems, setCartItems] = useState<Record<string, number>>({})
   const [isSaving] = useState(false)
   const [cardNumber, setCardNumber] = useState('')
@@ -26,11 +26,12 @@ const SalesPage: React.FC = () => {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [searchFilter, setSearchFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [couponCode, setCouponCode] = useState('')
   const [isCouponApplied, setIsCouponApplied] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
+  const [couponDiscountAmount, setCouponDiscountAmount] = useState<number>(0)
   const itemsPerPage = 6
 
   // Cores por contexto
@@ -62,11 +63,8 @@ const SalesPage: React.FC = () => {
   }
 
   const loadCoupons = async () => {
-    const loadedCoupons = await getCoupons()
-    const resolvedCoupons = Array.isArray(loadedCoupons) 
-      ? await Promise.all(loadedCoupons) 
-      : []
-    setCoupons(resolvedCoupons)
+    const loadedCoupons = await getCoupons(context)
+    setCoupons(loadedCoupons || [])
   }
 
   // Filtrar produtos por nome
@@ -89,10 +87,11 @@ const SalesPage: React.FC = () => {
   }, [searchFilter])
 
   useEffect(() => {
-    if (cartItems.length === 0) {
+    if (Object.keys(cartItems).length === 0) {
       setCouponCode('')
       setCouponError(null)
       setIsCouponApplied(false)
+      setCouponDiscountAmount(0)
     }
   }, [cartItems])
 
@@ -104,11 +103,26 @@ const SalesPage: React.FC = () => {
     }, 0)
   }, [cartItems, products])
 
+  // Validar se o cupom ainda é válido quando o total muda (lojinha precisa de mínimo R$ 150)
+  useEffect(() => {
+    if (context === 'lojinha' && isCouponApplied && total < 150) {
+      // Se o total ficou abaixo de R$ 150, remover o cupom
+      setIsCouponApplied(false)
+      setCouponDiscountAmount(0)
+      showWarning('Cupom removido', 'O cupom foi removido porque o total da compra ficou abaixo de R$ 150,00')
+    }
+  }, [total, context, isCouponApplied, showWarning])
+
   const discountedTotal = useMemo(() => {
     if (isCouponApplied && couponCode) {
-      return Math.max(0, total - 10)
-    } return total
-  }, [total, isCouponApplied, couponCode]) 
+      if (context === 'lanchonete' && couponDiscountAmount > 0) {
+        return Math.max(0, total - couponDiscountAmount)
+      } else if (context === 'lojinha') {
+        return Math.max(0, total - 10)
+      }
+    }
+    return total
+  }, [total, isCouponApplied, couponCode, couponDiscountAmount, context]) 
 
   const handleAddToCart = (product: Product) => {
     const pid = product.id
@@ -222,7 +236,7 @@ const SalesPage: React.FC = () => {
       lastSearchRef.current = searchValue;
       
       try {
-        setIsLoading(true);
+        // Não usar isLoading aqui - só durante a venda
         setError(null);
         
         const card = await getCardByNumber(searchValue);
@@ -247,8 +261,6 @@ const SalesPage: React.FC = () => {
         console.error('Erro ao buscar cartão:', err);
         setError(err?.message || 'Erro ao buscar cartão');
         setSelectedCard(null);
-      } finally {
-        setIsLoading(false);
       }
     }, 500); // 500ms de debounce
   }
@@ -307,6 +319,9 @@ const SalesPage: React.FC = () => {
         couponCode,
         discountedTotal
       )
+      
+      // Recarregar produtos para atualizar estoque
+      await loadProducts()
       
       showSuccess(
         'Venda realizada!',
@@ -567,43 +582,70 @@ const SalesPage: React.FC = () => {
                   })}
                 </div>
 
-                {/* Cupom (lojinha) */}
-                {context === 'lojinha' && (
-                  <div className="pt-2 border-t border-gray-300">
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Cupom</label>
-                    <div className="flex gap-1.5">
-                      <select
-                        value={couponCode}
-                        onChange={e => setCouponCode(e.target.value)}
-                        disabled={isCouponApplied || total < 150}
-                        className="flex-1 px-2 py-1.5 border-2 border-gray-300 rounded text-xs bg-white disabled:bg-gray-100"
-                      >
-                        <option value="">Selecione</option>
-                        {coupons.map((coupon, idx) => (
-                          <option key={idx} value={coupon}>{coupon}</option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => {
-                          if (total >= 150 && !isCouponApplied) {
-                            setIsCouponApplied(true)
-                            showSuccess('Cupom aplicado!', 'Desconto de R$10,00')
+                {/* Cupom */}
+                <div className="pt-2 border-t border-gray-300">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Cupom</label>
+                  <div className="flex gap-1.5">
+                    <select
+                      value={couponCode}
+                      onChange={e => {
+                        setCouponCode(e.target.value)
+                        if (e.target.value) {
+                          const selectedCoupon = coupons.find(c => c.name === e.target.value)
+                          if (selectedCoupon && context === 'lanchonete' && selectedCoupon.discountAmount) {
+                            setCouponDiscountAmount(selectedCoupon.discountAmount)
+                          } else if (context === 'lojinha') {
+                            setCouponDiscountAmount(10)
                           }
-                        }}
-                        disabled={isCouponApplied || total < 150}
-                        className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white font-semibold rounded text-xs"
-                      >
-                        Aplicar
-                      </button>
-                    </div>
-                    {total < 150 && <p className="text-xs text-amber-600 mt-1">Mínimo: R$150</p>}
-                    {isCouponApplied && <p className="text-xs text-emerald-700 font-semibold mt-1">✅ -R$ 10,00</p>}
+                        } else {
+                          setCouponDiscountAmount(0)
+                        }
+                      }}
+                      disabled={isCouponApplied || (context === 'lojinha' && total < 150)}
+                      className="flex-1 min-w-0 px-2 py-1.5 border-2 border-gray-300 rounded text-xs bg-white disabled:bg-gray-100 truncate"
+                      style={{ maxWidth: '100%' }}
+                    >
+                      <option value="">Selecione</option>
+                      {coupons.map((coupon, idx) => {
+                        const displayName = coupon.name.length > 20 
+                          ? `${coupon.name.substring(0, 17)}...` 
+                          : coupon.name
+                        return (
+                          <option key={idx} value={coupon.name} title={coupon.name}>
+                            {displayName} {coupon.discountAmount ? `(-R$ ${coupon.discountAmount.toFixed(2)})` : ''}
+                          </option>
+                        )
+                      })}
+                    </select>
+                    <button
+                      onClick={() => {
+                        if (context === 'lanchonete' && !isCouponApplied && couponCode) {
+                          setIsCouponApplied(true)
+                          const selectedCoupon = coupons.find(c => c.name === couponCode)
+                          const discount = selectedCoupon?.discountAmount || 0
+                          showSuccess('Cupom aplicado!', `Desconto de R$ ${discount.toFixed(2)}`)
+                        } else if (context === 'lojinha' && total >= 150 && !isCouponApplied) {
+                          setIsCouponApplied(true)
+                          showSuccess('Cupom aplicado!', 'Desconto de R$10,00')
+                        }
+                      }}
+                      disabled={isCouponApplied || (context === 'lojinha' && total < 150) || !couponCode}
+                      className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white font-semibold rounded text-xs flex-shrink-0"
+                    >
+                      Aplicar
+                    </button>
                   </div>
-                )}
+                  {context === 'lojinha' && total < 150 && <p className="text-xs text-amber-600 mt-1">Mínimo: R$150</p>}
+                  {isCouponApplied && (
+                    <p className="text-xs text-emerald-700 font-semibold mt-1">
+                      ✅ -R$ {couponDiscountAmount.toFixed(2)}
+                    </p>
+                  )}
+                </div>
 
                 {/* Total */}
                 <div className="pt-2 border-t border-gray-300 space-y-0.5">
-                  {isCouponApplied && context === 'lojinha' && (
+                  {isCouponApplied && (
                     <>
                       <div className="flex justify-between text-xs">
                         <span>Subtotal</span>
@@ -611,7 +653,7 @@ const SalesPage: React.FC = () => {
                       </div>
                       <div className="flex justify-between text-xs text-emerald-600">
                         <span>Desconto</span>
-                        <span>- R$ 10,00</span>
+                        <span>- R$ {formatPrice(couponDiscountAmount)}</span>
                       </div>
                     </>
                   )}
@@ -666,6 +708,35 @@ const SalesPage: React.FC = () => {
         }).filter(Boolean).join(', ')}`}
         isLoading={isSaving}
       />
+
+      {/* Modal de Loading - Bloqueia a tela durante o processamento */}
+      {isLoading && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-md">
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 border-4 border-yellow-300/50">
+            <div className="text-center">
+              <div className="mb-6 flex justify-center">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-yellow-200/50 animate-ping"></div>
+                  <div className="relative">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3 font-cardinal">
+                {context === 'lojinha' ? '🛍️ Processando venda...' : '🍔 Processando pedido...'}
+              </h3>
+              <p className="text-gray-700 text-base font-farmhand">
+                Por favor, aguarde enquanto finalizamos sua {context === 'lojinha' ? 'venda' : 'pedido'}
+              </p>
+              <div className="mt-4 flex justify-center space-x-1">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

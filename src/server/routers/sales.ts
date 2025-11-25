@@ -45,8 +45,8 @@ export const salesRouter = router({
 
       // 1. Verificar permissão específica para a categoria
       const hasPermissionForCategory = ctx.user.role === 'admin' || 
-        (category === 'lojinha' && ctx.user.role === 'lojinha') ||
-        (category === 'lanchonete' && ctx.user.role === 'lanchonete') ||
+        (category === 'lojinha' && ['lojinha', 'servico'].includes(ctx.user.role)) ||
+        (category === 'lanchonete' && ['lanchonete', 'servico'].includes(ctx.user.role)) ||
         (category === 'sapatinho' && ['admin', 'lojinha', 'lanchonete', 'comunicacao'].includes(ctx.user.role))
 
       if (!hasPermissionForCategory) {
@@ -315,8 +315,8 @@ export const salesRouter = router({
       // Verificar permissão para a categoria
       if (category) {
         const hasPermissionForCategory = ctx.user.role === 'admin' || 
-          (category === 'lojinha' && ctx.user.role === 'lojinha') ||
-          (category === 'lanchonete' && ctx.user.role === 'lanchonete')
+          (category === 'lojinha' && ['lojinha', 'servico'].includes(ctx.user.role)) ||
+          (category === 'lanchonete' && ['lanchonete', 'servico'].includes(ctx.user.role))
 
         if (!hasPermissionForCategory) {
           throw new TRPCError({
