@@ -34,11 +34,11 @@ const ProductsPage = () => {
       selectDescription: 'Cadastre, edite e visualize itens da lanchonete'
     },
     sapatinho: {
-      title: '👠 Itens do Sapatinho Veloz',
+      title: '👠 Itens do Sapatinho velOz',
       color: 'pink',
       createLabel: 'Cadastrar Item Mágico',
       listLabel: 'Listar Itens Mágicos',
-      createDescription: 'Adicione novos itens especiais ao Sapatinho Veloz',
+      createDescription: 'Adicione novos itens especiais ao Sapatinho velOz',
       listDescription: 'Visualize os itens mágicos disponíveis',
       selectDescription: 'Gerencie os itens encantados do Sapatinho'
     }

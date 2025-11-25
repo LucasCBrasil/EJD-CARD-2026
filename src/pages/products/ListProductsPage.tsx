@@ -41,17 +41,17 @@ const ListProductsPage = () => {
       deleteMessage: 'Deseja realmente excluir este item do cardápio?'
     },
     sapatinho: {
-      title: '👠 Itens do Sapatinho Veloz',
+      title: '👠 Itens do Sapatinho velOz',
       subtitle: 'Gerencie os itens mágicos disponíveis',
       emptyMessage: 'Nenhum item cadastrado para o Sapatinho',
-      deleteTitle: 'Excluir Item Mágico',
+      deleteTitle: 'Excluir Item',
       deleteMessage: 'Deseja realmente excluir este item do Sapatinho?'
     }
   }
   
   const currentConfig = config[context]
-  const itemSingular = context === 'lojinha' ? 'produto' : context === 'sapatinho' ? 'item mágico' : 'item'
-  const itemSingularTitle = context === 'lojinha' ? 'Produto' : context === 'sapatinho' ? 'Item Mágico' : 'Item'
+  const itemSingular = context === 'lojinha' ? 'produto' : context === 'sapatinho' ? 'item' : 'item'
+  const itemSingularTitle = context === 'lojinha' ? 'Produto' : context === 'sapatinho' ? 'Item' : 'Item'
 
   // Carregar produtos
   useEffect(() => {

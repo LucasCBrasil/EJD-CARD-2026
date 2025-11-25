@@ -73,7 +73,7 @@ const SapatinhoVelozOrdersPage: React.FC = () => {
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-red-200 p-8 text-center">
         <div className="text-6xl mb-4">🚫</div>
         <h2 className="text-2xl font-bold text-red-700 mb-4">Acesso Negado</h2>
-        <p className="text-red-600">Você não tem permissão para visualizar pedidos do Sapatinho Veloz.</p>
+        <p className="text-red-600">Você não tem permissão para visualizar pedidos do Sapatinho velOz.</p>
       </div>
     )
   }
@@ -81,8 +81,8 @@ const SapatinhoVelozOrdersPage: React.FC = () => {
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border-2 border-yellow-300 p-10">
       <div className="mb-8">
-        <h2 className="text-4xl font-bold text-black mb-4">📦 Pedidos Sapatinho Veloz</h2>
-        <p className="text-lg text-gray-800">Visualize e gerencie os pedidos do Sapatinho Veloz</p>
+        <h2 className="text-4xl font-bold text-black mb-4">📦 Pedidos Sapatinho velOz</h2>
+        <p className="text-lg text-gray-800">Visualize e gerencie os pedidos do Sapatinho velOz</p>
       </div>
 
       {isLoading ? (

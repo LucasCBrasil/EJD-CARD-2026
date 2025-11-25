@@ -99,7 +99,7 @@ const CreateProductPage = () => {
     },
     sapatinho: {
       title: isEditing ? '✏️ Editar Item do Sapatinho' : '👠 Cadastrar Item do Sapatinho',
-      subtitle: isEditing ? 'Atualize as informações do item mágico' : 'Adicione um novo item especial para o Sapatinho Veloz',
+      subtitle: isEditing ? 'Atualize as informações do item mágico' : 'Adicione um novo item especial para o Sapatinho velOz',
       nameLabel: 'Nome do Item Mágico',
       namePlaceholder: 'Ex: Bilhete Encantado',
       successMessage: isEditing ? 'Item do Sapatinho atualizado!' : 'Item do Sapatinho cadastrado!'

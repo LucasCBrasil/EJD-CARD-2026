@@ -115,8 +115,8 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border-2 border-yellow-300 p-10">
       <div className="mb-8">
-        <h2 className="text-4xl font-bold text-black mb-4">📊 Histórico de Pedidos - Sapatinho Mágico</h2>
-        <p className="text-lg text-gray-800">Visualize todos os pedidos do Sapatinho Mágico</p>
+        <h2 className="text-4xl font-bold text-black mb-4">📊 Histórico de Pedidos - Sapatinho velOz</h2>
+        <p className="text-lg text-gray-800">Visualize todos os pedidos do Sapatinho velOz</p>
       </div>
 
       {/* Search Filter */}

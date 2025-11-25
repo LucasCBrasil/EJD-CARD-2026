@@ -99,9 +99,9 @@ const HomePage: React.FC = () => {
     },
     {
       id: 'sapatinho',
-      title: 'SAPATINHO MÁGICO',
+      title: 'SAPATINHO VELOZ',
       icon: '👠',
-      description: 'torne o dia de alguem ainda mais magico',
+      description: 'torne o dia de alguém ainda mais especial',
       color: 'from-ruby-100 to-ruby-200',
       gradient: 'border-ruby-300',
       path: '/sapatinho-veloz',
