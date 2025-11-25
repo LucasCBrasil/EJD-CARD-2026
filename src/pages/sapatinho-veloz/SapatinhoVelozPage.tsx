@@ -25,7 +25,7 @@ const TEAMS = [
 const SapatinhoVelozPage: React.FC = () => {
   const { user } = useAuth()
   const { getBalance } = useSupabaseData()
-  const { data: products = [], isLoading: isLoadingProducts } = useProducts('sapatinho')
+  const { data: products = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useProducts('sapatinho')
   const { showSuccess, showError } = useToastContext()
 
   const [senderTeam, setSenderTeam] = useState('')
@@ -36,6 +36,11 @@ const SapatinhoVelozPage: React.FC = () => {
   const [selectedProducts, setSelectedProducts] = useState<Record<string, number>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [userBalance, setUserBalance] = useState<number>(0)
+
+  // Forçar recarregamento dos produtos sempre que a página for montada
+  useEffect(() => {
+    refetchProducts()
+  }, [refetchProducts])
 
   useEffect(() => {
     if (user?.id) {

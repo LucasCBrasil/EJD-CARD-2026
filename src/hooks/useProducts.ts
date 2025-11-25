@@ -14,6 +14,7 @@ export function useProducts(category?: ProductCategory) {
   return useQuery({
     queryKey: productKeys.list(category),
     queryFn: () => productsApi.getAll(category),
+    refetchOnMount: 'always', // Sempre buscar dados frescos quando o componente for montado
   })
 }
 
