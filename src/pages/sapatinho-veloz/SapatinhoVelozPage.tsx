@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { useProducts } from '../../hooks/useProducts'
 import { SaleItem } from '../../types'
-import { Button } from '../../components/shared'
+import { Button, LoadingSpinner } from '../../components/shared'
 import { sapatinhoVelozApi } from '../../api/sapatinho-veloz.api'
 import { useToastContext } from '../../contexts/ToastContext'
 import OptimizedImage from '../../components/ui/OptimizedImage'
@@ -25,7 +25,7 @@ const TEAMS = [
 const SapatinhoVelozPage: React.FC = () => {
   const { user } = useAuth()
   const { getBalance } = useSupabaseData()
-  const { data: products = [], isLoading: isLoadingProducts } = useProducts('sapatinho')
+  const { data: products = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useProducts('sapatinho')
   const { showSuccess, showError } = useToastContext()
 
   const [senderTeam, setSenderTeam] = useState('')
@@ -36,6 +36,11 @@ const SapatinhoVelozPage: React.FC = () => {
   const [selectedProducts, setSelectedProducts] = useState<Record<string, number>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [userBalance, setUserBalance] = useState<number>(0)
+
+  // Forçar recarregamento dos produtos sempre que a página for montada
+  useEffect(() => {
+    refetchProducts()
+  }, [refetchProducts])
 
   useEffect(() => {
     if (user?.id) {
@@ -56,12 +61,38 @@ const SapatinhoVelozPage: React.FC = () => {
   }
 
   const handleQuantityChange = (productId: string, quantity: number) => {
+    const currentQuantity = selectedProducts[productId] || 0
+    
+    // Se está diminuindo ou removendo, não precisa validar estoque
     if (quantity <= 0) {
       const { [productId]: removed, ...rest } = selectedProducts
       setSelectedProducts(rest)
-    } else {
-      setSelectedProducts(prev => ({ ...prev, [productId]: quantity }))
+      return
     }
+
+    // Se está diminuindo a quantidade, permitir sem validar estoque
+    if (quantity < currentQuantity) {
+      setSelectedProducts(prev => ({ ...prev, [productId]: quantity }))
+      return
+    }
+
+    // Só validar estoque quando está AUMENTANDO a quantidade
+    const product = products.find(p => p.id === productId)
+    if (product && product.stock !== null && product.stock !== undefined) {
+      if (product.stock === 0) {
+        showError('Produto indisponível', `O produto "${product.name}" não está mais disponível em estoque.`)
+        return
+      }
+      if (product.stock < quantity) {
+        showError(
+          'Estoque insuficiente', 
+          `Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''} de "${product.name}".`
+        )
+        return
+      }
+    }
+
+    setSelectedProducts(prev => ({ ...prev, [productId]: quantity }))
   }
 
   const getSelectedItems = (): Omit<SaleItem, 'id'>[] => {
@@ -105,6 +136,32 @@ const SapatinhoVelozPage: React.FC = () => {
     const items = getSelectedItems()
     if (items.length === 0) {
       showError('Erro', 'Selecione pelo menos um produto')
+      return
+    }
+
+    // ✅ Validar estoque ANTES de chamar a função
+    const stockErrors: string[] = []
+    for (const item of items) {
+      const product = products.find(p => p.id === item.productId)
+      if (!product) {
+        stockErrors.push(`Produto "${item.productName}" não encontrado`)
+        continue
+      }
+
+      if (product.stock !== null && product.stock !== undefined) {
+        if (product.stock === 0) {
+          stockErrors.push(`O produto "${product.name}" não está mais disponível em estoque`)
+        } else if (product.stock < item.quantity) {
+          stockErrors.push(`Estoque insuficiente para "${product.name}". Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''}, mas você está tentando comprar ${item.quantity}`)
+        }
+      }
+    }
+
+    if (stockErrors.length > 0) {
+      const errorMessage = stockErrors.length === 1 
+        ? stockErrors[0]
+        : `Não é possível finalizar o pedido:\n${stockErrors.map((e, i) => `${i + 1}. ${e}`).join('\n')}`
+      showError('Erro no estoque', errorMessage)
       return
     }
 
@@ -268,7 +325,20 @@ const SapatinhoVelozPage: React.FC = () => {
                       {product.description && (
                         <div className="text-sm sm:text-base text-gray-700 mt-1 break-words">{product.description}</div>
                       )}
-                      <div className="text-xl sm:text-2xl font-bold text-emerald-700 mt-2">R$ {product.price.toFixed(2)}</div>
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="text-xl sm:text-2xl font-bold text-emerald-700">R$ {product.price.toFixed(2)}</div>
+                        {product.stock !== null && product.stock !== undefined && (
+                          <div className={`text-sm font-semibold ${
+                            product.stock === 0 
+                              ? 'text-red-600' 
+                              : product.stock <= 5 
+                                ? 'text-yellow-600' 
+                                : 'text-emerald-600'
+                          }`}>
+                            📦 {product.stock === 0 ? 'Indisponível' : `${product.stock} em estoque`}
+                          </div>
+                        )}
+                      </div>
                     </label>
                   </div>
                   {selectedProducts[product.id] && (
@@ -360,6 +430,35 @@ const SapatinhoVelozPage: React.FC = () => {
           </Button>
         </div>
       </form>
+
+      {/* Modal de Loading - Bloqueia a tela durante o processamento */}
+      {isProcessing && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-md">
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 border-4 border-yellow-300/50">
+            <div className="text-center">
+              <div className="mb-6 flex justify-center">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-yellow-200/50 animate-ping"></div>
+                  <div className="relative">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3 font-cardinal">
+                👠 Processando pedido...
+              </h3>
+              <p className="text-gray-700 text-base font-farmhand">
+                Por favor, aguarde enquanto finalizamos seu pedido do Sapatinho velOz
+              </p>
+              <div className="mt-4 flex justify-center space-x-1">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

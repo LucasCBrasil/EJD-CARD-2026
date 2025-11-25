@@ -19,22 +19,38 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
       setIsLoading(true)
       // Carregar todos os pedidos (incluindo entregues)
       const fetchedOrders = await sapatinhoVelozApi.getAll()
-      // Buscar informações dos remetentes quando necessário
-      const ordersWithSenders = await Promise.all(fetchedOrders.map(async (order) => {
+      
+      // ✅ OTIMIZAÇÃO: Buscar todos os cards de uma vez (evita N+1 queries)
+      const userIdsNeedingCards = fetchedOrders
+        .filter(order => !order.senderName && order.senderUserId)
+        .map(order => order.senderUserId)
+        .filter((id, index, self) => self.indexOf(id) === index) // Remove duplicatas
+      
+      let cardsMap = new Map<string, string>()
+      
+      if (userIdsNeedingCards.length > 0) {
+        const { data: cards, error: cardsError } = await supabase
+          .from('cards')
+          .select('user_id, user_name')
+          .in('user_id', userIdsNeedingCards)
+        
+        if (!cardsError && cards) {
+          cards.forEach(card => {
+            if (card.user_name) {
+              cardsMap.set(card.user_id, card.user_name)
+            }
+          })
+        }
+      }
+      
+      // Processar pedidos com os cards já carregados
+      const ordersWithSenders = fetchedOrders.map((order) => {
         let senderName = order.senderName
         let isAnonymous = false
         
-        // Se não tem sender_name, buscar do card pelo sender_user_id
+        // Se não tem sender_name, buscar do map de cards
         if (!senderName && order.senderUserId) {
-          const { data: card } = await supabase
-            .from('cards')
-            .select('user_name')
-            .eq('user_id', order.senderUserId)
-            .maybeSingle()
-          
-          if (card?.user_name) {
-            senderName = card.user_name
-          }
+          senderName = cardsMap.get(order.senderUserId) || null
         }
         
         // Verificar se é anônimo (sender_name null)
@@ -47,7 +63,8 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
           senderName: senderName || null,
           isAnonymous
         }
-      }))
+      })
+      
       setAllOrders(ordersWithSenders)
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error)
