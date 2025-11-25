@@ -84,6 +84,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   servico: [
     'cards:view_own',
     'sales:view_own',
+    'sales:create_lojinha',  // ✅ Pode realizar vendas na lojinha
     'orders:place_sapatinho',  // ✅ Pode fazer pedidos no sapatinho
   ],
   

@@ -124,7 +124,7 @@ interface SupabaseDataContextType {
   markAsDelivered: (orderId: string) => Promise<void>
 
   // Funções de cupons
-  getCoupons: () => Promise<string[]>
+  getCoupons: (category?: 'lojinha' | 'lanchonete') => Promise<Array<{ name: string; discountAmount?: number }>>
   
   // Funções de cartão
   getCardByUserId: (userId: string) => Card | null
@@ -925,20 +925,38 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   }
 
   // Buscar cupons
-  const getCoupons = async (): Promise<string[]> => {
+  const getCoupons = async (category?: 'lojinha' | 'lanchonete'): Promise<Array<{ name: string; discountAmount?: number }>> => {
     try {
+      if (category === 'lanchonete') {
+        // Buscar cupons da lanchonete (com valor fixo)
         const { data, error } = await supabase
-        .from('coupons')
-        .select('*')
-        .order('created_at', { ascending: false })
+          .from('lanchonete_coupons')
+          .select('name, discount_amount')
+          .eq('active', true)
+          .order('created_at', { ascending: false })
+        
         if (error) throw error
-      console.log('Cupons buscados:', data)
-      const couponNames = (data || []).map((item: { name: string }) => item.name)
-      console.log(couponNames)
-      return couponNames as any || null
+        
+        return (data || []).map((item: { name: string; discount_amount: number }) => ({
+          name: item.name,
+          discountAmount: parseFloat(item.discount_amount.toString())
+        }))
+      } else {
+        // Buscar cupons da lojinha (percentual)
+        const { data, error } = await supabase
+          .from('coupons')
+          .select('name')
+          .order('created_at', { ascending: false })
+        
+        if (error) throw error
+        
+        return (data || []).map((item: { name: string }) => ({
+          name: item.name
+        }))
+      }
     } catch (err) {
-        console.error('Erro ao buscar cupons:', err)
-        throw err
+      console.error('Erro ao buscar cupons:', err)
+      throw err
     }
   }
 
