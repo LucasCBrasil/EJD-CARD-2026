@@ -531,6 +531,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         id: sale.id,
         userId: sale.user_id,
         sellerId: sale.seller_id,
+        saleId: sale.sale_number,
         category: sale.category,
         items: (sale.items || []).map((item: any) => ({
           productId: item.product_id || '',
@@ -749,7 +750,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
       return {
         id: sale.id,
-        saleId: sale.id,
+        saleId: sale.sale_number,
         orderCode: orderData?.order_code || null,
         userId: sale.card_id,
         customerName: customerName,
@@ -773,37 +774,14 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     try {
       // orderId é o ID da venda na tabela sales
       // Atualizar status da venda para 'delivered'
-      const { error: updateSaleError } = await supabase
-        .from('sales')
-        .update({
-          status: 'delivered'
-        })
-        .eq('id', orderId)
-
+      const { data: updated, error: updateSaleError } = await supabase.functions.invoke('mark-sale-delivered', {
+        body: {
+          saleId: orderId,
+        }
+      })
       if (updateSaleError) {
         console.error('Erro ao atualizar venda:', updateSaleError)
         throw updateSaleError
-      }
-
-      // Também atualizar o pedido na tabela orders (se existir) para manter consistência
-      const { data: orderData } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('sale_id', orderId)
-        .maybeSingle()
-
-      if (orderData) {
-        const { error: updateOrderError } = await supabase
-          .from('orders')
-          .update({
-            status: 'delivered',
-            delivered_at: new Date().toISOString()
-          })
-          .eq('id', orderData.id)
-
-        if (updateOrderError) {
-          console.warn('Erro ao atualizar pedido (não crítico):', updateOrderError)
-        }
       }
 
       await loadData()
