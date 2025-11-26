@@ -509,14 +509,62 @@ Deno.serve(async (req: Request) => {
     }
 
     // 13. CRIAR TRANSAÇÃO
-    await supabase.from('transactions').insert({
+    const { error: transactionError } = await supabase.from('transactions').insert({
       card_id: card.id,
       amount: -calculatedTotal,
       type: 'debit',
       description: `Pedido Sapatinho Veloz - ${items.length} itens`
     });
 
-    // 14. SUCESSO!
+    if (transactionError) {
+      console.error('Transaction creation error:', transactionError);
+      // Não falhar o pedido por causa da transação, mas logar o erro
+      // O saldo já foi atualizado, então o pedido está válido
+    }
+
+    // 14. VERIFICAR SE TUDO FOI CRIADO CORRETAMENTE
+    // Fazer uma verificação final para garantir que o pedido existe
+    const { data: verifyOrder, error: verifyError } = await supabase
+      .from('sapatinho_veloz_orders')
+      .select('id')
+      .eq('id', orderId)
+      .single();
+
+    if (verifyError || !verifyOrder) {
+      console.error('Verificação final falhou:', verifyError);
+      // Tentar reverter tudo
+      if (productsWithStock.length > 0 && stockUpdates.length > 0) {
+        for (const stockUpdate of stockUpdates) {
+          await supabase
+            .from('sapatinho_products')
+            .update({ stock: stockUpdate.oldStock })
+            .eq('id', stockUpdate.id);
+        }
+      }
+      await supabase.from('sapatinho_veloz_order_items').delete().eq('order_id', orderId);
+      await supabase.from('sapatinho_veloz_orders').delete().eq('id', orderId);
+      await supabase.from('sapatinho_sale_items').delete().eq('sale_id', saleId);
+      await supabase.from('sapatinho_sales').delete().eq('id', saleId);
+      
+      // Reverter saldo
+      await supabase
+        .from('cards')
+        .update({ balance: card.balance })
+        .eq('id', card.id);
+      
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Erro ao verificar pedido criado. O pedido foi cancelado.'
+      }), {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    // 15. SUCESSO! Tudo foi criado e verificado
     return new Response(JSON.stringify({
       success: true,
       data: {

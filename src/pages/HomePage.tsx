@@ -64,19 +64,31 @@ const HomePage: React.FC = () => {
 
   // Carregar imagem de fundo
   useEffect(() => {
+    // Garantir que começa como false
+    setBackgroundLoaded(false)
+    
     const img = new Image()
     img.src = '/background-emerald-city.png'
+    
+    // Forçar reload da imagem para garantir que carrega
     img.onload = () => {
-      // Aguardar um pouco para garantir que a imagem está totalmente carregada
+      // Aguardar um pouco para garantir que a imagem está totalmente carregada e renderizada
       setTimeout(() => {
         setBackgroundLoaded(true)
-      }, 100)
+      }, 300)
     }
     img.onerror = () => {
-      // Se a imagem falhar ao carregar, ainda assim mostrar o conteúdo após um delay
+      // Se a imagem falhar ao carregar, ainda assim mostrar o conteúdo após um delay maior
       setTimeout(() => {
         setBackgroundLoaded(true)
-      }, 500)
+      }, 1000)
+    }
+    
+    // Se a imagem já estiver em cache, pode não disparar onload
+    if (img.complete) {
+      setTimeout(() => {
+        setBackgroundLoaded(true)
+      }, 300)
     }
   }, [])
 
@@ -426,8 +438,20 @@ const HomePage: React.FC = () => {
   // Mostrar spinner enquanto a imagem de fundo não carregar
   if (!backgroundLoaded) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-white fixed inset-0 z-[9999]">
-        <div className="relative z-10 flex flex-col items-center justify-center">
+      <div 
+        className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-white z-[99999]"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: '#ffffff'
+        }}
+      >
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
           {/* Spinner animado */}
           <div className="relative mb-8">
             <div className="w-20 h-20 border-4 border-golden-200 border-t-golden-500 rounded-full animate-spin"></div>

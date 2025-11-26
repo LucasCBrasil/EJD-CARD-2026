@@ -127,32 +127,69 @@ export const sapatinhoVelozApi = {
     items: Omit<SaleItem, 'id'>[]
   }): Promise<string> => {
     // ✅ AGORA USA EDGE FUNCTION (SEGURO!)
-    const { data: response, error } = await supabase.functions.invoke('sapatinho-order-', {
-      body: {
-        senderTeam: params.senderTeam,
-        recipientName: params.recipientName,
-        recipientAddress: params.recipientAddress,
-        message: params.message,
-        isAnonymous: params.isAnonymous,
-        items: params.items.map(item => ({
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price
-        }))
+    // Timeout de 5 minutos (300 segundos) - limite máximo do Supabase Pro/Team
+    // Se você estiver no plano Free, o limite é 60 segundos
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 300000) // 300 segundos (5 minutos)
+
+    try {
+      const { data: response, error } = await supabase.functions.invoke('sapatinho-order-', {
+        body: {
+          senderTeam: params.senderTeam,
+          recipientName: params.recipientName,
+          recipientAddress: params.recipientAddress,
+          message: params.message,
+          isAnonymous: params.isAnonymous,
+          items: params.items.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            price: item.price
+          }))
+        },
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      if (error) {
+        console.error('Edge function error:', error)
+        // Verificar se é erro de timeout
+        if (error.message?.includes('timeout') || error.message?.includes('aborted') || error.name === 'AbortError') {
+          throw new Error('A operação demorou mais de 5 minutos. O pedido pode ter sido criado mesmo assim. Por favor, verifique seus pedidos antes de tentar novamente.')
+        }
+        throw new Error(error.message || 'Erro ao criar pedido')
       }
-    })
 
-    if (error) {
-      console.error('Edge function error:', error)
-      throw new Error(error.message || 'Erro ao criar pedido')
+      // Validação mais robusta da resposta
+      if (!response) {
+        console.error('Resposta vazia da edge function')
+        throw new Error('Não foi possível processar a resposta do servidor. Por favor, verifique se o pedido foi criado.')
+      }
+
+      if (!response.success) {
+        console.error('Edge function retornou erro:', response.error)
+        throw new Error(response.error || 'Erro ao criar pedido')
+      }
+
+      // Verificar se realmente tem o orderId
+      if (!response.data?.orderId) {
+        console.error('Resposta sem orderId:', response)
+        throw new Error('Pedido criado mas não foi possível obter o ID. Por favor, verifique se o pedido foi salvo.')
+      }
+
+      return response.data.orderId
+    } catch (err: any) {
+      clearTimeout(timeoutId)
+      
+      // Tratamento específico para timeout
+      if (err.name === 'AbortError' || err.message?.includes('timeout') || err.message?.includes('aborted')) {
+        throw new Error('A operação demorou mais de 5 minutos. O pedido pode ter sido criado mesmo assim. Por favor, verifique seus pedidos antes de tentar novamente.')
+      }
+      
+      // Re-throw outros erros
+      throw err
     }
-
-    if (!response?.success) {
-      throw new Error(response?.error || 'Erro ao criar pedido')
-    }
-
-    return response.data.orderId
   },
 
   markAsDelivered: async (orderId: string): Promise<void> => {
