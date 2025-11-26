@@ -67,11 +67,16 @@ const HomePage: React.FC = () => {
     const img = new Image()
     img.src = '/background-emerald-city.png'
     img.onload = () => {
-      setBackgroundLoaded(true)
+      // Aguardar um pouco para garantir que a imagem está totalmente carregada
+      setTimeout(() => {
+        setBackgroundLoaded(true)
+      }, 100)
     }
     img.onerror = () => {
-      // Se a imagem falhar ao carregar, ainda assim mostrar o conteúdo
-      setBackgroundLoaded(true)
+      // Se a imagem falhar ao carregar, ainda assim mostrar o conteúdo após um delay
+      setTimeout(() => {
+        setBackgroundLoaded(true)
+      }, 500)
     }
   }, [])
 
@@ -421,7 +426,7 @@ const HomePage: React.FC = () => {
   // Mostrar spinner enquanto a imagem de fundo não carregar
   if (!backgroundLoaded) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-white">
+      <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-white fixed inset-0 z-[9999]">
         <div className="relative z-10 flex flex-col items-center justify-center">
           {/* Spinner animado */}
           <div className="relative mb-8">
@@ -433,10 +438,10 @@ const HomePage: React.FC = () => {
           
           {/* Texto de carregamento */}
           <div className="text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-golden-400 mb-2 font-cardinal animate-pulse">
+            <h2 className="text-2xl md:text-3xl font-bold text-golden-600 mb-2 font-cardinal animate-pulse">
               Carregando...
             </h2>
-            <p className="text-lg text-emerald-300 font-farmhand">
+            <p className="text-lg text-emerald-600 font-farmhand">
               Preparando sua jornada mágica
             </p>
           </div>
