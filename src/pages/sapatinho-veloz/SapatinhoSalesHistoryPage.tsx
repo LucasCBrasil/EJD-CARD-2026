@@ -117,26 +117,15 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
   }
 
   const getStatusBadge = (status: string) => {
-    const baseClasses = `
-    px-4 py-2
-    rounded-full
-    text-base
-    font-bold
-    border-2
-    max-[413px]:!px-0.5
-    max-[413px]:!py-1
-    max-[413px]:!text-xs
-    max-[413px]:!rounded-md`
-
-     switch (status) {
+    switch (status) {
       case 'pending':
-        return <span className={`${baseClasses} bg-yellow-200 text-yellow-900 border-yellow-400`}>⏳ Pendente</span>
+        return <span className="px-4 py-2 bg-yellow-200 text-yellow-900 rounded-full text-base font-bold border-2 border-yellow-400">⏳ Pendente</span>
       case 'completed':
-        return <span className={`${baseClasses} bg-blue-200 text-blue-900 border-blue-400`}>📦 Aguardando entrega</span>
+        return <span className="px-4 py-2 bg-blue-200 text-blue-900 rounded-full text-base font-bold border-2 border-blue-400">📦 Aguardando entrega</span>
       case 'delivered':
-        return <span className={`${baseClasses} bg-green-200 text-green-900 border-green-400`}>🚚 Entregue</span>
+        return <span className="px-4 py-2 bg-green-200 text-green-900 rounded-full text-base font-bold border-2 border-green-400">🚚 Entregue</span>
       default:
-        return <span className={`${baseClasses} bg-gray-200 text-gray-900 border-gray-400`}>{status}</span>
+        return <span className="px-4 py-2 bg-gray-200 text-gray-900 rounded-full text-base font-bold border-2 border-gray-400">{status}</span>
     }
   }
 
@@ -214,19 +203,7 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-lg font-bold text-black">👤 Remetente</h4>
                     {order.isAnonymous && (
-                      <span className="
-                        px-3 py-1
-                        bg-purple-200 text-purple-900
-                        rounded-full
-                        text-sm font-bold
-                        border-2 border-purple-400
-
-                        /* Ajustes para telas pequenas (360px–413px) */
-                        max-[413px]:!px-1
-                        max-[413px]:!py-0.5
-                        max-[413px]:!text-xs
-                        max-[413px]:!rounded-md
-                      ">
+                      <span className="px-3 py-1 bg-purple-200 text-purple-900 rounded-full text-sm font-bold border-2 border-purple-400">
                         🔒 Anônimo
                       </span>
                     )}

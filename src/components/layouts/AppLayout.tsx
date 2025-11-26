@@ -24,8 +24,6 @@ const AppLayout = () => {
   const isInListPage = pathname.endsWith('/products')
   // Verificar se está em páginas de produtos
   const isInProductsPage = pathname.endsWith('/products')
-
-  const isInSellPage = pathname.endsWith('/select')
   
   // Verificar se está em página de formulário (create/edit) ou listagem
   const isInFormPage = pathname.includes('/products/create') || 
@@ -76,8 +74,10 @@ const AppLayout = () => {
     const context = getBackContext()
     // Se estiver em subpágina de produtos (create/edit/list), volta para /products
     // Caso contrário, volta para a página principal do contexto
-    if (isInFormPage || isInListPage || isInSellPage) {
-      navigate({ to: `/${context}` as any, search: {} as any })
+    if (isInFormPage || isInListPage) {
+      navigate({ to: `/${context}/select` as any, search: {} as any })
+    } else if (isInListPage) {
+      navigate({ to: `/${context}/select` as any, search: {} as any })
     } else {
       navigate({ to: `/${context}` as any, search: {} as any })
     }
@@ -91,6 +91,10 @@ const AppLayout = () => {
       : context === 'lanchonete'
         ? 'Lanchonete'
         : 'Sapatinho velOz'
+    
+    if (isInProductsSubpage) {
+      return `← Voltar para Gerenciar Produtos`
+    }
     return `← Voltar para ${contextName}`
   }
 
@@ -105,7 +109,7 @@ const AppLayout = () => {
   }
 
   return (
-    <div className={`min-h-screen w-full relative overflow-visible`} style={{ minHeight: '100vh' }}>
+    <div className={`min-h-screen w-full relative ${isHomePage ? 'overflow-visible' : 'overflow-auto'}`} style={{ minHeight: '100vh' }}>
       {/* Imagem de fundo - Estrada Dourada e Cidade Esmeralda - TODAS as páginas */}
       <div 
         className="fixed inset-0"
@@ -115,7 +119,7 @@ const AppLayout = () => {
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
-          opacity: 0.6,
+          opacity: isHomePage ? 1 : 0.6,
           zIndex: -1,
           pointerEvents: 'none',
           width: '100%',
@@ -128,26 +132,26 @@ const AppLayout = () => {
       >
         {/* Overlay sutil para melhorar legibilidade - apenas em páginas internas */}
         {!isHomePage && (
-          <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] pointer-events-none"></div>
+          <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] pointer-events-none"></div>
         )}
         {/* Overlay sutil para HomePage */}
         {isHomePage && (
-          <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 pointer-events-none"></div>
         )}
       </div>
       
-      <div className={`w-full min-h-screen ${
-          isHomePage ? 'px-0 py-0' : 'px-2 py-4 md:px-4 md:py-8'
-        }`} style={{ zIndex: 1 }}>
-        <div className={`max-w-7xl mx-auto relative`}>
+      <div className={`w-full min-h-screen ${isHomePage ? 'px-0 py-0' : 'px-4 py-8'} relative`} style={{ zIndex: 1 }}>
+        <div className={`${isHomePage ? 'w-full' : 'max-w-4xl mx-auto w-full'}`}>
           {/* Header com informações do usuário e logout - sempre visível */}
-          <div className={`flex justify-between items-center px-2 pt-4`} style={{ zIndex: 50 }}>
-            <div className={`text-sm md:text-base text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]`}>
-              👋 Olá, <span className={`font-bold text-base md:text-lg text-black`}>{user?.name || user?.email}</span>
-              <span className={`ml-2 md:ml-3 px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold border
-                'bg-emerald-200 text-emerald-900 border-emerald-400'
-              `}>
-                {user?.role === 'admin' ? 'Admin' : 
+          <div className={`flex justify-between items-center ${isHomePage ? 'px-4 pt-4 mb-0 relative' : 'mb-6'}`} style={{ zIndex: isHomePage ? 50 : 1 }}>
+            <div className={`text-sm md:text-base ${isHomePage ? 'text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]' : 'text-gray-800'}`}>
+              👋 Olá, <span className={`font-bold text-base md:text-lg ${isHomePage ? 'text-golden-300' : 'text-black'}`}>{user?.name || user?.email}</span>
+              <span className={`ml-2 md:ml-3 px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold border ${
+                isHomePage 
+                  ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400 backdrop-blur-md' 
+                  : 'bg-emerald-200 text-emerald-900 border-emerald-400'
+              }`}>
+                {user?.role === 'admin' ? '👑 Admin' : 
                  user?.role === 'lojinha' ? '🏪 Lojinha' :
                  user?.role === 'lanchonete' ? '🍔 Lanchonete' :
                  user?.role === 'comunicacao' ? '📢 Comunicação' :
@@ -161,11 +165,7 @@ const AppLayout = () => {
                   onClick={() => navigate({ to: '/' as any })}
                   variant="outline"
                   size="sm"
-                  className="border-golden-500 text-golden-700 hover:bg-golden-500 hover:text-black font-semibold
-                  max-[413px]:!px-4
-                  max-[413px]:!py-2
-                  max-[413px]:text-xs
-                  max-[413px]:rounded-md"
+                  className="border-golden-500 text-golden-700 hover:bg-golden-500 hover:text-black font-semibold"
                 >
                   🏠 Home
                 </Button>
@@ -174,13 +174,9 @@ const AppLayout = () => {
                 onClick={handleLogout}
                 variant="outline"
                 size="sm"
-                className={`
-                  "border-wizard-500 text-wizard-500 hover:bg-wizard-500 hover:text-black"
-                  max-[413px]:!px-4
-                  max-[413px]:!py-2
-                  max-[413px]:text-xs
-                  max-[413px]:rounded-md
-                `}
+                className={isHomePage 
+                  ? "border-wizard-400 text-white backdrop-blur-md bg-wizard-500/20 hover:bg-wizard-500 hover:text-black" 
+                  : "border-wizard-500 text-wizard-500 hover:bg-wizard-500 hover:text-black"}
               >
                 🚪 Sair
               </Button>
@@ -190,7 +186,6 @@ const AppLayout = () => {
           {/* Header apenas em páginas internas, não na home */}
           {!isHomePage && (
             <Header 
-              className="scale-[0.85] md:scale-100 mb-3 md:mb-6"
               subtitle="Encontrão 2025 - em caminhos mágicos" 
             />
           )}
@@ -201,8 +196,8 @@ const AppLayout = () => {
           )}
           
           {/* Botão de Voltar (apenas em páginas de produtos) */}
-          {(isInProductsPage || isInFormPage || isInSellPage) && (
-            <div className="flex justify-start mb-3 md:mb-8 mt-4">
+          {isInProductsPage && (
+            <div className="flex justify-start mb-8 mt-4">
               <Button
                 onClick={handleBackToContext}
                 variant="outline"
@@ -215,7 +210,7 @@ const AppLayout = () => {
           )}
           
           {/* Conteúdo das rotas */}
-          <div className={isInProductsPage ? "mt-0" : "mt-4 md:mt-8"}>
+          <div className={isInProductsPage ? "mt-0" : "mt-8"}>
             {<Outlet />}
           </div>
         </div>

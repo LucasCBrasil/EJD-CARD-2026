@@ -1,10 +1,10 @@
-import React from 'react'
+import { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { router } from './router'
 import { queryClient } from './lib/query-client'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
 import { SupabaseDataProvider } from './contexts/SupabaseDataContext'
 import { ToastProvider } from './contexts/ToastContext'
@@ -13,18 +13,18 @@ import { isSupabaseConfigured } from './lib/supabase'
 import './index.css'
 import './global.css'
 
-// RouterUpdater agora espera o AuthProvider carregar o usuário
+// Componente simples - não atualizar contexto constantemente
 function RouterUpdater() {
-  const { isLoading } = useAuth()
-
-  if (isLoading) {
-    // Pode colocar aqui skeleton ou tela neutra
-    return (
-      <div className="w-screen h-screen flex items-center justify-center text-gray-500">
-        Carregando...
-      </div>
-    )
-  }
+  // Atualizar contexto apenas uma vez na inicialização
+  useEffect(() => {
+    router.update({
+      context: {
+        queryClient,
+        user: null,
+        isLoading: false,
+      },
+    })
+  }, [])
 
   return <RouterProvider router={router} />
 }
