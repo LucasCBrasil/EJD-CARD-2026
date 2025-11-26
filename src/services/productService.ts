@@ -109,6 +109,7 @@ export const productService = {
       const filePath = `${fileName}`;
 
       // Upload file to Supabase Storage
+      // O Supabase já gerencia timeout automaticamente (geralmente 30-60s)
       const { error: uploadError } = await supabase.storage
         .from('products')
         .upload(filePath, file);
@@ -138,7 +139,7 @@ export const productService = {
         imageUrl = await this.uploadProductImage(newImageFile);
         if (!imageUrl) {
           console.error('Image upload failed');
-          return null;
+          throw new Error('Falha ao fazer upload da imagem. Por favor, tente novamente.');
         }
       }
       const baseData = {
@@ -159,6 +160,8 @@ export const productService = {
             active: true
           }
 
+      let savedProduct: Product | null = null;
+
       if (product.id) {
         // Update existing product
         const { data, error } = await supabase
@@ -168,8 +171,16 @@ export const productService = {
           .select()
           .single();
 
-        if (error) throw error;
-        return data;
+        if (error) {
+          console.error('Update product error:', error);
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error('Produto não foi atualizado. Nenhum dado retornado.');
+        }
+        
+        savedProduct = data;
       } else {
         // Create new product
         const { data, error } = await supabase
@@ -178,12 +189,25 @@ export const productService = {
           .select()
           .single();
 
-        if (error) throw error;
-        return data;
+        if (error) {
+          console.error('Create product error:', error);
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error('Produto não foi criado. Nenhum dado retornado.');
+        }
+        
+        savedProduct = data;
       }
+
+      // Retornar produto salvo
+      // Não precisamos verificação adicional - se o Supabase retornou dados, está salvo
+      return savedProduct;
     } catch (error) {
       console.error('Product save failed:', error);
-      return null;
+      // Re-throw para que o frontend possa tratar o erro
+      throw error;
     }
   } 
 }

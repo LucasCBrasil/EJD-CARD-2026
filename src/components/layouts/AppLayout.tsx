@@ -21,7 +21,7 @@ const AppLayout = () => {
   }
 
   const pathname = routerState.location.pathname
-  const isHomePage = pathname === '/'
+  const isHomePage = pathname === '/' || pathname === ''
   const isInListPage = pathname.endsWith('/products')
   // Verificar se está em páginas de produtos
   const isInProductsPage = pathname.endsWith('/products')
@@ -114,36 +114,32 @@ const AppLayout = () => {
       {/* Loading global - aparece quando há loaders pendentes */}
       <GlobalLoading />
       
-      <div className={`min-h-screen w-full relative ${isHomePage ? 'overflow-visible' : 'overflow-auto'}`} style={{ minHeight: '100vh' }}>
-      {/* Imagem de fundo - Estrada Dourada e Cidade Esmeralda - TODAS as páginas */}
-      <div 
-        className="fixed inset-0"
-        style={{
-          backgroundImage: 'url(/background-emerald-city.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed',
-          opacity: isHomePage ? 1 : 0.6,
-          zIndex: -1,
-          pointerEvents: 'none',
-          width: '100%',
-          height: '100%',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0
-        }}
-      >
-        {/* Overlay sutil para melhorar legibilidade - apenas em páginas internas */}
-        {!isHomePage && (
+      <div className={`min-h-screen w-full relative ${isHomePage ? 'overflow-visible' : 'overflow-auto'}`} style={{ minHeight: '100vh', backgroundColor: isHomePage ? 'transparent' : undefined }}>
+      {/* Imagem de fundo - Estrada Dourada e Cidade Esmeralda - TODAS as páginas (exceto HomePage que gerencia seu próprio fundo) */}
+      {!isHomePage && (
+        <div 
+          className="fixed inset-0"
+          style={{
+            backgroundImage: 'url(/background-emerald-city.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundAttachment: 'fixed',
+            opacity: 0.6,
+            zIndex: -1,
+            pointerEvents: 'none',
+            width: '100%',
+            height: '100%',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
+          }}
+        >
+          {/* Overlay sutil para melhorar legibilidade - apenas em páginas internas */}
           <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] pointer-events-none"></div>
-        )}
-        {/* Overlay sutil para HomePage */}
-        {isHomePage && (
-          <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 pointer-events-none"></div>
-        )}
-      </div>
+        </div>
+      )}
       
       <div className={`w-full min-h-screen ${isHomePage ? 'px-0 py-0' : 'px-4 py-8'} relative`} style={{ zIndex: 1 }}>
         <div className={`${isHomePage ? 'w-full' : 'max-w-4xl mx-auto w-full'}`}>

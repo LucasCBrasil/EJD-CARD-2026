@@ -179,7 +179,7 @@ const SapatinhoVelozPage: React.FC = () => {
     setIsProcessing(true)
 
     try {
-      await sapatinhoVelozApi.create({
+      const orderId = await sapatinhoVelozApi.create({
         senderUserId: user.id,
         senderTeam,
         recipientName: recipientName.trim(),
@@ -188,6 +188,14 @@ const SapatinhoVelozPage: React.FC = () => {
         isAnonymous,
         items
       })
+
+      // Verificar se realmente recebeu o orderId
+      if (!orderId) {
+        throw new Error('Pedido criado mas não foi possível confirmar. Por favor, verifique se o pedido foi salvo.')
+      }
+
+      // Aguardar um pouco para garantir que o banco processou tudo
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       showSuccess('Sucesso!', 'Pedido Sapatinho velOz criado com sucesso! Sua encomenda chegará ao destinatário até o final do Encontrão.')
 
@@ -199,11 +207,16 @@ const SapatinhoVelozPage: React.FC = () => {
       setIsAnonymous(false)
       setSelectedProducts({})
 
-      // Atualizar saldo
+      // Atualizar saldo e produtos
       const newBalance = getBalance(user.id)
       setUserBalance(newBalance)
+      
+      // Recarregar produtos para atualizar estoque
+      refetchProducts()
     } catch (error: any) {
-      showError('Erro', error?.message || 'Erro ao criar pedido')
+      console.error('Erro ao criar pedido:', error)
+      const errorMessage = error?.message || 'Erro ao criar pedido. Por favor, verifique se o pedido foi salvo e tente novamente se necessário.'
+      showError('Erro', errorMessage)
     } finally {
       setIsProcessing(false)
     }
@@ -448,7 +461,11 @@ const SapatinhoVelozPage: React.FC = () => {
                 👠 Processando pedido...
               </h3>
               <p className="text-gray-700 text-base font-farmhand">
-                Por favor, aguarde enquanto finalizamos seu pedido do Sapatinho velOz
+                Por favor, aguarde enquanto finalizamos seu pedido do Sapatinho velOz. 
+                <br />
+                <span className="text-sm text-gray-600 mt-2 block">
+                  Isso pode levar alguns minutos. Não feche esta página!
+                </span>
               </p>
               <div className="mt-4 flex justify-center space-x-1">
                 <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>

@@ -185,7 +185,7 @@ const CreateProductPage = () => {
     setIsLoading(true)
 
     try {
-      await productService.saveProduct(
+      const savedProduct = await productService.saveProduct(
         context,
         {
           id: id ? id : null,
@@ -199,11 +199,20 @@ const CreateProductPage = () => {
         existingUrl
       )
 
+      // Verificar se realmente foi salvo
+      if (!savedProduct || !savedProduct.id) {
+        throw new Error('Produto não foi salvo. Por favor, tente novamente.')
+      }
+
+      // Aguardar um pouco para garantir que o banco processou tudo
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       showSuccess('Sucesso', currentConfig.successMessage)
       safeNavigate(`${basePath}/products`)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar produto:', error)
-      showError('Erro', 'Erro ao salvar produto. Tente novamente.')
+      const errorMessage = error?.message || 'Erro ao salvar produto. Por favor, verifique se o produto foi salvo e tente novamente se necessário.'
+      showError('Erro', errorMessage)
     } finally {
       setIsLoading(false)
     }
