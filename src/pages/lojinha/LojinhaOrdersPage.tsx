@@ -88,7 +88,7 @@ const [isConfirming, setIsConfirming] = useState(false)
             {orders.map(order => (
               <div
                 key={order.id}
-                className="border-2 border-gray-300 !bg-white/80 shadow-md rounded-xl p-4 flex flex-col justify-between h-full"
+                className="bg-white shadow-md rounded-xl p-4 flex flex-col justify-between h-full"
               >
         <div>
             <div className="flex justify-between items-start mb-4">

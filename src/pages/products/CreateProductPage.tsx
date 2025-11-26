@@ -210,7 +210,7 @@ const CreateProductPage = () => {
   }
 
   const handleCancel = () => {
-    safeNavigate(`${basePath}`)
+    safeNavigate(`${basePath}/select`)
   }
 
   return (

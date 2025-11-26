@@ -132,7 +132,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   const handleAuthChange = async (userId: string | null) => {
-    setIsLoading(true)
     try {
       if (!userId) {
         setUser(null)
@@ -163,8 +162,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Em segundo plano: garantir linha e carregar role real (não bloquear)
       Promise.all([
-        await ensureAppUserRow(userId).catch(console.error),
-        await loadUserWithRole(userId).catch(console.error)
+        ensureAppUserRow(userId).catch(console.error),
+        loadUserWithRole(userId).catch(console.error)
       ]).then(([, u]) => {
         if (u && u.id === userId) {
           setUser((prev: User | null) => {
@@ -179,8 +178,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (e) {
       console.error('handleAuthChange fatal:', e)
       setUser(null)
-    } finally {
-      setIsLoading(false) 
     }
   }
 
