@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Header, Button } from '../shared'
+import { GlobalLoading } from '../shared/GlobalLoading'
 import { TabNavigation } from '../ui'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -109,7 +110,11 @@ const AppLayout = () => {
   }
 
   return (
-    <div className={`min-h-screen w-full relative ${isHomePage ? 'overflow-visible' : 'overflow-auto'}`} style={{ minHeight: '100vh' }}>
+    <>
+      {/* Loading global - aparece quando há loaders pendentes */}
+      <GlobalLoading />
+      
+      <div className={`min-h-screen w-full relative ${isHomePage ? 'overflow-visible' : 'overflow-auto'}`} style={{ minHeight: '100vh' }}>
       {/* Imagem de fundo - Estrada Dourada e Cidade Esmeralda - TODAS as páginas */}
       <div 
         className="fixed inset-0"
@@ -155,7 +160,7 @@ const AppLayout = () => {
                  user?.role === 'lojinha' ? '🏪 Lojinha' :
                  user?.role === 'lanchonete' ? '🍔 Lanchonete' :
                  user?.role === 'comunicacao' ? '📢 Comunicação' :
-                 user?.role === 'servico' ? '🔧 Serviço' :
+                 user?.role === 'servico' ? 'Serviço' :
                  '👤 Encontrista'}
               </span>
             </div>
@@ -216,6 +221,7 @@ const AppLayout = () => {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

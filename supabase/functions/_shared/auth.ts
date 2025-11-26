@@ -72,7 +72,7 @@ export const getUserRole = async (userId: string): Promise<UserRole> => {
   
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error('Missing Supabase credentials')
-    return 'encontrista'
+    return 'servico'
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -83,7 +83,7 @@ export const getUserRole = async (userId: string): Promise<UserRole> => {
     .eq('id', userId)
     .single()
 
-  return (appUser?.role as UserRole) || 'encontrista'
+  return (appUser?.role as UserRole) || 'servico'
 }
 
 /**

@@ -21,7 +21,7 @@ const getRoleBadge = (role: UserRole) => {
     lojinha: { color: 'bg-blue-100 text-blue-700', text: 'Lojinha', emoji: '🏪' },
     lanchonete: { color: 'bg-orange-100 text-orange-700', text: 'Lanchonete', emoji: '🍔' },
     comunicacao: { color: 'bg-green-100 text-green-700', text: 'Comunicação', emoji: '📢' },
-    servico: { color: 'bg-yellow-100 text-yellow-700', text: 'Serviço', emoji: '🔧' },
+    servico: { color: 'bg-yellow-100 text-yellow-700', text: 'Serviço', emoji: '' },
     encontrista: { color: 'bg-gray-100 text-gray-700', text: 'Encontrista', emoji: '👤' },
   }
   return badges[role] || badges.encontrista
