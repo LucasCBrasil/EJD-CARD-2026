@@ -77,7 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       id: authUser.user.id,
       email: authUser.user.email || '',
       name: authUser.user.user_metadata?.name || null,
-      role: (profile?.role as any) || 'encontrista',
+      role: (profile?.role as any) || 'servico',
     }
   }
 
@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .from('app_users')
         .insert({ 
           id: userId, 
-          role: 'encontrista',
+          role: 'servico',
           email: email,
           name: name
         })
@@ -149,7 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: authUser.user.id,
         email: authUser.user.email || '',
         name: authUser.user.user_metadata?.name || null,
-        role: 'encontrista' as const,
+        role: 'servico' as const,
       }
       
       // Só atualizar se o usuário mudou

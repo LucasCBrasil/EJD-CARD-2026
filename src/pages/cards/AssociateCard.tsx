@@ -2,10 +2,13 @@ import React, { useState } from 'react'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { Button } from '../../components/shared'
 import { useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { cardKeys } from '../../hooks/useCards'
 
 const AssociateCard: React.FC = () => {
   const dataCtx: any = useSupabaseData()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [cardNumber, setCardNumber] = useState('')
   const [cardCode, setCardCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -17,6 +20,12 @@ const AssociateCard: React.FC = () => {
     setIsLoading(true)
     try {
       await dataCtx.associateCard({ cardNumber, cardCode })
+      // Invalidar todas as queries de cartões para atualizar o cache
+      await queryClient.invalidateQueries({ queryKey: cardKeys.all })
+      // Forçar refetch de todas as queries relacionadas a cartões
+      await queryClient.refetchQueries({ queryKey: cardKeys.all })
+      // Aguardar um pouco para garantir que as queries sejam atualizadas
+      await new Promise(resolve => setTimeout(resolve, 500))
       navigate({ to: '/mycard' as any })
     } catch (err: any) {
       setError(err?.message || 'Erro ao associar cartão')

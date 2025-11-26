@@ -85,7 +85,7 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .single()
 
-    const userRole = (appUser?.role as string) || 'encontrista'
+    const userRole = (appUser?.role as string) || 'servico'
     if (userRole !== 'admin' && userRole !== 'comunicacao') {
       return new Response(JSON.stringify({
         success: false,

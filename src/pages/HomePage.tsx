@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { usePermissions } from '../hooks/usePermissions'
 import { useAuth } from '../contexts/AuthContext'
+import { useCardByUserId } from '../hooks/useCards'
 import { Button } from '../components/shared'
 
 interface MainCard {
@@ -46,6 +47,12 @@ const HomePage: React.FC = () => {
 
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   const [logoError, setLogoError] = useState(false)
+  const [backgroundLoaded, setBackgroundLoaded] = useState(false)
+  
+  // Verificar se o usuário tem um cartão associado
+  const { user } = useAuth()
+  const { data: userCard } = useCardByUserId(user?.id || '', !!user?.id)
+  const hasAssociatedCard = !!userCard
 
   const handleLogout = async () => {
     try {
@@ -54,6 +61,19 @@ const HomePage: React.FC = () => {
       console.error('Erro ao fazer logout:', error)
     }
   }
+
+  // Carregar imagem de fundo
+  useEffect(() => {
+    const img = new Image()
+    img.src = '/background-emerald-city.png'
+    img.onload = () => {
+      setBackgroundLoaded(true)
+    }
+    img.onerror = () => {
+      // Se a imagem falhar ao carregar, ainda assim mostrar o conteúdo
+      setBackgroundLoaded(true)
+    }
+  }, [])
 
   // Definir os cards principais
   const mainCards: MainCard[] = [
@@ -75,7 +95,7 @@ const HomePage: React.FC = () => {
       color: 'from-emerald-100 to-emerald-200',
       gradient: 'border-emerald-300',
       path: '/cards',
-      canAccess: canViewCards && userRole !== 'encontrista'
+      canAccess: userRole === 'admin' || userRole === 'comunicacao'
     },
     {
       id: 'lojinha',
@@ -105,7 +125,7 @@ const HomePage: React.FC = () => {
       color: 'from-ruby-100 to-ruby-200',
       gradient: 'border-ruby-300',
       path: '/sapatinho-veloz',
-      canAccess: canSellSapatinho || canPlaceOrderSapatinho || canViewSalesHistorySapatinho
+      canAccess: hasAssociatedCard && (canSellSapatinho || canPlaceOrderSapatinho || canViewSalesHistorySapatinho)
     },
     {
       id: 'adm',
@@ -398,9 +418,42 @@ const HomePage: React.FC = () => {
   // Filtrar apenas cards que o usuário tem acesso
   const accessibleCards = mainCards.filter(card => card.canAccess)
 
+  // Mostrar spinner enquanto a imagem de fundo não carregar
+  if (!backgroundLoaded) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-white">
+        <div className="relative z-10 flex flex-col items-center justify-center">
+          {/* Spinner animado */}
+          <div className="relative mb-8">
+            <div className="w-20 h-20 border-4 border-golden-200 border-t-golden-500 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }}></div>
+            </div>
+          </div>
+          
+          {/* Texto de carregamento */}
+          <div className="text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-golden-400 mb-2 font-cardinal animate-pulse">
+              Carregando...
+            </h2>
+            <p className="text-lg text-emerald-300 font-farmhand">
+              Preparando sua jornada mágica
+            </p>
+          </div>
+          
+          {/* Efeitos decorativos */}
+          <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+            <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-golden-500/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen w-full py-4 md:py-8 px-3 md:px-4 relative overflow-hidden">
-      {/* Imagem de fundo - Estrada Dourada e Cidade Esmeralda */}
+    <div className="min-h-screen w-full py-4 md:py-8 px-3 md:px-4 relative overflow-hidden" style={{ backgroundColor: 'transparent' }}>
+      {/* Imagem de fundo - Estrada Dourada e Cidade Esmeralda - Fixa e sempre visível */}
       <div 
         className="fixed inset-0"
         style={{
@@ -408,9 +461,18 @@ const HomePage: React.FC = () => {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed',
           zIndex: 0,
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          width: '100vw',
+          height: '100vh',
+          minWidth: '100vw',
+          minHeight: '100vh',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          transform: 'scale(1.1)'
         }}
       >
         {/* Overlay sutil para melhorar legibilidade do conteúdo */}
@@ -477,7 +539,7 @@ const HomePage: React.FC = () => {
               <div key={card.id} id={`card-${card.id}`} className={accessibleCards.length === 1 ? 'w-full max-w-md' : 'col-span-1'}>
                 <button
                   onClick={handleClick}
-                  className={`group relative w-full min-h-[200px] flex flex-col justify-between backdrop-blur-xl bg-white/10 border-2 border-white/20 rounded-2xl p-4 md:p-5 shadow-[0_8px_32px_0_rgba(251,191,36,0.37)] hover:shadow-[0_8px_50px_0_rgba(251,191,36,0.6)] transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 active:scale-95 touch-manipulation select-none opacity-0 animate-slide-in-up delay-${Math.min(index, 6) * 100} overflow-hidden`}
+                  className={`group relative w-full min-h-[200px] flex flex-col items-center justify-center backdrop-blur-xl bg-white/10 border-2 border-white/20 rounded-2xl p-4 md:p-5 shadow-[0_8px_32px_0_rgba(251,191,36,0.37)] hover:shadow-[0_8px_50px_0_rgba(251,191,36,0.6)] transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 active:scale-95 touch-manipulation select-none opacity-0 animate-slide-in-up delay-${Math.min(index, 6) * 100} overflow-hidden`}
                   type="button"
                   style={{
                     background: `linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%)`
@@ -492,18 +554,18 @@ const HomePage: React.FC = () => {
                   {/* Borda interna brilhante */}
                   <div className="absolute inset-0 rounded-2xl border border-white/40 pointer-events-none"></div>
                   
-                  <div className="text-center relative z-10 flex flex-col flex-grow justify-center">
+                  <div className="text-center relative z-10 flex flex-col items-center justify-center w-full">
                     <div className="text-4xl md:text-5xl mb-2 transform group-hover:scale-110 transition-transform duration-300 filter drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">
                       {card.icon}
                     </div>
                     <h3 className="text-lg md:text-xl font-bold text-white font-cardinal tracking-wide mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] uppercase">
                       {card.title}
                     </h3>
-                    <p className="text-xs md:text-sm text-white/90 font-farmhand leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] mb-2">
+                    <p className="text-xs md:text-sm text-white/90 font-farmhand leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] mb-2 px-2">
                       {card.description}
                     </p>
                     {hasMultipleSubMenus && (
-                      <div className="mt-auto text-golden-300 text-xs font-bold animate-pulse">
+                      <div className="mt-2 text-golden-300 text-xs font-bold animate-pulse">
                         {isExpanded ? '▼ Clique para fechar' : '▶ Clique para ver opções'}
                       </div>
                     )}
@@ -585,4 +647,5 @@ const HomePage: React.FC = () => {
 }
 
 export default HomePage
+
 

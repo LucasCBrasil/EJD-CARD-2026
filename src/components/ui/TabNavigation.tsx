@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useCardByUserId } from '../../hooks/useCards'
@@ -25,12 +25,20 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
     canViewSalesHistorySapatinho,
-    canViewOpenOrders
+    canViewOpenOrders,
+    canPlaceOrderSapatinho
   } = usePermissions()
   
   // Verificar se o usuário tem um cartão associado
-  const { data: userCard } = useCardByUserId(user?.id || '', !!user?.id)
+  const { data: userCard, refetch: refetchUserCard } = useCardByUserId(user?.id || '', !!user?.id)
   const hasAssociatedCard = !!userCard
+  
+  // Refetch quando o componente montar ou quando o usuário mudar
+  useEffect(() => {
+    if (user?.id) {
+      refetchUserCard()
+    }
+  }, [user?.id, refetchUserCard])
 
   return (
     <div className="flex justify-center mb-8 w-full">
@@ -47,7 +55,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
           >
             💳 Meu Cartão
           </button>
-          {canViewCards && userRole !== 'encontrista' && (
+          {(userRole === 'admin' || userRole === 'comunicacao') && (
             <button
               onClick={() => onTabChange('cards')}
             className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${

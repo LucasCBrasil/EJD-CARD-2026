@@ -36,6 +36,8 @@ export function useCardByUserId(userId: string, enabled = true) {
     enabled: enabled && !!userId,
     retry: false, // Não tentar novamente se falhar
     throwOnError: false, // Não lançar erro, apenas retornar null
+    refetchOnMount: true, // Refetch quando o componente montar
+    refetchOnWindowFocus: true, // Refetch quando a janela ganhar foco
   })
 }
 
