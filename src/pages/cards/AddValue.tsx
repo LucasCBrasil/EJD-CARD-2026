@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Button, Header, ConfirmationModal } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
+import { Card } from '../../types'
 
 interface AddValueProps {
   onBack?: () => void
@@ -9,7 +10,7 @@ interface AddValueProps {
 
 const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
   const { getCardByNumber, updateCardBalance } = useSupabaseData()
-  const [selectedCard, setSelectedCard] = useState<any | null>(null)
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [amount, setAmount] = useState('')
   const [formattedAmount, setFormattedAmount] = useState('')
   const [cardNumber, setCardNumber] = useState('')
@@ -87,7 +88,7 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
       
       showSuccess(
         'Valor Adicionado!',
-        `R$ ${formattedAmount} foi adicionado ao cartão ${selectedCard.card_number} de ${selectedCard.user_name || 'usuário'} com sucesso.`
+        `R$ ${formattedAmount} foi adicionado ao cartão ${selectedCard.cardNumber} de ${selectedCard.userName || 'usuário'} com sucesso.`
       )
       
       setAmount('')
@@ -165,8 +166,8 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
               {selectedCard && (
                 <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-4">
                   <h4 className="font-semibold text-black mb-2">📋 Cartão Selecionado</h4>
-                  <p className="text-black"><strong>Nome:</strong> {selectedCard.user_name || 'Sem nome'}</p>
-                  <p className="text-black"><strong>Número:</strong> {formatCardNumber(selectedCard.card_number || '')}</p>
+                  <p className="text-black"><strong>Nome:</strong> {selectedCard.userName || 'Sem nome'}</p>
+                  <p className="text-black"><strong>Número:</strong> {formatCardNumber(selectedCard.cardNumber || '')}</p>
                   <p className="text-black"><strong>Saldo Atual:</strong> R$ {(selectedCard.balance || 0).toFixed(2).replace('.', ',')}</p>
                   {amount && (
                     <p className="text-black mt-2">

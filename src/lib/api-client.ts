@@ -10,7 +10,7 @@ const isDev = import.meta.env.DEV
 // Em desenvolvimento, priorizar URL local; se não houver, usar localhost padrão
 // Em produção, usar URL de produção
 const supabaseUrl = isDev 
-  ? (import.meta.env.VITE_SUPABASE_LOCAL_URL || 'http://localhost:54321')
+  ? (import.meta.env.VITE_SUPABASE_LOCAL_URL || 'https://exppyrjeqxjglwdcijsk.supabase.co')
   : (import.meta as any).env?.VITE_SUPABASE_URL
 
 const API_BASE_URL = supabaseUrl 
@@ -163,6 +163,12 @@ export const api = {
       query: { userId },
     }),
 
+  getCardById: (id: string) =>
+    request<{ success: boolean; data: any }>('list-cards', {
+      method: 'GET',
+      query: { id },
+    }),
+
   associateCard: (params: { cardNumber: string; cardCode: string }) =>
     request<{ success: boolean; data: any }>('update-balance', {
       method: 'POST',
@@ -196,10 +202,10 @@ export const api = {
       query: { status: 'pending' },
     }),
 
-  markOrderAsDelivered: (orderId: string) =>
+  markOrderAsDelivered: (saleId: string) =>
     request<{ success: boolean }>('mark-sale-delivered', {
       method: 'POST',
-      body: { orderId },
+      body: { saleId },
     }),
 
   // Transactions
@@ -228,6 +234,12 @@ export const api = {
       body: data,
     }),
 
+  manageSapatinhoProducts: (data: any, method: 'POST' | 'PUT' | 'DELETE' = 'POST') =>
+    request<{ success: boolean; data: any }>('manage-sapatinho-products', {
+      method,
+      body: data,
+    }),
+    
   createSapatinhoOrder: (data: any) =>
     request<{ success: boolean; data: any }>('sapatinho-order-', {
       method: 'POST',

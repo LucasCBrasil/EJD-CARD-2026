@@ -93,7 +93,7 @@ const [isConfirming, setIsConfirming] = useState(false)
         <div>
             <div className="flex justify-between items-start mb-4">
             <div>
-                <h3 className="font-bold">Pedido #{order.saleId}</h3>
+                <h3 className="font-bold">Pedido #{order.saleNumber}</h3>
                 <p className="text-sm text-gray-600">{order.customerName}</p>
             </div>
             <span className="text-lg font-semibold">
@@ -139,7 +139,7 @@ const [isConfirming, setIsConfirming] = useState(false)
         onConfirm={handleConfirmDelivery}
         title="Confirmar Entrega"
         variant="delivery-confirmation"
-        message={selectedOrder ? `Deseja confirmar a entrega do pedido #${selectedOrder.saleId ? selectedOrder.saleId : selectedOrder.id} de ${selectedOrder.customerName}?` : ''}
+        message={selectedOrder ? `Deseja confirmar a entrega do pedido #${selectedOrder.saleNumber ? selectedOrder.saleNumber : selectedOrder.id} de ${selectedOrder.customerName}?` : ''}
         card={null}
         amount={selectedOrder ? selectedOrder.total.toString() : '0'}
         formattedAmount={selectedOrder ? selectedOrder.total.toFixed(2).replace('.', ',') : '0,00'}

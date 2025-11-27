@@ -175,6 +175,7 @@ export const productService = {
         }
       }
 
+
       const productData = {
         name: product.name,
         price: product.price,
@@ -187,8 +188,11 @@ export const productService = {
 
       const method = product.id ? 'PUT' : 'POST'
       const actionData = product.id 
-        ? { action: 'update', id: product.id, ...productData }
-        : { action: 'create', ...productData }
+        ? { id: product.id, ...productData }
+        : { ...productData }
+
+      console.log('method:', method)
+      console.log('actionData:', actionData)
 
       const response = await api.manageProducts(actionData, method)
 
@@ -203,6 +207,57 @@ export const productService = {
         name: savedProduct.name,
         price: parseFloat(savedProduct.price) || 0,
         category: savedProduct.category || category,
+        description: savedProduct.description || null,
+        stock: savedProduct.stock || 0,
+        active: savedProduct.active !== false,
+        createdAt: savedProduct.created_at,
+        image_url: savedProduct.image_url || savedProduct.image || null,
+        image: savedProduct.image_url || savedProduct.image || null,
+      } as Product
+    } catch (error: any) {
+      console.error('Product save failed:', error);
+      throw error;
+    }
+  },
+  
+  async saveSapatinhoProduct(product: Product, newImageFile: File | null, existingImageUrl: string | null | undefined): Promise<Product | null> {
+    try {
+      // Handle image upload if file exists
+      let imageUrl = existingImageUrl;
+      if (newImageFile instanceof File) {
+        imageUrl = await this.uploadProductImage(newImageFile);
+        if (!imageUrl) {
+          throw new Error('Falha ao fazer upload da imagem. Por favor, tente novamente.');
+        }
+      }
+
+
+      const productData = {
+        name: product.name,
+        price: product.price,
+        stock: product.stock,
+        description: product.description || null,
+        image_url: imageUrl || product.image || null,
+        active: product.id ? (typeof product.active === 'boolean' ? product.active : true) : true,
+      }
+
+      const method = product.id ? 'PUT' : 'POST'
+      const actionData = product.id 
+        ? { id: product.id, ...productData }
+        : { ...productData }
+
+      const response = await api.manageSapatinhoProducts(actionData, method)
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao salvar produto')
+      }
+
+      // Transformar resposta para formato esperado
+      const savedProduct = response.data
+      return {
+        id: savedProduct.id,
+        name: savedProduct.name,
+        price: parseFloat(savedProduct.price) || 0,
         description: savedProduct.description || null,
         stock: savedProduct.stock || 0,
         active: savedProduct.active !== false,

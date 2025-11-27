@@ -185,19 +185,35 @@ const CreateProductPage = () => {
     setIsLoading(true)
 
     try {
-      const savedProduct = await productService.saveProduct(
-        context,
-        {
-          id: id ? id : null,
-          name: formData.name,
-          price: parseFloat(formData.price.replace(',', '.')),
-          stock: parseInt(formData.stock, 10),
-          category: context,
-          description: formData.name,
-        },
-        formData.image instanceof File ? formData.image : null,
-        existingUrl
-      )
+      let savedProduct = null;
+      if (context !== 'sapatinho') {
+        savedProduct = await productService.saveProduct(
+          context,
+          {
+            id: id ? id : null,
+            name: formData.name,
+            price: parseFloat(formData.price.replace(',', '.')),
+            stock: parseInt(formData.stock, 10),
+            category: context,
+            description: formData.name,
+          },
+          formData.image instanceof File ? formData.image : null,
+          existingUrl
+        )
+      } else {
+        savedProduct = await productService.saveSapatinhoProduct(
+          {
+            id: id ? id : null,
+            name: formData.name,
+            price: parseFloat(formData.price.replace(',', '.')),
+            stock: parseInt(formData.stock, 10),
+            category: context,
+            description: formData.name,
+          },
+          formData.image instanceof File ? formData.image : null,
+          existingUrl
+        )
+      }
 
       // Verificar se realmente foi salvo
       if (!savedProduct || !savedProduct.id) {

@@ -27,7 +27,6 @@ export interface SaleItem {
   id?: string | null
   productId: string
   productName: string
-  product_name?: string
   quantity: number
   price: number
   image?: string | null
@@ -38,16 +37,14 @@ export interface Sale {
   userId: string
   sellerId: string
   saleId?: string
-  sale_id?: string
   category: 'lojinha' | 'lanchonete' | 'sapatinho'
   items: SaleItem[]
   total: number
   status: 'completed' | 'delivered'
   createdAt: string
-  created_at?: string
   card?: {
-    card_number?: string
-    user_name?: string
+    cardNumber?: string
+    userName?: string
   }
   seller?: {
     id: string
@@ -58,7 +55,8 @@ export interface Sale {
 
 export interface Order {
   id: string
-  saleId: string
+  saleId: string,
+  saleNumber: string,
   orderCode?: string
   sale?: any
   userId: string
@@ -68,18 +66,14 @@ export interface Order {
   total: number
   status: 'pending' | 'completed' | 'delivered'
   createdAt: string
-  created_at?: string
   deliveredAt?: string
 }
 
 export interface Card {
   id: string
   userId: string
-  user_id?: string
   userName: string
-  user_name?: string
   cardNumber: string
-  card_number?: string
   phoneNumber: string
   balance: number
   createdAt: string
@@ -402,6 +396,9 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   // ✅ Agora usa Edge Function via api-client
   const makeSale = async (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
+    console.log('userId:', userId);
+    console.log('items:', items);
+    console.log('category:', category);
     try {
       // Buscar cartão do usuário primeiro
       const { api } = await import('../lib/api-client')
@@ -467,7 +464,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
           total: parseFloat(sale.total) || 0,
           status: sale.status,
           createdAt: sale.created_at,
-          card: sale.card || null,
+          card: sale.cards || null,
         } as Sale
       })
       
@@ -535,7 +532,8 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   
   try {
     const { api } = await import('../lib/api-client')
-    const response = await api.listOrders('lojinha')
+    const response = await api.listSales('lojinha')
+    console.log(response)
     
     if (!response.success) {
       throw new Error(response.error || 'Erro ao buscar pedidos')
@@ -547,9 +545,10 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       .map((order: any) => ({
         id: order.id,
         saleId: order.sale_id || order.id,
+        saleNumber: order.sale_number,
         orderCode: order.order_code || null,
         userId: order.card_id,
-        customerName: order.customer_name || 'Cliente',
+        customerName: order.cards.user_name || 'Cliente',
         items: (order.sale_items || []).map((item: any) => ({
           productId: item.product_id,
           productName: item.product_name,
@@ -669,6 +668,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       }
 
       const cardData = response.data
+      console.log('card:', cardData);
       return {
         id: cardData.id,
         userId: cardData.user_id || '',
@@ -724,11 +724,15 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   // ✅ Agora usa Edge Function via api-client
   const updateCardBalance = async (cardId: string, amount: number, type: 'credit' | 'debit', description?: string): Promise<void> => {
     try {
+
+      console.log('cardId:', cardId)
+      console.log('amount:', amount)
+      console.log('type:', type)
       const { api } = await import('../lib/api-client')
       const response = await api.updateBalance({
-        action: type,
         cardId,
         amount,
+        type: type,
         description: description || (type === 'credit' ? 'Crédito' : 'Débito'),
       })
 

@@ -45,10 +45,13 @@ const SalesHistoryPage: React.FC = () => {
   }, [context, location.pathname, isCorrectRoute, loadSales])
 
   const filteredSales = useMemo(() => {
-    if (!searchName.trim()) return allSales
-    return allSales.filter(sale =>
-      sale.card?.user_name?.toLowerCase().includes(searchName.toLowerCase())
-    )
+    let sales = allSales.filter(sale => sale.category === context);
+    if (searchName.trim()) {
+      sales = sales.filter(sale =>
+        sale.card?.user_name?.toLowerCase().includes(searchName.toLowerCase())
+      )
+    }
+    return sales;
   }, [allSales, searchName])
 
   // Paginação
@@ -56,7 +59,11 @@ const SalesHistoryPage: React.FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedSales = filteredSales.slice(startIndex, startIndex + itemsPerPage)
   
-  const isEmpty = useMemo(() => allSales.length === 0, [allSales])
+  const salesInContext = useMemo(() => {
+  return allSales.filter(sale => sale.category === context);
+  }, [allSales, context]);
+
+  const isEmpty = useMemo(() => salesInContext.length === 0, [salesInContext]);
 
   const goToNextPage = () => {
     if (currentPage < totalPages) {
@@ -146,10 +153,25 @@ const SalesHistoryPage: React.FC = () => {
 
           {/* Info de Paginação */}
           <div className="mb-6 text-center">
-            <p className="text-sm text-gray-600">
-              Mostrando {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredSales.length)} de {filteredSales.length} vendas
-              {totalPages > 1 && ` • Página ${currentPage} de ${totalPages}`}
-            </p>
+            {isEmpty ? (
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">📭</div>
+                <p className="text-gray-500 text-lg mb-6">Nenhuma venda registrada ainda.</p>
+                <button 
+                  onClick={() => navigate({ to: context === 'lojinha' ? '/lojinha' : '/lanchonete' })} 
+                  className={`bg-${accentColor}-500 hover:bg-${accentColor}-600 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5`}
+                >
+                  + NOVA VENDA
+                </button>
+              </div>
+            ) : (
+              <div className="mb-6 text-center">
+                <p className="text-sm text-gray-600">
+                  Mostrando {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredSales.length)} de {filteredSales.length} vendas
+                  {totalPages > 1 && ` • Página ${currentPage} de ${totalPages}`}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Sales List */}

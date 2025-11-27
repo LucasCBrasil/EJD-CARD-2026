@@ -313,7 +313,7 @@ const SalesPage: React.FC = () => {
     setIsLoading(true)
     try {
       await makeSale(
-        selectedCard.id,
+        selectedCard.userId,
         items,
         context,
         couponCode,
@@ -513,7 +513,7 @@ const SalesPage: React.FC = () => {
               {selectedCard ? (
                 <div className="bg-emerald-50 rounded-md p-2 border border-emerald-200">
                   <p className="text-xs text-gray-900">
-                    <strong>Nome:</strong> {selectedCard.user_name}
+                    <strong>Nome:</strong> {selectedCard.userName}
                   </p>
                   <p className="text-xs text-gray-900">
                     <strong>Saldo:</strong> R$ {selectedCard.balance.toFixed(2)}
