@@ -2,7 +2,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import CardsPage from '../../../pages/cards/CardsPage'
 import { cardKeys } from '../../../hooks/useCards'
-import { cardsApi } from '../../../api/cards.api'
+import { api } from '../../../lib/api-client'
 import type { RouterContext } from '../../../router'
 
 export const Route = createFileRoute('/_layout/cards/')({
@@ -10,7 +10,13 @@ export const Route = createFileRoute('/_layout/cards/')({
   loader: async ({ context }: { context: RouterContext }) => {
     await context.queryClient.ensureQueryData({
       queryKey: cardKeys.lists(),
-      queryFn: cardsApi.getAll,
+      queryFn: async () => {
+        const response = await api.listCards()
+        if (!response.success) {
+          throw new Error(response.error || 'Erro ao buscar cartões')
+        }
+        return Array.isArray(response.data) ? response.data : [response.data].filter(Boolean)
+      },
     })
   },
 })

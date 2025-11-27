@@ -4,7 +4,7 @@ import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { useProducts } from '../../hooks/useProducts'
 import { SaleItem } from '../../types'
 import { Button, LoadingSpinner } from '../../components/shared'
-import { sapatinhoVelozApi } from '../../api/sapatinho-veloz.api'
+import { sapatinhoVelozApi } from '../../api/sapatinho-veloz.api' // ⚠️ Usa apenas create() que já chama Edge Function via api-client
 import { useToastContext } from '../../contexts/ToastContext'
 import OptimizedImage from '../../components/ui/OptimizedImage'
 

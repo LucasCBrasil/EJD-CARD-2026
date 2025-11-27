@@ -13,15 +13,13 @@
 import { createSupabaseClient } from '../_shared/supabase.ts'
 import { requireAuth, isAdmin } from '../_shared/auth.ts'
 import type { ApiResponse } from '../_shared/types.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin')
+  
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders(origin) })
   }
 
   try {
@@ -42,7 +40,7 @@ Deno.serve(async (req) => {
           } as ApiResponse),
           {
             status: 403,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
           }
         )
       }
@@ -77,7 +75,7 @@ Deno.serve(async (req) => {
             } as ApiResponse),
             {
               status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
           )
         }
@@ -89,7 +87,7 @@ Deno.serve(async (req) => {
           } as ApiResponse),
           {
             status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
           }
         )
       }
@@ -119,7 +117,7 @@ Deno.serve(async (req) => {
             } as ApiResponse),
             {
               status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
           )
         }
@@ -132,7 +130,7 @@ Deno.serve(async (req) => {
             } as ApiResponse),
             {
               status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
           )
         }
@@ -159,7 +157,7 @@ Deno.serve(async (req) => {
             } as ApiResponse),
             {
               status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
           )
         }
@@ -172,7 +170,7 @@ Deno.serve(async (req) => {
           } as ApiResponse),
           {
             status: 201,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
           }
         )
       }
@@ -196,7 +194,7 @@ Deno.serve(async (req) => {
             } as ApiResponse),
             {
               status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
           )
         }
@@ -215,7 +213,7 @@ Deno.serve(async (req) => {
               } as ApiResponse),
               {
                 status: 400,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
               }
             )
           }
@@ -240,7 +238,7 @@ Deno.serve(async (req) => {
             } as ApiResponse),
             {
               status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
           )
         }
@@ -253,7 +251,7 @@ Deno.serve(async (req) => {
           } as ApiResponse),
           {
             status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
           }
         )
       }
@@ -271,7 +269,7 @@ Deno.serve(async (req) => {
             } as ApiResponse),
             {
               status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
           )
         }
@@ -293,7 +291,7 @@ Deno.serve(async (req) => {
             } as ApiResponse),
             {
               status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
           )
         }
@@ -305,7 +303,7 @@ Deno.serve(async (req) => {
           } as ApiResponse),
           {
             status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
           }
         )
       }
@@ -318,7 +316,7 @@ Deno.serve(async (req) => {
           } as ApiResponse),
           {
             status: 405,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
           }
         )
     }

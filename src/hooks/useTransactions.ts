@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { transactionsApi } from '../api/transactions.api'
+import { api } from '../lib/api-client'
 
 export const transactionKeys = {
   all: ['transactions'] as const,
@@ -10,7 +10,13 @@ export const transactionKeys = {
 export function useTransactions(cardId?: string) {
   return useQuery({
     queryKey: cardId ? transactionKeys.byCardId(cardId) : transactionKeys.lists(),
-    queryFn: () => cardId ? transactionsApi.getByCardId(cardId) : transactionsApi.getAll(),
+    queryFn: async () => {
+      const response = await api.listTransactions(cardId)
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao buscar transações')
+      }
+      return response.data || []
+    },
     enabled: !!cardId || !cardId, // Sempre habilitado
   })
 }

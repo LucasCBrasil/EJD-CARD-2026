@@ -6,3 +6,4 @@ export const Route = createFileRoute('/_layout/historico/sapatinho')({
   component: SapatinhoSalesHistoryPage,
 })
 
+

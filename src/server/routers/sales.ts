@@ -301,27 +301,66 @@ export const salesRouter = router({
 
   /**
    * Listar histórico de vendas
+   * ⚠️ IMPORTANTE: Apenas admin, lojinha e lanchonete podem ver histórico geral
+   * Usuários normais devem usar a Edge Function list-sales com cardId
    */
   list: createProtectedProcedure(['sales:view_history_lojinha'])
     .input(
       z.object({
         category: z.enum(['lojinha', 'lanchonete', 'sapatinho']).optional(),
+        cardId: z.string().uuid().optional(), // Permite filtrar por cartão específico
       })
     )
     .query(async ({ input, ctx }) => {
-      const { category } = input
-      const { supabase } = ctx
+      const { category, cardId } = input
+      const { supabase, user } = ctx
 
-      // Verificar permissão para a categoria
-      if (category) {
-        const hasPermissionForCategory = ctx.user.role === 'admin' || 
-          (category === 'lojinha' && ['lojinha', 'servico'].includes(ctx.user.role)) ||
-          (category === 'lanchonete' && ['lanchonete', 'servico'].includes(ctx.user.role))
-
-        if (!hasPermissionForCategory) {
+      // REGRA: Se cardId foi passado, verificar se usuário pode ver esse cartão
+      if (cardId) {
+        // Verificar se o cartão pertence ao usuário (exceto se for admin/lojinha/lanchonete)
+        if (!['admin', 'lojinha', 'lanchonete'].includes(user.role)) {
+          const { data: card } = await supabase
+            .from('cards')
+            .select('user_id')
+            .eq('id', cardId)
+            .single()
+          
+          if (!card || card.user_id !== user.id) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Você só pode ver vendas do seu próprio cartão',
+            })
+          }
+        }
+      } else {
+        // Sem cardId - está pedindo histórico geral
+        // Apenas admin, lojinha ou lanchonete podem ver histórico geral
+        if (!['admin', 'lojinha', 'lanchonete'].includes(user.role)) {
           throw new TRPCError({
             code: 'FORBIDDEN',
-            message: `Você não tem permissão para ver vendas de: ${category}`,
+            message: 'Acesso negado: apenas administradores, lojinha e lanchonete podem ver histórico geral',
+          })
+        }
+
+        // Verificar permissão específica por categoria
+        if (category === 'lojinha' && !['admin', 'lojinha'].includes(user.role)) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Você não tem permissão para ver vendas de: lojinha',
+          })
+        }
+
+        if (category === 'lanchonete' && !['admin', 'lanchonete'].includes(user.role)) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Você não tem permissão para ver vendas de: lanchonete',
+          })
+        }
+
+        if (category === 'sapatinho' && !['admin', 'lojinha'].includes(user.role)) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Você não tem permissão para ver vendas de: sapatinho',
           })
         }
       }
@@ -336,6 +375,10 @@ export const salesRouter = router({
           ${itemsTable} (*)
         `)
         .order('created_at', { ascending: false })
+
+      if (cardId) {
+        query = query.eq('card_id', cardId)
+      }
 
       if (category && category !== 'sapatinho') {
         query = query.eq('category', category)

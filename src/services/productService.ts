@@ -1,6 +1,7 @@
-// Serviço para gerenciar produtos no Supabase
+// Serviço para gerenciar produtos - Agora usa Edge Functions via api-client
+// ⚠️ Migrado para usar api-client.ts - queries diretas removidas
 
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/api-client'
 import type { ProductCategory } from '../types'
 
 export type Product = {
@@ -21,45 +22,52 @@ const TABLE_BY_CATEGORY: Record<ProductCategory, { table: string; hasCategoryCol
 }
 
 export const productService = {
-  // Retorna array de produtos (nunca undefined)
+  // ✅ Agora usa Edge Function via api-client
   getProducts: async (category: ProductCategory): Promise<Product[]> => {
     try {
-      const { table, hasCategoryColumn } = TABLE_BY_CATEGORY[category]
-      let query = supabase
-        .from(table)
-        .select('*')
-        .eq('active', true)
-
-      if (hasCategoryColumn) {
-        query = query.eq('category', category)
-      }
-
-      const { data, error } = await query.order('name', { ascending: true })
-
-      if (error) {
-        console.error('productService.getProducts error:', error)
+      const response = await api.listProducts(category)
+      
+      if (!response.success) {
+        console.error('productService.getProducts error:', response.error)
         return []
       }
 
-      // garante retorno consistente
-      return data ?? []
+      // Transformar dados da Edge Function para formato esperado
+      const products = (response.data || []).map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        price: parseFloat(product.price) || 0,
+        category: product.category || category,
+        description: product.description || null,
+        stock: product.stock || 0,
+        active: product.active !== false,
+        createdAt: product.created_at,
+        image_url: product.image_url || product.image || null,
+        image: product.image_url || product.image || null,
+      } as Product))
+
+      // Ordenar por nome
+      return products.sort((a, b) => a.name.localeCompare(b.name))
     } catch (err) {
       console.error('productService.getProducts unexpected error:', err)
       return []
     }
   },
 
-  // Deleta produto e retorna boolean indicando sucesso
+  // ✅ Agora usa Edge Function via api-client
   deleteProduct: async (category: ProductCategory, id: string): Promise<boolean> => {
     try {
-      const { table } = TABLE_BY_CATEGORY[category]
-      const { error } = await supabase
-        .from(table)
-        .update({ active: false, updated_at: new Date().toISOString() })
-        .eq('id', id)
+      const response = await api.manageProducts(
+        {
+          action: 'delete',
+          id,
+          category,
+        },
+        'DELETE'
+      )
 
-      if (error) {
-        console.error('productService.deleteProduct error:', error)
+      if (!response.success) {
+        console.error('productService.deleteProduct error:', response.error)
         return false
       }
       return true
@@ -69,33 +77,42 @@ export const productService = {
     }
   },
 
-  // Opcional: buscar um produto por id (útil para edição)
+  // ✅ Agora usa Edge Function via api-client
   getProductById: async (id: string, category: ProductCategory = 'lojinha'): Promise<Product | null> => {
     try {
-      const { table, hasCategoryColumn } = TABLE_BY_CATEGORY[category]
-      let query = supabase
-        .from(table)
-        .select('*')
-        .eq('id', id)
-
-      if (hasCategoryColumn) {
-        query = query.eq('category', category)
-      }
-
-      const { data, error } = await query.single()
-
-      if (error) {
-        console.error('productService.getProductById error:', error)
+      const response = await api.listProducts(category)
+      
+      if (!response.success) {
+        console.error('productService.getProductById error:', response.error)
         return null
       }
-      return data ?? null
+
+      // Buscar produto específico na lista
+      const product = (response.data || []).find((p: any) => p.id === id)
+      
+      if (!product) return null
+
+      return {
+        id: product.id,
+        name: product.name,
+        price: parseFloat(product.price) || 0,
+        category: product.category || category,
+        description: product.description || null,
+        stock: product.stock || 0,
+        active: product.active !== false,
+        createdAt: product.created_at,
+        image_url: product.image_url || product.image || null,
+        image: product.image_url || product.image || null,
+      } as Product
     } catch (err) {
       console.error('productService.getProductById unexpected error:', err)
       return null
     }
   },
 
-  //Salva imagem do produto no storage do supabase
+  // ⚠️ Upload de imagem - Storage do Supabase pode ser usado diretamente se RLS estiver configurado
+  // Para maior segurança, considere criar uma Edge Function para uploads
+  // ⚠️ NOTA: auth-client não tem storage - usar método alternativo ou criar Edge Function
   async uploadProductImage(file: File): Promise<string | null> {
     try {
       if (!file) {
@@ -103,14 +120,30 @@ export const productService = {
         return null;
       }
 
+      // TODO: Criar Edge Function 'upload-product-image' para uploads seguros
+      // Por enquanto, usar cliente mínimo apenas para storage (storage tem políticas próprias)
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabaseUrl = import.meta.env.DEV
+        ? (import.meta.env.VITE_SUPABASE_LOCAL_URL || import.meta.env.VITE_SUPABASE_URL)
+        : import.meta.env.VITE_SUPABASE_URL
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase não configurado')
+      }
+
+      const storageClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      })
+      
       // Generate unique filename
       const fileExt = file.type.split('/').pop() || 'jpg';
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `${fileName}`;
 
       // Upload file to Supabase Storage
-      // O Supabase já gerencia timeout automaticamente (geralmente 30-60s)
-      const { error: uploadError } = await supabase.storage
+      // ⚠️ Storage tem políticas próprias de RLS, mas idealmente deveria usar Edge Function
+      const { error: uploadError } = await storageClient.storage
         .from('products')
         .upload(filePath, file);
 
@@ -120,7 +153,7 @@ export const productService = {
       }
 
       // Get public URL
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = storageClient.storage
         .from('products')
         .getPublicUrl(filePath);
       return urlData.publicUrl;
@@ -130,83 +163,55 @@ export const productService = {
     }
   },
 
+  // ✅ Agora usa Edge Function via api-client
   async saveProduct(category: ProductCategory, product: Product, newImageFile: File | null, existingImageUrl: string | null | undefined): Promise<Product | null> {
-    try {      
-      const { table, hasCategoryColumn } = TABLE_BY_CATEGORY[category]
+    try {
       // Handle image upload if file exists
       let imageUrl = existingImageUrl;
       if (newImageFile instanceof File) {
         imageUrl = await this.uploadProductImage(newImageFile);
         if (!imageUrl) {
-          console.error('Image upload failed');
           throw new Error('Falha ao fazer upload da imagem. Por favor, tente novamente.');
         }
       }
-      const baseData = {
+
+      const productData = {
         name: product.name,
         price: product.price,
         stock: product.stock,
         description: product.description || null,
-        image_url: imageUrl || product.image,
-        ...(hasCategoryColumn ? { category } : {})
-      };
-      const productData = product.id
-        ? {
-            ...baseData,
-            ...(typeof product.active === 'boolean' ? { active: product.active } : {})
-          }
-        : {
-            ...baseData,
-            active: true
-          }
-
-      let savedProduct: Product | null = null;
-
-      if (product.id) {
-        // Update existing product
-        const { data, error } = await supabase
-          .from(table)
-          .update(productData)
-          .eq('id', product.id)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Update product error:', error);
-          throw error;
-        }
-        
-        if (!data) {
-          throw new Error('Produto não foi atualizado. Nenhum dado retornado.');
-        }
-        
-        savedProduct = data;
-      } else {
-        // Create new product
-        const { data, error } = await supabase
-          .from(table)
-          .insert([productData])
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Create product error:', error);
-          throw error;
-        }
-        
-        if (!data) {
-          throw new Error('Produto não foi criado. Nenhum dado retornado.');
-        }
-        
-        savedProduct = data;
+        image_url: imageUrl || product.image || null,
+        category,
+        active: product.id ? (typeof product.active === 'boolean' ? product.active : true) : true,
       }
 
-      // Retornar produto salvo
-      // Não precisamos verificação adicional - se o Supabase retornou dados, está salvo
-      return savedProduct;
-    } catch (error) {
+      const method = product.id ? 'PUT' : 'POST'
+      const actionData = product.id 
+        ? { action: 'update', id: product.id, ...productData }
+        : { action: 'create', ...productData }
+
+      const response = await api.manageProducts(actionData, method)
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao salvar produto')
+      }
+
+      // Transformar resposta para formato esperado
+      const savedProduct = response.data
+      return {
+        id: savedProduct.id,
+        name: savedProduct.name,
+        price: parseFloat(savedProduct.price) || 0,
+        category: savedProduct.category || category,
+        description: savedProduct.description || null,
+        stock: savedProduct.stock || 0,
+        active: savedProduct.active !== false,
+        createdAt: savedProduct.created_at,
+        image_url: savedProduct.image_url || savedProduct.image || null,
+        image: savedProduct.image_url || savedProduct.image || null,
+      } as Product
+    } catch (error: any) {
       console.error('Product save failed:', error);
-      // Re-throw para que o frontend possa tratar o erro
       throw error;
     }
   } 

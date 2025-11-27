@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { usePermissions } from '../../hooks/usePermissions'
-import { sapatinhoVelozApi } from '../../api/sapatinho-veloz.api'
+import { api } from '../../lib/api-client'
 import { SapatinhoVelozOrder } from '../../types'
 import { Button } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
@@ -20,10 +20,45 @@ const SapatinhoVelozOrdersPage: React.FC = () => {
   const loadOrders = async () => {
     try {
       setIsLoading(true)
-      const openOrders = await sapatinhoVelozApi.getOpenOrders()
+      // Carregar pedidos abertos via Edge Function
+      const response = await api.listOrders('sapatinho')
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao carregar pedidos')
+      }
+
+      // Filtrar apenas pedidos pendentes ou completos (não entregues)
+      const openOrders = (response.data || [])
+        .filter((order: any) => ['pending', 'completed'].includes(order.status))
+        .map((order: any) => ({
+          id: order.id,
+          saleId: order.sale_id,
+          senderUserId: order.sender_user_id,
+          senderName: order.sender_name || null,
+          senderTeam: order.sender_team || null,
+          recipientName: order.recipient_name,
+          recipientAddress: order.recipient_address,
+          message: order.message || null,
+          items: (order.sapatinho_veloz_order_items || []).map((item: any) => ({
+            id: item.id,
+            orderId: item.order_id,
+            productId: item.product_id,
+            productName: item.product_name,
+            quantity: item.quantity,
+            price: parseFloat(item.price) || 0,
+            createdAt: item.created_at
+          })),
+          total: parseFloat(order.total) || 0,
+          status: order.status,
+          createdAt: order.created_at,
+          deliveredAt: order.delivered_at || null,
+          isAnonymous: !order.sender_name && order.sender_user_id !== null
+        } as SapatinhoVelozOrder))
+      
       setOrders(openOrders)
     } catch (error: any) {
       showError('Erro', error?.message || 'Erro ao carregar pedidos')
+      setOrders([])
     } finally {
       setIsLoading(false)
     }
@@ -36,7 +71,10 @@ const SapatinhoVelozOrdersPage: React.FC = () => {
     }
 
     try {
-      await sapatinhoVelozApi.markAsDelivered(orderId)
+      const response = await api.markOrderAsDelivered(orderId)
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao marcar pedido como entregue')
+      }
       showSuccess('Sucesso', 'Pedido marcado como entregue')
       loadOrders()
     } catch (error: any) {

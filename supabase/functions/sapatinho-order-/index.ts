@@ -64,17 +64,14 @@ const requireAuth = async (req: Request) => {
   return user;
 };
 
-// ==================== CORS ====================
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-};
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 // ==================== MAIN FUNCTION ====================
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get('origin')
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
-      headers: corsHeaders,
+      headers: getCorsHeaders(origin),
       status: 200
     });
   }
@@ -98,7 +95,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -120,7 +117,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 404,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -143,7 +140,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -157,7 +154,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -223,7 +220,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -239,7 +236,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -265,7 +262,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -295,7 +292,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -332,7 +329,7 @@ Deno.serve(async (req: Request) => {
         }), {
           status: 500,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(origin),
             'Content-Type': 'application/json'
           }
         });
@@ -351,7 +348,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 400,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -367,7 +364,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 400,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -404,7 +401,7 @@ Deno.serve(async (req: Request) => {
         }), {
           status: 500,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(origin),
             'Content-Type': 'application/json'
           }
         });
@@ -447,7 +444,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -502,7 +499,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -558,7 +555,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -576,7 +573,7 @@ Deno.serve(async (req: Request) => {
     }), {
       status: 200,
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(origin),
         'Content-Type': 'application/json'
       }
     });
@@ -589,7 +586,7 @@ Deno.serve(async (req: Request) => {
     }), {
       status: 500,
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(origin),
         'Content-Type': 'application/json'
       }
     });

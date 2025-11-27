@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { auth } from '../lib/auth-client'
+import { api } from '../lib/api-client'
 
 interface User {
   id: string
@@ -38,7 +39,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const init = async () => {
       try {
-        const { data } = await supabase.auth.getSession()
+        const { data } = await auth.getSession()
         // Finalizar loading imediatamente
         setIsLoading(false)
         // Não bloquear a UI esperando o carregamento de role
@@ -50,7 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     void init()
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: sub } = auth.onAuthStateChange(async (_event, session) => {
       try {
         // também não bloquear
         void handleAuthChange(session?.user?.id || null)
@@ -63,71 +64,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [])
 
+  // ✅ Agora usa Edge Function segura
   const loadUserWithRole = async (userId: string): Promise<User | null> => {
-    const { data: authUser } = await supabase.auth.getUser()
+    const { data: authUser } = await auth.getUser()
     if (!authUser.user) return null
 
-    const { data: profile } = await supabase
-      .from('app_users')
-      .select('role')
-      .eq('id', userId)
-      .maybeSingle()
+    try {
+      // Buscar perfil via Edge Function (seguro!)
+      const response = await api.getUserProfile()
+      
+      if (!response.success || !response.data) {
+        // Se falhar, retornar usuário básico com role padrão
+        return {
+          id: authUser.user.id,
+          email: authUser.user.email || '',
+          name: authUser.user.user_metadata?.name || null,
+          role: 'servico',
+        }
+      }
 
-    return {
-      id: authUser.user.id,
-      email: authUser.user.email || '',
-      name: authUser.user.user_metadata?.name || null,
-      role: (profile?.role as any) || 'servico',
+      return {
+        id: response.data.id,
+        email: response.data.email || authUser.user.email || '',
+        name: response.data.name || authUser.user.user_metadata?.name || null,
+        role: (response.data.role as any) || 'servico',
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error)
+      // Em caso de erro, retornar usuário básico
+      return {
+        id: authUser.user.id,
+        email: authUser.user.email || '',
+        name: authUser.user.user_metadata?.name || null,
+        role: 'servico',
+      }
     }
   }
 
+  // ✅ A Edge Function já garante que a linha existe e está atualizada
   const ensureAppUserRow = async (userId: string) => {
-    // Verificar se linha já existe
-    const { data: existing } = await supabase
-      .from('app_users')
-      .select('id, email, name, role')
-      .eq('id', userId)
-      .maybeSingle()
-
-    // Se já existe e tem email/name preenchidos, não fazer nada
-    if (existing && existing.email && existing.name) {
-      return // Linha já existe e está completa, não precisa atualizar
-    }
-
-    // Só buscar dados de auth.users se precisar preencher email/name
-    const { data: authUser } = await supabase.auth.getUser()
-    if (!authUser.user) return
-
-    const email = authUser.user.email || ''
-    const name = authUser.user.user_metadata?.name || null
-
-    // Criar ou atualizar apenas se não existir ou se faltar email/name
-    if (!existing) {
-      // Criar nova linha
-      const { error } = await supabase
-        .from('app_users')
-        .insert({ 
-          id: userId, 
-          role: 'servico',
-          email: email,
-          name: name
-        })
-      if (error) {
-        console.warn('ensureAppUserRow insert warning:', error.message)
-      }
-    } else if (!existing.email || !existing.name) {
-      // Atualizar apenas email/name se estiverem vazios (preservar role)
-      const updates: any = {}
-      if (!existing.email) updates.email = email
-      if (!existing.name) updates.name = name
-
-      const { error } = await supabase
-        .from('app_users')
-        .update(updates)
-        .eq('id', userId)
-      if (error) {
-        console.warn('ensureAppUserRow update warning:', error.message)
-      }
+    // Apenas chamar a Edge Function que já faz isso automaticamente
+    try {
+      await api.getUserProfile()
+    } catch (error) {
+      console.warn('ensureAppUserRow warning:', error)
     }
   }
 
@@ -139,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // Definir usuário básico imediatamente
-      const { data: authUser } = await supabase.auth.getUser()
+      const { data: authUser } = await auth.getUser()
       if (!authUser.user || authUser.user.id !== userId) {
         setUser(null)
         return
@@ -183,9 +163,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password })
+    const { error } = await auth.signInWithPassword({ email: cleanEmail, password })
     if (error) throw error
-    const { data: sessionData } = await supabase.auth.getSession()
+    const { data: sessionData } = await auth.getSession()
     const userId = sessionData.session?.user?.id
     if (!userId) return
     await ensureAppUserRow(userId)
@@ -195,7 +175,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string, name: string) => {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const { error } = await supabase.auth.signUp({
+    const { error } = await auth.signUp({
       email: cleanEmail,
       password,
       options: { data: { name } }
@@ -210,7 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   const logout = async () => {
-    await supabase.auth.signOut()
+    await auth.signOut()
     setUser(null)
     // O redirecionamento será feito automaticamente pelo __root.tsx
   }

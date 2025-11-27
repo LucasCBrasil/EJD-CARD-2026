@@ -14,17 +14,15 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req: Request) => {
   // OPTIONS primeiro (sem logs para performance)
+  const origin = req.headers.get('origin')
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { 
-      headers: corsHeaders,
+      headers: getCorsHeaders(origin),
       status: 200
     })
   }
@@ -57,7 +55,7 @@ Deno.serve(async (req: Request) => {
         error: 'Unauthorized'
       }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -74,7 +72,7 @@ Deno.serve(async (req: Request) => {
         error: 'Unauthorized'
       }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -92,7 +90,7 @@ Deno.serve(async (req: Request) => {
         error: 'Acesso negado'
       }), {
         status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -120,7 +118,7 @@ Deno.serve(async (req: Request) => {
           error: 'Dados inválidos: name, cardNumber, phoneNumber e cardCode são obrigatórios'
         }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
         })
       }
 
@@ -139,7 +137,7 @@ Deno.serve(async (req: Request) => {
           error: 'Cartão com este número já existe'
         }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
         })
       }
 
@@ -163,7 +161,7 @@ Deno.serve(async (req: Request) => {
           error: `Erro ao criar cartão: ${createError?.message || 'Erro desconhecido'}`
         }), {
           status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
         })
       }
 
@@ -186,7 +184,94 @@ Deno.serve(async (req: Request) => {
         }
       }), {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+      })
+    }
+
+    // ==================== ASSOCIAR CARTÃO ====================
+    if (action === 'associate') {
+      // Validações
+      if (!cardNumber || !cardCode) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Dados inválidos: cardNumber e cardCode são obrigatórios'
+        }), {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Buscar cartão por número e código
+      const { data: existingCard, error: findError } = await supabase
+        .from('cards')
+        .select('id, is_associated, card_code, user_name')
+        .eq('card_number', cardNumber)
+        .maybeSingle()
+
+      if (findError || !existingCard) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Cartão não encontrado'
+        }), {
+          status: 404,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (existingCard.card_code !== cardCode) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Código do cartão inválido'
+        }), {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (existingCard.is_associated) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Cartão já associado. Fale com a coordenação do encontro se quiser mudar a conta do cartão associado.'
+        }), {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Obter nome do usuário
+      const { data: authUser } = await supabaseAnon.auth.getUser(token)
+      const userName = authUser?.user?.user_metadata?.name || null
+
+      // Associar cartão ao usuário
+      const { data: updatedCard, error: updateError } = await supabase
+        .from('cards')
+        .update({
+          user_id: user.id,
+          user_name: userName,
+          is_associated: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingCard.id)
+        .eq('is_associated', false)
+        .select('*')
+        .single()
+
+      if (updateError || !updatedCard) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: `Erro ao associar cartão: ${updateError?.message || 'Erro desconhecido'}`
+        }), {
+          status: 500,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        data: updatedCard
+      }), {
+        status: 200,
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -198,7 +283,7 @@ Deno.serve(async (req: Request) => {
         error: 'Dados inválidos: cardId, amount e type são obrigatórios'
       }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -208,7 +293,7 @@ Deno.serve(async (req: Request) => {
         error: 'Valor deve ser maior que zero'
       }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -218,7 +303,7 @@ Deno.serve(async (req: Request) => {
         error: 'Tipo inválido: deve ser "credit" ou "debit"'
       }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -235,7 +320,7 @@ Deno.serve(async (req: Request) => {
         error: 'Cartão não encontrado'
       }), {
         status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -250,7 +335,7 @@ Deno.serve(async (req: Request) => {
         error: `Saldo insuficiente. Saldo atual: R$ ${currentBalance.toFixed(2)}, Débito: R$ ${amount.toFixed(2)}`
       }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -278,7 +363,7 @@ Deno.serve(async (req: Request) => {
         error: `Erro ao atualizar saldo: ${updateResult.error.message}`
       }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
 
@@ -299,7 +384,7 @@ Deno.serve(async (req: Request) => {
       }
     }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
@@ -309,7 +394,7 @@ Deno.serve(async (req: Request) => {
       error: error instanceof Error ? error.message : 'Erro desconhecido'
     }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
     })
   }
 })

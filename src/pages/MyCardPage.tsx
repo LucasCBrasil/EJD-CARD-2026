@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useData } from '../contexts/DataContext'
 import { useSupabaseData } from '../contexts/SupabaseDataContext'
 import { pixService, PixPayment } from '../services/pixService'
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 interface Card {
   id: string
@@ -80,67 +80,83 @@ const MyCardPage: React.FC = () => {
       setIsLoadingData(true)
       
       if (supabaseData && isSupabaseConfigured()) {
-        // ✅ SEMPRE buscar direto do Supabase para ter dados frescos
-        const { data: cardData, error } = await supabase
-          .from('cards')
-          .select('*')
-          .eq('user_id', user?.id || '')
-          .eq('is_associated', true)
-          .maybeSingle()
-        
-        if (error) {
-          // Ignorar erros de "nenhum resultado encontrado"
-          if (error.code !== 'PGRST116' && !error.message?.includes('No rows') && !error.message?.includes('Cannot coerce')) {
-            console.error('Erro ao buscar cartão:', error)
+        // ✅ Agora usa Edge Function via api-client (seguro!)
+        try {
+          const { api } = await import('../lib/api-client')
+          
+          if (!user?.id) {
+            console.warn('MyCardPage: user.id não disponível')
+            setCard(null)
+            return
           }
-        }
-        
-        // Se não houver cartão, apenas definir como null (não redirecionar)
-        // A página mostrará uma mensagem amigável
-        if (!cardData) {
+          
+          const response = await api.getCardByUserId(user.id)
+          
+          if (!response.success) {
+            console.error('MyCardPage: Erro ao buscar cartão:', response.error)
+            // Se não encontrou cartão, não é erro crítico - apenas não mostrar
+            if (response.error?.includes('não encontrado') || 
+                response.error?.includes('not found') ||
+                response.error?.includes('nenhum resultado')) {
+              setCard(null)
+              return
+            }
+            // Outros erros - logar mas não quebrar a página
+            console.error('Erro ao buscar cartão:', response.error)
+            setCard(null)
+            return
+          }
+          
+          if (!response.data) {
+            setCard(null)
+            return
+          }
+
+          // Mapear do formato da Edge Function para Card
+          const cardData = response.data
+          const userCard = {
+            id: cardData.id,
+            userId: cardData.user_id || '',
+            userName: cardData.user_name || '',
+            cardNumber: cardData.card_number || '',
+            phoneNumber: cardData.phone_number || '',
+            balance: parseFloat(cardData.balance) || 0,
+            createdAt: cardData.created_at || '',
+            updatedAt: cardData.updated_at || ''
+          }
+
+          setCard({
+            id: userCard.id,
+            name: userCard.userName || 'Sem nome',
+            cardNumber: userCard.cardNumber || '',
+            balance: userCard.balance || 0,
+            phoneNumber: userCard.phoneNumber || ''
+          })
+
+          // Carregar histórico de compras do cartão (otimizado - busca apenas vendas deste cartão)
+          const sales = await supabaseData.getSalesByCardId(userCard.id, 20)
+          
+          // Converter vendas em compras do usuário
+          const userPurchases: Purchase[] = (sales || [])
+            .map((sale: any) => ({
+              id: sale.id,
+              date: sale.createdAt.split('T')[0],
+              store: sale.category === 'lojinha'
+                ? 'Lojinha Mágica'
+                : sale.category === 'lanchonete'
+                  ? 'Lanchonete do Feiticeiro'
+                  : 'Sapatinho velOz',
+              product: sale.items.map((item: any) => item.productName).join(', '),
+              amount: sale.total,
+              type: sale.category
+            }))
+
+          setPurchases(userPurchases)
+        } catch (error: any) {
+          console.error('MyCardPage: Erro ao carregar dados do cartão:', error)
+          // Não quebrar a página se houver erro - apenas não mostrar cartão
           setCard(null)
-          return
         }
-
-        // Mapear do formato Supabase para Card
-        const userCard = {
-          id: cardData.id,
-          userId: cardData.user_id || '',
-          userName: cardData.user_name || '',
-          cardNumber: cardData.card_number || '',
-          phoneNumber: cardData.phone_number || '',
-          balance: parseFloat(cardData.balance) || 0,
-          createdAt: cardData.created_at || '',
-          updatedAt: cardData.updated_at || ''
-        }
-
-        setCard({
-          id: userCard.id,
-          name: userCard.userName || 'Sem nome',
-          cardNumber: userCard.cardNumber || '',
-          balance: userCard.balance || 0,
-          phoneNumber: userCard.phoneNumber || ''
-        })
-
-        // Carregar histórico de compras do cartão (otimizado - busca apenas vendas deste cartão)
-        const sales = await supabaseData.getSalesByCardId(userCard.id, 20)
-        
-        // Converter vendas em compras do usuário
-        const userPurchases: Purchase[] = (sales || [])
-          .map((sale: any) => ({
-            id: sale.id,
-            date: sale.createdAt.split('T')[0],
-            store: sale.category === 'lojinha'
-              ? 'Lojinha Mágica'
-              : sale.category === 'lanchonete'
-                ? 'Lanchonete do Feiticeiro'
-                : 'Sapatinho velOz',
-            product: sale.items.map((item: any) => item.productName).join(', '),
-            amount: sale.total,
-            type: sale.category
-          }))
-
-        setPurchases(userPurchases)
       } else {
         // Usar dados locais (modo fallback)
         const userCard: Card = {
