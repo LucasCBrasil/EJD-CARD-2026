@@ -65,7 +65,7 @@ const LojinhaPage = () => {
       path: '/sapatinho-veloz/products/create',
       color: 'from-ruby-100 to-ruby-200',
       gradient: 'border-ruby-300',
-      canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha'
+      canAccess: userRole === 'admin' || userRole === 'lojinha'
     },
     {
       icon: '📋',
@@ -74,7 +74,7 @@ const LojinhaPage = () => {
       path: '/sapatinho-veloz/products',
       color: 'from-ruby-100 to-ruby-200',
       gradient: 'border-ruby-300',
-      canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha'
+      canAccess: userRole === 'admin' || userRole === 'lojinha'
     }
   ]
 

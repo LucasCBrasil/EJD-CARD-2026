@@ -146,8 +146,8 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
               👠 Sapatinho velOz
             </button>
           )}
-          {/* Produtos Sapatinho - Cadastrar e Listar */}
-          {(canSellSapatinho || userRole === 'admin' || userRole === 'lojinha') && (
+          {/* Produtos Sapatinho - Cadastrar e Listar - APENAS admin e lojinha podem gerenciar */}
+          {(userRole === 'admin' || userRole === 'lojinha') && (
             <>
               <button
                 onClick={() => safeNavigate('/sapatinho-veloz/products/create')}

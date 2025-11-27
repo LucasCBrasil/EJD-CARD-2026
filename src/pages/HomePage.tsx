@@ -264,7 +264,7 @@ const HomePage: React.FC = () => {
             title: 'Cadastrar Produto Sapatinho',
             description: 'Adicionar novo produto do sapatinho',
             path: '/sapatinho-veloz/products/create',
-            canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha',
+            canAccess: userRole === 'admin' || userRole === 'lojinha',
             color: 'from-ruby-100 to-ruby-200',
             gradient: 'border-ruby-300'
           },
@@ -273,7 +273,7 @@ const HomePage: React.FC = () => {
             title: 'Listar Produtos Sapatinho',
             description: 'Gerenciar produtos do sapatinho',
             path: '/sapatinho-veloz/products',
-            canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha',
+            canAccess: userRole === 'admin' || userRole === 'lojinha',
             color: 'from-ruby-100 to-ruby-200',
             gradient: 'border-ruby-300'
           },
