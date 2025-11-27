@@ -47,6 +47,20 @@ Deno.serve(async (req) => {
     // REGRA: Se cardId foi passado, usuário quer ver vendas do SEU cartão
     //        Se cardId NÃO foi passado, precisa ser admin/lojinha/lanchonete para ver histórico geral
 
+    // BLOQUEAR ENCONTRISTA - não pode ver histórico de vendas
+    if (userRole === 'encontrista') {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Acesso negado: encontristas não podem ver histórico de vendas'
+        } as ApiResponse),
+        {
+          status: 403,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     if (cardId) {
       // Usuário está pedindo vendas de um cartão específico
       // Verificar se o cartão pertence ao usuário (exceto se for admin/lojinha/lanchonete)

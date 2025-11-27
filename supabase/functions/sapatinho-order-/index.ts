@@ -84,10 +84,34 @@ Deno.serve(async (req: Request) => {
     }
     const user = authResult;
 
-    // 2. EXTRAIR DADOS
+    // 2. VERIFICAR PERMISSÃO - ENCONTRISTA NÃO PODE FAZER PEDIDOS
+    const supabaseForRole = createSupabaseClient();
+    const { data: appUser } = await supabaseForRole
+      .from('app_users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = (appUser?.role as string) || 'servico';
+
+    // Encontrista não pode fazer pedidos no Sapatinho
+    if (userRole === 'encontrista') {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Acesso negado: encontristas não podem fazer pedidos no Sapatinho Veloz'
+      }), {
+        status: 403,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    // 3. EXTRAIR DADOS
     const { senderTeam, recipientName, recipientAddress, message, isAnonymous, items } = await req.json();
 
-    // 3. VALIDAÇÕES
+    // 4. VALIDAÇÕES
     if (!senderTeam || !recipientName || !recipientAddress || !items || items.length === 0) {
       return new Response(JSON.stringify({
         success: false,
@@ -103,7 +127,7 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createSupabaseClient();
 
-    // 4. BUSCAR CARTÃO DO USUÁRIO
+    // 5. BUSCAR CARTÃO DO USUÁRIO
     const { data: card, error: cardError } = await supabase
       .from('cards')
       .select('id, balance, user_name')
@@ -123,7 +147,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 5. VALIDAR PRODUTOS E ESTOQUE (✅ TABELA CORRETA: sapatinho_products)
+    // 6. VALIDAR PRODUTOS E ESTOQUE (✅ TABELA CORRETA: sapatinho_products)
     const productIds = items.map((item: any) => item.productId);
     console.log('Buscando produtos com IDs:', productIds);
     

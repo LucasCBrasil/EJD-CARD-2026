@@ -44,6 +44,20 @@ Deno.serve(async (req) => {
     const url = new URL(req.url)
     const cardId = url.searchParams.get('cardId')
 
+    // BLOQUEAR ENCONTRISTA - encontrista só pode ver saldo, não transações
+    if (userRole === 'encontrista') {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Acesso negado: encontristas não podem ver histórico de transações'
+        } as ApiResponse),
+        {
+          status: 403,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     let query = supabase
       .from('transactions')
       .select(`

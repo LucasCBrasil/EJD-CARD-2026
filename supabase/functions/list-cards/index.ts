@@ -50,13 +50,26 @@ Deno.serve(async (req) => {
     // Filtros
     if (cardNumber) {
       query = query.eq('card_number', cardNumber)
+      
+      // Se não for role privilegiado, verificar propriedade após buscar
+      if (userRole !== 'admin' && userRole !== 'lojinha' && userRole !== 'lanchonete' && userRole !== 'comunicacao') {
+        // Usuários normais só podem ver seus próprios cartões mesmo buscando por número
+        query = query.eq('user_id', authResult.id)
+      }
     }
+    
     if (userId) {
       query = query.eq('user_id', userId)
       if (userRole !== 'admin' && userRole !== 'lojinha' && userRole !== 'lanchonete' && userRole !== 'comunicacao') {
         // Usuários normais só veem seus próprios cartões
         query = query.eq('user_id', authResult.id)
       }
+    } else if (!cardNumber) {
+      // Se não passar userId nem cardNumber, usuários normais só veem seus próprios cartões
+      if (userRole !== 'admin' && userRole !== 'lojinha' && userRole !== 'lanchonete' && userRole !== 'comunicacao') {
+        query = query.eq('user_id', authResult.id)
+      }
+      // Se for admin/lojinha/lanchonete/comunicacao, pode ver todos os cartões
     }
 
     query = query.order('created_at', { ascending: false })
