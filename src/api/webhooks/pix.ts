@@ -36,7 +36,7 @@ export async function handlePixWebhook(payload: PixWebhookData): Promise<void> {
     const { data } = payload
     
     // Atualizar status do pagamento no Supabase
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('pix_payments')
       .update({
         status: data.status,
@@ -55,7 +55,7 @@ export async function handlePixWebhook(payload: PixWebhookData): Promise<void> {
 
     // Se o pagamento foi confirmado, adicionar saldo ao cartão
     if (data.status === 'confirmed') {
-      const { data: payment, error: paymentError } = await supabase
+      const { data: payment, error: paymentError } = await (supabase as any)
         .from('pix_payments')
         .select('card_id, amount')
         .eq('external_id', data.id)
@@ -67,7 +67,7 @@ export async function handlePixWebhook(payload: PixWebhookData): Promise<void> {
       }
 
       // Adicionar saldo ao cartão
-      const { error: balanceError } = await supabase
+      const { error: balanceError } = await (supabase as any)
         .from('cards')
         .update({
           balance: payment.amount, // TODO: Implementar incremento correto
@@ -81,7 +81,7 @@ export async function handlePixWebhook(payload: PixWebhookData): Promise<void> {
       }
 
       // Criar transação de crédito
-      const { error: transactionError } = await supabase
+      const { error: transactionError } = await (supabase as any)
         .from('transactions')
         .insert({
           card_id: payment.card_id,

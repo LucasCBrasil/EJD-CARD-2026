@@ -13,7 +13,7 @@ export function useTransactions(cardId?: string) {
     queryFn: async () => {
       const response = await api.listTransactions(cardId)
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar transações')
+        throw new Error((response as any).error || 'Erro ao buscar transações')
       }
       return response.data || []
     },

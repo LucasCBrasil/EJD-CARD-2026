@@ -16,7 +16,7 @@ export function useSales(category?: ProductCategory) {
     queryFn: async () => {
       const response = await api.listSales(category)
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar vendas')
+        throw new Error((response as any).error || 'Erro ao buscar vendas')
       }
       return response.data || []
     },
@@ -31,7 +31,7 @@ export function useCreateSale() {
     mutationFn: async (data: any) => {
       const response = await api.createSale(data)
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao criar venda')
+        throw new Error((response as any).error || 'Erro ao criar venda')
       }
       return response.data
     },

@@ -16,7 +16,7 @@ export function useProducts(category?: ProductCategory) {
     queryFn: async () => {
       const response = await api.listProducts(category)
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar produtos')
+        throw new Error((response as any).error || 'Erro ao buscar produtos')
       }
       return response.data || []
     },
@@ -32,7 +32,7 @@ export function useCreateProduct() {
     mutationFn: async (product: any) => {
       const response = await api.manageProducts(product, 'POST')
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao criar produto')
+        throw new Error((response as any).error || 'Erro ao criar produto')
       }
       return response.data
     },
@@ -54,7 +54,7 @@ export function useUpdateProduct() {
     mutationFn: async ({ id, updates }: { id: string; updates: { category: ProductCategory } & Record<string, any> }) => {
       const response = await api.manageProducts({ id, ...updates }, 'PUT')
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao atualizar produto')
+        throw new Error((response as any).error || 'Erro ao atualizar produto')
       }
       return response.data
     },
@@ -76,7 +76,7 @@ export function useDeleteProduct() {
     mutationFn: async ({ id, category }: { id: string; category: ProductCategory }) => {
       const response = await api.manageProducts({ id, category }, 'DELETE')
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao remover produto')
+        throw new Error((response as any).error || 'Erro ao remover produto')
       }
       return response.data
     },

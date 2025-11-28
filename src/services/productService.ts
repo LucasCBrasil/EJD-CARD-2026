@@ -28,7 +28,7 @@ export const productService = {
       const response = await api.listProducts(category)
       
       if (!response.success) {
-        console.error('productService.getProducts error:', response.error)
+        console.error('productService.getProducts error:', (response as any).error)
         return []
       }
 
@@ -67,7 +67,7 @@ export const productService = {
       )
 
       if (!response.success) {
-        console.error('productService.deleteProduct error:', response.error)
+        console.error('productService.deleteProduct error:', (response as any).error)
         return false
       }
       return true
@@ -83,7 +83,7 @@ export const productService = {
       const response = await api.listProducts(category)
       
       if (!response.success) {
-        console.error('productService.getProductById error:', response.error)
+        console.error('productService.getProductById error:', (response as any).error)
         return null
       }
 
@@ -197,7 +197,7 @@ export const productService = {
       const response = await api.manageProducts(actionData, method)
 
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao salvar produto')
+        throw new Error((response as any).error || 'Erro ao salvar produto')
       }
 
       // Transformar resposta para formato esperado
@@ -249,7 +249,7 @@ export const productService = {
       const response = await api.manageSapatinhoProducts(actionData, method)
 
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao salvar produto')
+        throw new Error((response as any).error || 'Erro ao salvar produto')
       }
 
       // Transformar resposta para formato esperado

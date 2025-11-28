@@ -24,7 +24,7 @@ const SapatinhoVelozOrdersPage: React.FC = () => {
       const response = await api.listOrders('sapatinho')
       
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao carregar pedidos')
+        throw new Error((response as any).error || 'Erro ao carregar pedidos')
       }
 
       // Filtrar apenas pedidos pendentes ou completos (não entregues)
@@ -77,7 +77,7 @@ const SapatinhoVelozOrdersPage: React.FC = () => {
     try {
       const response = await api.markOrderAsDelivered(orderId)
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao marcar pedido como entregue')
+        throw new Error((response as any).error || 'Erro ao marcar pedido como entregue')
       }
       showSuccess('Sucesso', 'Pedido marcado como entregue')
       loadOrders()
