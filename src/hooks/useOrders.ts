@@ -14,7 +14,7 @@ export function useOrders() {
     queryFn: async () => {
       const response = await api.listOrders('lojinha')
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar pedidos')
+        throw new Error((response as any).error || 'Erro ao buscar pedidos')
       }
       return response.data || []
     },
@@ -27,7 +27,7 @@ export function useOpenOrders() {
     queryFn: async () => {
       const response = await api.listOrders('lojinha')
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar pedidos')
+        throw new Error((response as any).error || 'Erro ao buscar pedidos')
       }
       // Filtrar apenas pedidos abertos
       return (response.data || []).filter((order: any) => !order.delivered_at)

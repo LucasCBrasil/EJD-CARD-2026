@@ -2,18 +2,147 @@
  * Edge Function: manage-products
  * 
  * Gerencia produtos de forma segura (CRUD):
- * - Criar produto (admin only)
- * - Atualizar produto (admin only)
- * - Deletar produto / Desativar (admin only)
+ * - Criar produto (admin, lojinha para lojinha, lanchonete para lanchonete)
+ * - Atualizar produto (admin, lojinha para lojinha, lanchonete para lanchonete)
+ * - Deletar produto / Desativar (admin, lojinha para lojinha, lanchonete para lanchonete)
  * - Listar produtos (público)
  * 
- * Este código roda NA NUVEM, inacessível via DevTools!
+ * Utilitários inline (para evitar problemas de bundle com _shared)
  */
 
-import { createSupabaseClient } from '../_shared/supabase.ts'
-import { requireAuth, isAdmin } from '../_shared/auth.ts'
-import type { ApiResponse } from '../_shared/types.ts'
-import { getCorsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+type UserRole = 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista'
+
+interface ApiResponse {
+  success: boolean
+  data?: any
+  error?: string
+  message?: string
+}
+
+// ==================== UTILITÁRIOS ====================
+
+const createSupabaseClient = () => {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
+
+const getAuthUser = async (req: Request) => {
+  try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return null
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    if (!token) {
+      return null
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase credentials')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+
+    if (error || !user) {
+      return null
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    }
+  } catch (error) {
+    console.error('Error validating auth:', error)
+    return null
+  }
+}
+
+const requireAuth = async (req: Request) => {
+  const user = await getAuthUser(req)
+  
+  if (!user) {
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Unauthorized: Authentication required' 
+      } as ApiResponse),
+      { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+  }
+
+  return user
+}
+
+const getUserRole = async (userId: string): Promise<UserRole> => {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('Missing Supabase credentials')
+    return 'servico'
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  
+  const { data: appUser } = await supabase
+    .from('app_users')
+    .select('role')
+    .eq('id', userId)
+    .single()
+
+  return (appUser?.role as UserRole) || 'servico'
+}
+
+// Permissões simplificadas - apenas o que precisamos para produtos
+const hasPermission = (userRole: UserRole, permission: 'canManageProductsLojinha' | 'canManageProductsLanchonete'): boolean => {
+  if (userRole === 'admin') return true
+  
+  if (permission === 'canManageProductsLojinha') {
+    return userRole === 'lojinha'
+  }
+  
+  if (permission === 'canManageProductsLanchonete') {
+    return userRole === 'lanchonete'
+  }
+  
+  return false
+}
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowed = Deno.env.get('ALLOWED_ORIGINS') || 'http://localhost:5173,http://localhost:5174,http://localhost:3000'
+  const allowedOrigins = allowed.split(',').map(o => o.trim())
+  const allowOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0]
+  
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  }
+}
+
+// ==================== FUNÇÃO PRINCIPAL ====================
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin')
@@ -29,24 +158,89 @@ Deno.serve(async (req) => {
       return authResult
     }
 
-    // 2. VALIDAR PERMISSÕES DE ADMIN (exceto para GET)
+    const supabase = createSupabaseClient()
+
+    // 2. VALIDAR PERMISSÕES (exceto para GET - listar é público)
+    // Para POST/PUT/DELETE, verificar permissões baseadas em role e categoria
     if (req.method !== 'GET') {
-      const userIsAdmin = await isAdmin(req)
-      if (!userIsAdmin) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Acesso negado: apenas administradores podem gerenciar produtos'
-          } as ApiResponse),
-          {
-            status: 403,
-            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+      const userRole = await getUserRole(authResult.id)
+      
+      // Admin pode tudo
+      if (userRole !== 'admin') {
+        // Verificar permissões baseadas na categoria do produto
+        let category: 'lojinha' | 'lanchonete' | null = null
+        
+        // Para POST, extrair categoria do body
+        if (req.method === 'POST') {
+          try {
+            const body = await req.clone().json()
+            category = body.category
+          } catch {
+            // Se não conseguir extrair, será validado depois no POST handler
           }
-        )
+        }
+        
+        // Para PUT/DELETE, precisamos buscar o produto para saber a categoria
+        if (req.method === 'PUT' || req.method === 'DELETE') {
+          let productId: string | null = null
+          
+          if (req.method === 'PUT') {
+            try {
+              const body = await req.clone().json()
+              productId = body.id
+            } catch {
+              // Será validado depois
+            }
+          } else {
+            // DELETE - aceitar tanto query string quanto body
+            const url = new URL(req.url)
+            productId = url.searchParams.get('id')
+            
+            // Se não encontrou na query string, tenta no body
+            if (!productId) {
+              try {
+                const body = await req.clone().json()
+                productId = body.id
+              } catch {
+                // Body vazio ou inválido
+              }
+            }
+          }
+          
+          if (productId) {
+            const { data: product } = await supabase
+              .from('products')
+              .select('category')
+              .eq('id', productId)
+              .single()
+            
+            if (product) {
+              category = product.category as 'lojinha' | 'lanchonete'
+            }
+          }
+        }
+        
+        // Verificar permissões baseadas em role e categoria
+        if (category) {
+          const permission = category === 'lojinha' ? 'canManageProductsLojinha' : 'canManageProductsLanchonete'
+          const hasPermissionToManage = hasPermission(userRole, permission)
+          
+          if (!hasPermissionToManage) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: `Acesso negado: você não tem permissão para gerenciar produtos de ${category}`
+              } as ApiResponse),
+              {
+                status: 403,
+                headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+              }
+            )
+          }
+        }
+        // Se category for null, a validação será feita no handler específico (POST)
       }
     }
-
-    const supabase = createSupabaseClient()
 
     // 3. ROTEAMENTO POR MÉTODO HTTP
     switch (req.method) {
@@ -93,7 +287,7 @@ Deno.serve(async (req) => {
       }
 
       case 'POST': {
-        // CRIAR PRODUTO (admin only)
+        // CRIAR PRODUTO - verifica permissões baseadas em role e categoria
         const {
           name,
           price,
@@ -108,7 +302,7 @@ Deno.serve(async (req) => {
           stock?: number
         } = await req.json()
 
-        // Validações
+        // Validações básicas
         if (!name || price === undefined || !category) {
           return new Response(
             JSON.stringify({
@@ -133,6 +327,26 @@ Deno.serve(async (req) => {
               headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
           )
+        }
+
+        // Verificar permissões novamente (caso não tenha sido verificada antes)
+        const userRole = await getUserRole(authResult.id)
+        if (userRole !== 'admin') {
+          const permission = category === 'lojinha' ? 'canManageProductsLojinha' : 'canManageProductsLanchonete'
+          const hasPermissionToManage = hasPermission(userRole, permission)
+          
+          if (!hasPermissionToManage) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: `Acesso negado: você não tem permissão para criar produtos de ${category}`
+              } as ApiResponse),
+              {
+                status: 403,
+                headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+              }
+            )
+          }
         }
 
         // Criar produto
@@ -176,7 +390,7 @@ Deno.serve(async (req) => {
       }
 
       case 'PUT': {
-        // ATUALIZAR PRODUTO (admin only)
+        // ATUALIZAR PRODUTO - permissões verificadas acima baseadas em role e categoria
         const {
           id,
           name,
@@ -257,9 +471,20 @@ Deno.serve(async (req) => {
       }
 
       case 'DELETE': {
-        // DELETAR/DESATIVAR PRODUTO (admin only)
+        // DELETAR/DESATIVAR PRODUTO - permissões verificadas acima baseadas em role e categoria
+        // Aceitar ID tanto na query string quanto no body (para compatibilidade)
         const url = new URL(req.url)
-        const id = url.searchParams.get('id')
+        let id = url.searchParams.get('id')
+        
+        // Se não encontrou na query string, tenta no body
+        if (!id) {
+          try {
+            const body = await req.clone().json()
+            id = body.id
+          } catch {
+            // Body vazio ou inválido, continua tentando query string
+          }
+        }
 
         if (!id) {
           return new Response(
@@ -330,9 +555,8 @@ Deno.serve(async (req) => {
       } as ApiResponse),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       }
     )
   }
 })
-

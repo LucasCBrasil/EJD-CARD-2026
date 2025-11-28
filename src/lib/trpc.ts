@@ -44,7 +44,7 @@ export function getTrpcClient() {
     ? 'http://localhost:3001/api/trpc'
     : '/api/trpc'
 
-  return trpc.createClient({
+  return (trpc as any).createClient({
     links: [
       httpBatchLink({
         url,

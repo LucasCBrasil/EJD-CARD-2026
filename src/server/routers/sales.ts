@@ -66,7 +66,7 @@ export const salesRouter = router({
       })
 
       // 2. Buscar cartão
-      const { data: card, error: cardError } = await supabase
+      const { data: card, error: cardError } = await (supabase as any)
         .from('cards')
         .select('id, balance, user_name')
         .eq('card_number', cardNumber)
@@ -83,7 +83,7 @@ export const salesRouter = router({
       const productIds = items.map(item => item.productId)
       
       const productTable = category === 'sapatinho' ? 'sapatinho_products' : 'products'
-      let productsQuery = supabase
+      let productsQuery = (supabase as any)
         .from(productTable)
         .select('id, name, price, active, stock')
         .in('id', productIds)
@@ -111,11 +111,11 @@ export const salesRouter = router({
       }
 
       // 4. Calcular total usando preços DO BANCO
-      const productsMap = new Map(products.map(p => [p.id, p]))
+      const productsMap = new Map(products.map((p: any) => [p.id, p]))
       let total = 0
 
       const saleItems = items.map(item => {
-        const product = productsMap.get(item.productId)
+        const product = productsMap.get(item.productId) as any
         if (!product || !product.active) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -172,7 +172,7 @@ export const salesRouter = router({
               sale_id: crypto.randomUUID(),
             }
 
-        const { data: sale, error: saleError } = await supabase
+        const { data: sale, error: saleError } = await (supabase as any)
           .from(salesTable)
           .insert(saleData)
           .select()
@@ -190,7 +190,7 @@ export const salesRouter = router({
           price: item.price,
         }))
 
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await (supabase as any)
           .from(itemsTable)
           .insert(itemsData)
 
@@ -198,12 +198,12 @@ export const salesRouter = router({
 
         // 6.3 Diminuir estoque dos produtos
         for (const item of saleItems) {
-          const product = productsMap.get(item.productId)
+          const product = productsMap.get(item.productId) as any
           
           if (product && product.stock !== null && product.stock !== undefined) {
             const newStock = product.stock - item.quantity
             
-            const { error: stockError } = await supabase
+            const { error: stockError } = await (supabase as any)
               .from('products')
               .update({ stock: newStock })
               .eq('id', item.productId)
@@ -216,7 +216,7 @@ export const salesRouter = router({
         }
 
         // 6.4 Debitar saldo
-        const { error: balanceError } = await supabase
+        const { error: balanceError } = await (supabase as any)
           .from('cards')
           .update({
             balance: card.balance - total,
@@ -227,7 +227,7 @@ export const salesRouter = router({
         if (balanceError) throw balanceError
 
         // 6.5 Criar transação
-        const { error: transactionError } = await supabase
+        const { error: transactionError } = await (supabase as any)
           .from('transactions')
           .insert({
             card_id: card.id,
@@ -242,7 +242,7 @@ export const salesRouter = router({
         // 6.6 Se lojinha, criar pedido
         if (category === 'lojinha') {
           // Gerar código sequencial de 5 dígitos
-          const { data: lastOrder } = await supabase
+          const { data: lastOrder } = await (supabase as any)
             .from('orders')
             .select('order_code')
             .not('order_code', 'is', null)
@@ -259,7 +259,7 @@ export const salesRouter = router({
           }
           const orderCode = nextNumber.toString().padStart(5, '0')
           
-          const { error: orderError } = await supabase
+          const { error: orderError } = await (supabase as any)
             .from('orders')
             .insert({
               sale_id: sale.id,
@@ -319,7 +319,7 @@ export const salesRouter = router({
       if (cardId) {
         // Verificar se o cartão pertence ao usuário (exceto se for admin/lojinha/lanchonete)
         if (!['admin', 'lojinha', 'lanchonete'].includes(user.role)) {
-          const { data: card } = await supabase
+          const { data: card } = await (supabase as any)
             .from('cards')
             .select('user_id')
             .eq('id', cardId)
@@ -368,7 +368,7 @@ export const salesRouter = router({
       const table = category === 'sapatinho' ? 'sapatinho_sales' : 'sales'
       const itemsTable = category === 'sapatinho' ? 'sapatinho_sale_items' : 'sale_items'
 
-      let query = supabase
+      let query = (supabase as any)
         .from(table)
         .select(`
           *,

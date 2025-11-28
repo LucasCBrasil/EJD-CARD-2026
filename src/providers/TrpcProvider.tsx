@@ -10,11 +10,12 @@ import { queryClient } from '../lib/query-client'
 
 export function TrpcProvider({ children }: { children: React.ReactNode }) {
   const [trpcClient] = useState(() => getTrpcClient())
+  const TrpcProviderComponent = (trpc as any).Provider
 
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+    <TrpcProviderComponent client={trpcClient} queryClient={queryClient}>
       {children}
-    </trpc.Provider>
+    </TrpcProviderComponent>
   )
 }
 

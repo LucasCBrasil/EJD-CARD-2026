@@ -44,7 +44,13 @@ export async function createContext(opts: any) {
   const token = authHeader.replace('Bearer ', '')
 
   // Validar token com Supabase Auth
-  const { data: { user }, error } = await supabase.auth.getUser(token)
+  if (!supabase.auth) {
+    return {
+      user: null,
+      supabase,
+    }
+  }
+  const { data: { user }, error } = await (supabase.auth as any).getUser(token)
 
   if (error || !user) {
     return {
