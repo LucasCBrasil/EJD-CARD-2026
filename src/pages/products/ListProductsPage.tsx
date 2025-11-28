@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from '@tanstack/react-router'
 import { Header, ConfirmationModal } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { productService, type Product } from '../../services/productService'
+import { usePermissions } from '../../hooks/usePermissions'
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import type { ProductCategory } from '../../types'
 
@@ -10,6 +11,7 @@ const ListProductsPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { showSuccess, showError, showInfo } = useToastContext()
+  const { userRole } = usePermissions()
   
   const context: ProductCategory = location.pathname.startsWith('/sapatinho-veloz')
     ? 'sapatinho'
@@ -17,6 +19,14 @@ const ListProductsPage = () => {
       ? 'lanchonete'
       : 'lojinha'
   const basePath = context === 'sapatinho' ? '/sapatinho-veloz' : `/${context}`
+  
+  // Proteção: apenas admin e lojinha podem gerenciar produtos de Sapatinho
+  useEffect(() => {
+    if (context === 'sapatinho' && userRole !== 'admin' && userRole !== 'lojinha') {
+      showError('Acesso Negado', 'Você não tem permissão para gerenciar produtos de Sapatinho.')
+      navigate({ to: '/' as any, replace: true })
+    }
+  }, [context, userRole, navigate, showError])
   
   const [products, setProducts] = useState<Product[]>([])
   const [currentPage, setCurrentPage] = useState(1)

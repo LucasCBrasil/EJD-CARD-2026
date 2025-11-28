@@ -4,6 +4,7 @@ import { useNavigate, useLocation, useParams } from '@tanstack/react-router'
 import { Button, Header } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { productService } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
 import type { ProductCategory } from '../../types'
 
 const CreateProductPage = () => {
@@ -11,6 +12,7 @@ const CreateProductPage = () => {
   const location = useLocation()
   const { id } = useParams({ strict: false }) as { id?: string }
   const { showSuccess, showError, showWarning } = useToastContext()
+  const { userRole } = usePermissions()
   
   const context: ProductCategory = location.pathname.startsWith('/sapatinho-veloz')
     ? 'sapatinho'
@@ -18,6 +20,14 @@ const CreateProductPage = () => {
       ? 'lanchonete'
       : 'lojinha'
   const basePath = context === 'sapatinho' ? '/sapatinho-veloz' : `/${context}`
+  
+  // Proteção: apenas admin e lojinha podem gerenciar produtos de Sapatinho
+  useEffect(() => {
+    if (context === 'sapatinho' && userRole !== 'admin' && userRole !== 'lojinha') {
+      showError('Acesso Negado', 'Você não tem permissão para gerenciar produtos de Sapatinho.')
+      navigate({ to: '/' as any, replace: true })
+    }
+  }, [context, userRole, navigate, showError])
   const isEditing = !!id // mantenha esta linha
   const [existingUrl, setExistingUrl] = useState<string | null>(null)
   
