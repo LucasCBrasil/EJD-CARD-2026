@@ -22,7 +22,18 @@ function getAuthClient() {
   if (_authClient) return _authClient
   
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase não configurado para autenticação')
+    // Retornar cliente mock para permitir renderização da UI
+    return {
+      auth: {
+        getSession: async () => ({ data: { session: null }, error: null }),
+        getUser: async () => ({ data: { user: null }, error: null }),
+        signInWithPassword: async () => ({ data: null, error: new Error('Supabase não configurado') }),
+        signInWithOAuth: async () => ({ data: null, error: new Error('Supabase não configurado') }),
+        signUp: async () => ({ data: null, error: new Error('Supabase não configurado') }),
+        signOut: async () => ({ error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      }
+    }
   }
   
   _authClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -55,6 +66,16 @@ export const auth = {
   signUp: async (credentials: { email: string; password: string; options?: any }) => {
     const client = getAuthClient()
     return client.auth.signUp(credentials)
+  },
+  
+  signInWithGoogle: async () => {
+    const client = getAuthClient()
+    return client.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      }
+    })
   },
   
   signOut: async () => {

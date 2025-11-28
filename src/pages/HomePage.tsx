@@ -664,11 +664,26 @@ const HomePage: React.FC = () => {
         )}
 
         {/* Rodapé com informações */}
-        <div className="mt-12 text-center text-sm text-white font-farmhand">
-          <div className="flex justify-center items-center space-x-2">
-            <span className="text-golden-400 drop-shadow-[0_0_8px_rgba(251,191,36,1)]">✨</span>
-            <p className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">Sistema de Gestão - Encontrão 2025</p>
-            <span className="text-golden-400 drop-shadow-[0_0_8px_rgba(251,191,36,1)]">✨</span>
+        <div className="mt-12 text-center font-farmhand">
+          <div 
+            className="inline-flex justify-center items-center gap-2 px-4 py-2 rounded-full"
+            style={{
+              background: 'rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(4px)',
+            }}
+          >
+            <span>✨</span>
+            <p 
+              className="text-white-override"
+              style={{ 
+                color: '#fbbf24', 
+                fontWeight: '600',
+                fontSize: '14px',
+              }}
+            >
+              Sistema de Gestão - Encontrão 2025
+            </p>
+            <span>✨</span>
           </div>
         </div>
       </div>

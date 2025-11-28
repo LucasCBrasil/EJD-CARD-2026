@@ -143,44 +143,73 @@ const AppLayout = () => {
       
       <div className={`w-full min-h-screen ${isHomePage ? 'px-0 py-0' : 'px-4 py-8'} relative`} style={{ zIndex: 1 }}>
         <div className={`${isHomePage ? 'w-full' : 'max-w-4xl mx-auto w-full'}`}>
-          {/* Header com informações do usuário e logout - sempre visível */}
-          <div className={`flex justify-between items-center ${isHomePage ? 'px-4 pt-4 mb-0 relative' : 'mb-6'}`} style={{ zIndex: isHomePage ? 50 : 1 }}>
-            <div className={`text-sm md:text-base ${isHomePage ? 'text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]' : 'text-gray-800'}`}>
-              👋 Olá, <span className={`font-bold text-base md:text-lg ${isHomePage ? 'text-golden-300' : 'text-black'}`}>{user?.name || user?.email}</span>
-              <span className={`ml-2 md:ml-3 px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold border ${
-                isHomePage 
-                  ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400 backdrop-blur-md' 
-                  : 'bg-emerald-200 text-emerald-900 border-emerald-400'
-              }`}>
-                {user?.role === 'admin' ? '👑 Admin' : 
-                 user?.role === 'lojinha' ? '🏪 Lojinha' :
-                 user?.role === 'lanchonete' ? '🍔 Lanchonete' :
-                 user?.role === 'comunicacao' ? '📢 Comunicação' :
-                 user?.role === 'servico' ? 'Serviço' :
-                 '👤 Encontrista'}
+          {/* Topbar minimalista */}
+          <div 
+            className={`flex justify-between items-center py-2 px-3 mb-4 ${isHomePage ? 'relative' : ''}`}
+            style={{ 
+              zIndex: isHomePage ? 50 : 1,
+            }}
+          >
+            {/* Info do usuário */}
+            <div 
+              className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs sm:text-sm"
+              style={{ 
+                background: isHomePage ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.05)',
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              <span>👋</span>
+              <span 
+                className="text-white-override"
+                style={{ 
+                  color: '#ffffff', 
+                  fontWeight: '700',
+                  textShadow: isHomePage ? '0 1px 3px rgba(0,0,0,0.5)' : 'none',
+                }}
+              >
+                {user?.name || user?.email?.split('@')[0]}
+              </span>
+              <span 
+                className="px-1.5 py-0.5 rounded-full text-xs"
+                style={{
+                  background: isHomePage ? 'rgba(16,185,129,0.5)' : '#10b981',
+                  color: '#ffffff',
+                }}
+              >
+                {user?.role === 'admin' ? '👑' : 
+                 user?.role === 'lojinha' ? '🏪' :
+                 user?.role === 'lanchonete' ? '🍔' :
+                 user?.role === 'comunicacao' ? '📢' :
+                 user?.role === 'servico' ? '⚙️' :
+                 '👤'}
               </span>
             </div>
-            <div className="flex space-x-2">
+            
+            {/* Botões */}
+            <div className="flex gap-1.5">
               {!isHomePage && (
-                <Button 
+                <button 
                   onClick={() => navigate({ to: '/' as any })}
-                  variant="outline"
-                  size="sm"
-                  className="border-golden-500 text-golden-700 hover:bg-golden-500 hover:text-black font-semibold"
+                  className="px-2 py-1 rounded-full text-xs sm:text-sm font-medium transition-opacity hover:opacity-80"
+                  style={{
+                    background: '#fbbf24',
+                    color: '#78350f',
+                  }}
                 >
-                  🏠 Home
-                </Button>
+                  🏠
+                </button>
               )}
-              <Button 
+              <button 
                 onClick={handleLogout}
-                variant="outline"
-                size="sm"
-                className={isHomePage 
-                  ? "border-wizard-400 text-white backdrop-blur-md bg-wizard-500/20 hover:bg-wizard-500 hover:text-black" 
-                  : "border-wizard-500 text-wizard-500 hover:bg-wizard-500 hover:text-black"}
+                className="px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-opacity hover:opacity-80 text-white-override"
+                style={{
+                  background: isHomePage ? 'rgba(255,255,255,0.2)' : '#ef4444',
+                  color: '#ffffff',
+                  backdropFilter: isHomePage ? 'blur(4px)' : 'none',
+                }}
               >
                 🚪 Sair
-              </Button>
+              </button>
             </div>
           </div>
           

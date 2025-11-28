@@ -13,6 +13,7 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
+  loginWithGoogle: () => Promise<void>
   register: (email: string, password: string, name: string) => Promise<void>
   logout: () => Promise<void>
 }
@@ -196,6 +197,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const loginWithGoogle = async () => {
+    const { error } = await auth.signInWithGoogle()
+    if (error) throw error
+    // O redirecionamento será feito automaticamente pelo Supabase após o OAuth
+  }
+
   const logout = async () => {
     await auth.signOut()
     setUser(null)
@@ -206,6 +213,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isLoading,
     login,
+    loginWithGoogle,
     register,
     logout,
   }

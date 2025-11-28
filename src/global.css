@@ -152,13 +152,36 @@ label {
   display: block !important;
 }
 
+/* Inputs padrão */
 input, textarea, select {
   font-size: 16px !important;
   padding: 12px 16px !important;
-  color: #1a1a1a !important;
-  background-color: #ffffff !important;
-  border: 2px solid #d1d5db !important;
   border-radius: 8px !important;
+  color: #1a1a1a;
+  background-color: #ffffff;
+  border: 2px solid #d1d5db;
+}
+
+/* Inputs em formulário escuro - permite estilos inline */
+.dark-form input, 
+.dark-form textarea, 
+.dark-form select {
+  color: #ffffff !important;
+  background-color: rgba(255,255,255,0.08) !important;
+  border: 2px solid rgba(255,255,255,0.15) !important;
+}
+
+.dark-form input::placeholder,
+.dark-form textarea::placeholder {
+  color: rgba(255,255,255,0.4) !important;
+}
+
+.dark-form input:focus, 
+.dark-form textarea:focus, 
+.dark-form select:focus {
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2) !important;
+  outline: none !important;
 }
 
 input:focus, textarea:focus, select:focus {
@@ -467,4 +490,21 @@ html {
 /* Caminho de tijolos amarelos - padrão adicional */
 .yellow-brick-road {
   filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5));
+}
+
+/* Animação de brilho para botão do Google */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Força texto branco - para botões em fundos escuros */
+.text-white-override,
+.text-white-override span,
+.text-white-override * {
+  color: #ffffff !important;
 }

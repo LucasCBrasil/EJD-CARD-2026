@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({
   className = ""
 }) => {
   return (
-    <header className={`text-center mb-12 ${className}`}>
+    <header className={`text-center mb-8 ${className}`}>
       {/* Botão de voltar */}
       {showBackButton && onBack && (
         <div className="flex justify-start mb-6">
@@ -36,29 +36,47 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       )}
 
-      {/* Logo */}
-      {showLogo && (
-        <div className="mb-8">
-          <img 
-            src="/logo-encontrão-2025.png" 
-            alt="Logo Encontrão 2025 - em CAMINHOZ MÁGICOS" 
-            className="max-w-md mx-auto h-auto"
-          />
+      {/* Logo e Subtítulo */}
+      {(showLogo || subtitle) && (
+        <div 
+          className="mx-auto max-w-md rounded-xl p-6"
+          style={{
+            background: '#ffffff',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          }}
+        >
+          {/* Logo */}
+          {showLogo && (
+            <div className="mb-4">
+              <img 
+                src="/logo-encontrão-2025.png" 
+                alt="Logo Encontrão 2025" 
+                className="max-w-[200px] sm:max-w-[240px] mx-auto h-auto"
+              />
+            </div>
+          )}
+
+          {/* Subtítulo */}
+          {subtitle && (
+            <p 
+              className="text-center"
+              style={{ 
+                color: '#065f46',
+                fontWeight: '600',
+                fontSize: '16px',
+              }}
+            >
+              ✨ {subtitle} ✨
+            </p>
+          )}
         </div>
       )}
 
       {/* Título */}
       {title && (
-        <h1 className="text-4xl md:text-5xl font-bold text-emerald-600 mb-4 font-cardinal">
+        <h1 className="text-4xl md:text-5xl font-bold text-emerald-600 mb-4 font-cardinal mt-6">
           {title}
         </h1>
-      )}
-
-      {/* Subtítulo */}
-      {subtitle && (
-        <p className="text-xl text-black font-farmhand italic">
-          {subtitle}
-        </p>
       )}
     </header>
   )
