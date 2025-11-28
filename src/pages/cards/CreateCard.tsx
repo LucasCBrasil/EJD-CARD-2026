@@ -165,13 +165,23 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
               </div>
 
               {/* Mensagem de erro */}
-              {createCardMutation.isError && (
-                <div className="bg-red-100 border border-red-300 rounded-lg p-4 text-center">
-                  <p className="text-red-800">
-                    {(createCardMutation.error as any)?.message || 'Erro ao criar cartão'}
-                  </p>
-                </div>
-              )}
+              {createCardMutation.isError && (() => {
+                const error = createCardMutation.error as any
+                const errorMessage = error?.message || error?.error || error?.toString() || 'Ocorreu um erro ao tentar criar o cartão. Por favor, tente novamente.'
+                return (
+                  <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                    <div className="flex items-start">
+                      <span className="text-red-500 text-xl mr-2">⚠️</span>
+                      <div className="flex-1">
+                        <p className="text-red-800 font-semibold mb-1">Erro ao criar cartão</p>
+                        <p className="text-red-700 text-sm whitespace-pre-wrap">
+                          {errorMessage}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Botão de Criar */}
               <Button

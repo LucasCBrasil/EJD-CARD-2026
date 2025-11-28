@@ -17,6 +17,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req: Request) => {
+  const startTime = Date.now()
+  console.log(`[${new Date().toISOString()}] Iniciando processamento - Método: ${req.method}`)
+  
   // OPTIONS primeiro (sem logs para performance)
   const origin = req.headers.get('origin')
   
@@ -67,6 +70,11 @@ Deno.serve(async (req: Request) => {
 
     const { data: { user }, error: authError } = authResult
     if (authError || !user) {
+      console.error(`[${new Date().toISOString()}] Erro de autenticação:`, {
+        error: authError?.message || 'Usuário não encontrado',
+        hasToken: !!token,
+        tokenLength: token?.length || 0
+      })
       return new Response(JSON.stringify({
         success: false,
         error: 'Unauthorized'
@@ -75,6 +83,8 @@ Deno.serve(async (req: Request) => {
         headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
+
+    console.log(`[${new Date().toISOString()}] Usuário autenticado:`, { userId: user.id, email: user.email })
 
     // Buscar role do usuário
     const { data: appUser } = await supabase
@@ -85,6 +95,12 @@ Deno.serve(async (req: Request) => {
 
     const userRole = (appUser?.role as string) || 'servico'
     if (userRole !== 'admin' && userRole !== 'comunicacao') {
+      console.error(`[${new Date().toISOString()}] Acesso negado:`, {
+        userId: user.id,
+        userEmail: user.email,
+        userRole,
+        requiredRoles: ['admin', 'comunicacao']
+      })
       return new Response(JSON.stringify({
         success: false,
         error: 'Acesso negado'
@@ -93,6 +109,8 @@ Deno.serve(async (req: Request) => {
         headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
       })
     }
+
+    console.log(`[${new Date().toISOString()}] Permissão verificada:`, { userId: user.id, role: userRole })
 
     const { 
       action,
@@ -111,8 +129,22 @@ Deno.serve(async (req: Request) => {
     const isCreate = action === 'create' || (!cardId && name && cardNumber && phoneNumber)
 
     if (isCreate) {
+      console.log(`[${new Date().toISOString()}] Iniciando criação de cartão:`, {
+        name,
+        cardNumber,
+        phoneNumber: phoneNumber ? `${phoneNumber.substring(0, 3)}***` : null,
+        hasCardCode: !!cardCode,
+        initialBalance
+      })
+
       // Validações antes de chamadas ao banco
       if (!name || !cardNumber || !phoneNumber || !cardCode) {
+        console.error(`[${new Date().toISOString()}] Validação falhou ao criar cartão:`, {
+          hasName: !!name,
+          hasCardNumber: !!cardNumber,
+          hasPhoneNumber: !!phoneNumber,
+          hasCardCode: !!cardCode
+        })
         return new Response(JSON.stringify({
           success: false,
           error: 'Dados inválidos: name, cardNumber, phoneNumber e cardCode são obrigatórios'
@@ -132,9 +164,14 @@ Deno.serve(async (req: Request) => {
         .maybeSingle()
 
       if (existingCard) {
+        console.error(`[${new Date().toISOString()}] Tentativa de criar cartão duplicado:`, {
+          cardNumber,
+          existingCardId: existingCard.id,
+          requestedBy: user.id
+        })
         return new Response(JSON.stringify({
           success: false,
-          error: 'Cartão com este número já existe'
+          error: `Não é possível criar um cartão com o número ${cardNumber}. Este número já está cadastrado no sistema. Por favor, use um número diferente.`
         }), {
           status: 400,
           headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
@@ -156,6 +193,14 @@ Deno.serve(async (req: Request) => {
         .single()
 
       if (createError || !newCard) {
+        console.error(`[${new Date().toISOString()}] Erro ao criar cartão no banco:`, {
+          error: createError?.message || 'Cartão não retornado',
+          errorCode: createError?.code,
+          errorDetails: createError?.details,
+          cardNumber,
+          requestedBy: user.id,
+          stack: createError instanceof Error ? createError.stack : undefined
+        })
         return new Response(JSON.stringify({
           success: false,
           error: `Erro ao criar cartão: ${createError?.message || 'Erro desconhecido'}`
@@ -165,16 +210,36 @@ Deno.serve(async (req: Request) => {
         })
       }
 
-      // Criar transação em paralelo (não espera resposta)
+      // Criar transação se houver saldo inicial (aguardar para garantir que foi criada)
       if (balance > 0) {
-        supabase.from('transactions').insert({
+        const { error: transactionError } = await supabase.from('transactions').insert({
           card_id: newCard.id,
           amount: balance,
           type: 'credit',
           description: description || 'Saldo inicial',
           created_by: user.id
-        }).then(() => {}).catch(() => {}) // Fire and forget
+        })
+        
+        if (transactionError) {
+          console.error(`[${new Date().toISOString()}] Erro ao criar transação inicial (não crítico):`, {
+            error: transactionError.message,
+            errorCode: transactionError.code,
+            errorDetails: transactionError.details,
+            cardId: newCard.id,
+            amount: balance,
+            requestedBy: user.id
+          })
+          // Não falhar a criação do cartão por causa da transação
+        }
       }
+
+      const elapsedTime = Date.now() - startTime
+      console.log(`[${new Date().toISOString()}] Cartão criado com sucesso - Tempo: ${elapsedTime}ms:`, {
+        cardId: newCard.id,
+        cardNumber: newCard.card_number,
+        initialBalance: balance,
+        createdBy: user.id
+      })
 
       return new Response(JSON.stringify({
         success: true,
@@ -276,8 +341,21 @@ Deno.serve(async (req: Request) => {
     }
 
     // ==================== ATUALIZAR SALDO ====================
+    console.log(`[${new Date().toISOString()}] Iniciando atualização de saldo:`, {
+      cardId,
+      amount,
+      type,
+      requestedBy: user.id
+    })
+
     // Validações antes de chamadas ao banco
     if (!cardId || amount === undefined || !type) {
+      console.error(`[${new Date().toISOString()}] Validação falhou ao atualizar saldo:`, {
+        hasCardId: !!cardId,
+        hasAmount: amount !== undefined,
+        hasType: !!type,
+        requestedBy: user.id
+      })
       return new Response(JSON.stringify({
         success: false,
         error: 'Dados inválidos: cardId, amount e type são obrigatórios'
@@ -315,6 +393,12 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (cardError || !card) {
+      console.error(`[${new Date().toISOString()}] Cartão não encontrado:`, {
+        cardId,
+        error: cardError?.message || 'Cartão não retornado',
+        errorCode: cardError?.code,
+        requestedBy: user.id
+      })
       return new Response(JSON.stringify({
         success: false,
         error: 'Cartão não encontrado'
@@ -330,6 +414,13 @@ Deno.serve(async (req: Request) => {
       : currentBalance - amount
 
     if (type === 'debit' && newBalance < 0) {
+      console.error(`[${new Date().toISOString()}] Saldo insuficiente:`, {
+        cardId,
+        currentBalance,
+        debitAmount: amount,
+        calculatedNewBalance: newBalance,
+        requestedBy: user.id
+      })
       return new Response(JSON.stringify({
         success: false,
         error: `Saldo insuficiente. Saldo atual: R$ ${currentBalance.toFixed(2)}, Débito: R$ ${amount.toFixed(2)}`
@@ -358,6 +449,18 @@ Deno.serve(async (req: Request) => {
     ])
 
     if (updateResult.error) {
+      console.error(`[${new Date().toISOString()}] Erro ao atualizar saldo no banco:`, {
+        cardId,
+        error: updateResult.error.message,
+        errorCode: updateResult.error.code,
+        errorDetails: updateResult.error.details,
+        previousBalance: currentBalance,
+        newBalance,
+        type,
+        amount,
+        requestedBy: user.id,
+        stack: updateResult.error instanceof Error ? updateResult.error.stack : undefined
+      })
       return new Response(JSON.stringify({
         success: false,
         error: `Erro ao atualizar saldo: ${updateResult.error.message}`
@@ -369,8 +472,25 @@ Deno.serve(async (req: Request) => {
 
     // Ignorar erro na transação (não crítico)
     if (transactionResult.error) {
-      console.error('Erro ao criar transação (não crítico):', transactionResult.error)
+      console.error(`[${new Date().toISOString()}] Erro ao criar transação (não crítico):`, {
+        cardId,
+        error: transactionResult.error.message,
+        errorCode: transactionResult.error.code,
+        type,
+        amount,
+        requestedBy: user.id
+      })
     }
+
+    const elapsedTime = Date.now() - startTime
+    console.log(`[${new Date().toISOString()}] Saldo atualizado com sucesso - Tempo: ${elapsedTime}ms:`, {
+      cardId,
+      previousBalance: currentBalance,
+      newBalance,
+      amount,
+      type,
+      requestedBy: user.id
+    })
 
     return new Response(JSON.stringify({
       success: true,
@@ -388,7 +508,17 @@ Deno.serve(async (req: Request) => {
     })
 
   } catch (error) {
-    console.error('Erro inesperado:', error)
+    const elapsedTime = Date.now() - startTime
+    const errorDetails = {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+      elapsedTime: `${elapsedTime}ms`,
+      timestamp: new Date().toISOString()
+    }
+    
+    console.error(`[${new Date().toISOString()}] Erro inesperado após ${elapsedTime}ms:`, errorDetails)
+    
     return new Response(JSON.stringify({
       success: false,
       error: error instanceof Error ? error.message : 'Erro desconhecido'

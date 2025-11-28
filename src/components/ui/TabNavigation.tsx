@@ -30,8 +30,9 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
   } = usePermissions()
   
   // Verificar se o usuário tem um cartão associado
-  const { data: userCard, refetch: refetchUserCard } = useCardByUserId(user?.id || '', !!user?.id)
-  const hasAssociatedCard = !!userCard
+  const { data: userCard, isLoading: isLoadingCard, refetch: refetchUserCard } = useCardByUserId(user?.id || '', !!user?.id)
+  // Verificar se realmente há um cartão válido (não apenas truthy)
+  const hasAssociatedCard = !isLoadingCard && !!userCard && userCard.id && userCard.card_number
   
   // Refetch quando o componente montar ou quando o usuário mudar
   useEffect(() => {
@@ -146,8 +147,8 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
               👠 Sapatinho velOz
             </button>
           )}
-          {/* Produtos Sapatinho - Cadastrar e Listar */}
-          {(canSellSapatinho || userRole === 'admin' || userRole === 'lojinha') && (
+          {/* Produtos Sapatinho - Cadastrar e Listar - APENAS admin e lojinha */}
+          {(userRole === 'admin' || userRole === 'lojinha') && (
             <>
               <button
                 onClick={() => safeNavigate('/sapatinho-veloz/products/create')}

@@ -4,11 +4,141 @@
  * Lista pedidos de forma segura com autenticação obrigatória
  */
 
-import { createSupabaseClient } from '../_shared/supabase.ts'
-import { requireAuth, getUserRole } from '../_shared/auth.ts'
-import type { ApiResponse } from '../_shared/types.ts'
-import { getCorsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// --- Shared Types ---
+export interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+}
+
+export type UserRole = 
+  | 'admin'
+  | 'lojinha'
+  | 'lanchonete'
+  | 'comunicacao'
+  | 'servico'
+  | 'encontrista'
+
+export interface AuthUser {
+  id: string
+  email?: string
+  role?: UserRole
+}
+
+// --- Shared CORS Headers ---
+const getAllowedOrigins = () => {
+  const allowed = Deno.env.get('ALLOWED_ORIGINS') || 'http://localhost:5173,http://localhost:5174,http://localhost:3000'
+  return allowed.split(',').map(o => o.trim())
+}
+
+export const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigins = getAllowedOrigins()
+  const allowOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0]
+  
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  }
+}
+
+// --- Shared Supabase Client ---
+export const createSupabaseClient = () => {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
+
+// --- Shared Auth Utilities ---
+export const getAuthUser = async (req: Request): Promise<AuthUser | null> => {
+  try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return null
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    if (!token) {
+      return null
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase credentials')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+
+    if (error || !user) {
+      return null
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    }
+  } catch (error) {
+    console.error('Error validating auth:', error)
+    return null
+  }
+}
+
+export const getUserRole = async (userId: string): Promise<UserRole> => {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('Missing Supabase credentials')
+    return 'servico'
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  
+  const { data: appUser } = await supabase
+    .from('app_users')
+    .select('role')
+    .eq('id', userId)
+    .single()
+
+  return (appUser?.role as UserRole) || 'servico'
+}
+
+export const requireAuth = async (req: Request): Promise<AuthUser | Response> => {
+  const user = await getAuthUser(req)
+  
+  if (!user) {
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Unauthorized: Authentication required' 
+      }),
+      { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+  }
+
+  return user
+}
+
+// --- Main Function ---
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin')
   
@@ -59,13 +189,26 @@ Deno.serve(async (req) => {
 
     if (category === 'sapatinho') {
       // Pedidos do Sapatinho (apenas admin e lojinha podem ver)
+      // Usar relacionamento direto do Supabase (como na branch que funciona)
 
       const { data: orders, error } = await supabase
         .from('sapatinho_veloz_orders')
-        .select('*')
+        .select(`
+          *,
+          sapatinho_veloz_order_items (
+            id,
+            order_id,
+            product_id,
+            product_name,
+            quantity,
+            price,
+            created_at
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (error) {
+        console.error('Erro ao buscar pedidos:', error)
         return new Response(
           JSON.stringify({
             success: false,
@@ -134,4 +277,3 @@ Deno.serve(async (req) => {
     )
   }
 })
-

@@ -51,8 +51,9 @@ const HomePage: React.FC = () => {
   
   // Verificar se o usuário tem um cartão associado
   const { user } = useAuth()
-  const { data: userCard } = useCardByUserId(user?.id || '', !!user?.id)
-  const hasAssociatedCard = !!userCard
+  const { data: userCard, isLoading: isLoadingCard } = useCardByUserId(user?.id || '', !!user?.id)
+  // Verificar se realmente há um cartão válido (não apenas truthy)
+  const hasAssociatedCard = !isLoadingCard && !!userCard && userCard.id && userCard.card_number
 
   const handleLogout = async () => {
     try {
@@ -264,7 +265,7 @@ const HomePage: React.FC = () => {
             title: 'Cadastrar Produto Sapatinho',
             description: 'Adicionar novo produto do sapatinho',
             path: '/sapatinho-veloz/products/create',
-            canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha',
+            canAccess: userRole === 'admin' || userRole === 'lojinha',
             color: 'from-ruby-100 to-ruby-200',
             gradient: 'border-ruby-300'
           },
@@ -273,7 +274,7 @@ const HomePage: React.FC = () => {
             title: 'Listar Produtos Sapatinho',
             description: 'Gerenciar produtos do sapatinho',
             path: '/sapatinho-veloz/products',
-            canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha',
+            canAccess: userRole === 'admin' || userRole === 'lojinha',
             color: 'from-ruby-100 to-ruby-200',
             gradient: 'border-ruby-300'
           },
@@ -282,7 +283,7 @@ const HomePage: React.FC = () => {
             title: 'Pedidos Sapatinho',
             description: 'Ver pedidos pendentes do sapatinho',
             path: '/pedidos-sapatinho-veloz',
-            canAccess: canViewOpenOrders && (canSellSapatinho || userRole === 'admin' || userRole === 'lojinha'),
+            canAccess: canViewOpenOrders && (userRole === 'admin' || userRole === 'lojinha'),
             color: 'from-ruby-100 to-ruby-200',
             gradient: 'border-ruby-300'
           },
@@ -371,7 +372,7 @@ const HomePage: React.FC = () => {
             title: 'Pedidos Abertos',
             description: 'Ver pedidos pendentes',
             path: '/pedidos-sapatinho-veloz',
-            canAccess: canViewOpenOrders && (canSellSapatinho || userRole === 'admin' || userRole === 'lojinha'),
+            canAccess: canViewOpenOrders && (userRole === 'admin' || userRole === 'lojinha'),
             color: 'from-golden-100 to-golden-200',
             gradient: 'border-golden-300'
           },
@@ -380,7 +381,7 @@ const HomePage: React.FC = () => {
             title: 'Cadastrar Produto',
             description: 'Adicionar novo produto',
             path: '/sapatinho-veloz/products/create',
-            canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha',
+            canAccess: userRole === 'admin' || userRole === 'lojinha',
             color: 'from-emerald-100 to-emerald-200',
             gradient: 'border-emerald-300'
           },
@@ -389,7 +390,7 @@ const HomePage: React.FC = () => {
             title: 'Listar Produtos',
             description: 'Gerenciar produtos',
             path: '/sapatinho-veloz/products',
-            canAccess: canSellSapatinho || userRole === 'admin' || userRole === 'lojinha',
+            canAccess: userRole === 'admin' || userRole === 'lojinha',
             color: 'from-compass-100 to-compass-200',
             gradient: 'border-compass-300'
           }

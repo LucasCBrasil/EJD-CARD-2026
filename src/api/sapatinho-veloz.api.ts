@@ -23,12 +23,6 @@ export const sapatinhoVelozApi = {
     isAnonymous?: boolean
     items: Omit<SaleItem, 'id'>[]
   }): Promise<string> => {
-    // ✅ AGORA USA EDGE FUNCTION (SEGURO!)
-    // Timeout de 5 minutos (300 segundos) - limite máximo do Supabase Pro/Team
-    // Se você estiver no plano Free, o limite é 60 segundos
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 300000) // 300 segundos (5 minutos)
-
     try {
       // ✅ Migrado para usar api-client em vez de supabase.functions.invoke
       const { api } = await import('../lib/api-client')
@@ -41,12 +35,14 @@ export const sapatinhoVelozApi = {
         isAnonymous: params.isAnonymous || false,
         items: params.items.map(item => ({
           productId: item.productId,
+          productName: item.productName,
           quantity: item.quantity,
+          price: item.price
         }))
       })
 
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao criar pedido')
+        throw new Error((response as any).error || 'Erro ao criar pedido')
       }
 
       // api.createSapatinhoOrder retorna orderId diretamente em response.data

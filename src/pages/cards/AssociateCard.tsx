@@ -28,7 +28,9 @@ const AssociateCard: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 500))
       navigate({ to: '/mycard' as any })
     } catch (err: any) {
-      setError(err?.message || 'Erro ao associar cartão')
+      // Extrair mensagem de erro completa de diferentes formatos
+      const errorMessage = err?.message || err?.error || err?.toString() || 'Erro ao associar cartão'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -60,7 +62,15 @@ const AssociateCard: React.FC = () => {
           />
         </div>
         {error && (
-          <div className="text-red-600 text-sm">{error}</div>
+          <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+            <div className="flex items-start">
+              <span className="text-red-500 text-xl mr-2">⚠️</span>
+              <div className="flex-1">
+                <p className="text-red-800 font-semibold mb-1">Erro ao associar cartão</p>
+                <p className="text-red-700 text-sm whitespace-pre-wrap">{error}</p>
+              </div>
+            </div>
+          </div>
         )}
         <Button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-black" disabled={isLoading}>
           {isLoading ? 'Associando...' : 'Associar Cartão'}

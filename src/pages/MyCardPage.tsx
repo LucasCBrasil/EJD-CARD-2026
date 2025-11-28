@@ -87,28 +87,19 @@ const MyCardPage: React.FC = () => {
           if (!user?.id) {
             console.warn('MyCardPage: user.id não disponível')
             setCard(null)
+            setPurchases([]) // Não mostrar histórico se não há usuário autenticado
             return
           }
           
+          // Buscar cartão associado ao usuário atual
+          // Se o cartão não estiver associado a este usuário, não será retornado
           const response = await api.getCardByUserId(user.id)
           
-          if (!response.success) {
-            console.error('MyCardPage: Erro ao buscar cartão:', response.error)
-            // Se não encontrou cartão, não é erro crítico - apenas não mostrar
-            if (response.error?.includes('não encontrado') || 
-                response.error?.includes('not found') ||
-                response.error?.includes('nenhum resultado')) {
-              setCard(null)
-              return
-            }
-            // Outros erros - logar mas não quebrar a página
-            console.error('Erro ao buscar cartão:', response.error)
+          if (!response.success || !response.data) {
+            // Se não encontrou cartão associado a este usuário, não mostrar nada
+            // O histórico do cartão continua existindo no banco, mas não é exibido aqui
             setCard(null)
-            return
-          }
-          
-          if (!response.data) {
-            setCard(null)
+            setPurchases([])
             return
           }
 
@@ -125,6 +116,15 @@ const MyCardPage: React.FC = () => {
             updatedAt: cardData.updated_at || ''
           }
 
+          // Verificar se realmente temos dados válidos do cartão associado ao usuário
+          if (!userCard.id || !userCard.cardNumber || userCard.userId !== user.id) {
+            // Cartão não está associado a este usuário - não mostrar
+            setCard(null)
+            setPurchases([])
+            return
+          }
+
+          // ✅ Cartão está associado ao usuário atual - mostrar informações
           setCard({
             id: userCard.id,
             name: userCard.userName || 'Sem nome',
@@ -133,29 +133,38 @@ const MyCardPage: React.FC = () => {
             phoneNumber: userCard.phoneNumber || ''
           })
 
-          // Carregar histórico de compras do cartão (otimizado - busca apenas vendas deste cartão)
-          const sales = await supabaseData.getSalesByCardId(userCard.id, 20)
+          // ✅ SÓ carregar histórico se o cartão está associado ao usuário atual
+          // O histórico pertence ao cartão, mas só é exibido se o cartão estiver associado a este usuário
+          const salesResponse = await api.listSales(undefined, userCard.id)
+          const sales = salesResponse.success ? (salesResponse.data || []).slice(0, 20) : []
           
           // Converter vendas em compras do usuário
-          const userPurchases: Purchase[] = (sales || [])
-            .map((sale: any) => ({
-              id: sale.id,
-              date: sale.createdAt.split('T')[0],
-              store: sale.category === 'lojinha'
-                ? 'Lojinha Mágica'
-                : sale.category === 'lanchonete'
-                  ? 'Lanchonete do Feiticeiro'
-                  : 'Sapatinho velOz',
-              product: sale.items.map((item: any) => item.productName).join(', '),
-              amount: sale.total,
-              type: sale.category
-            }))
-
+          // Formato da Edge Function: sale_items ou sapatinho_sale_items
+          const userPurchases: Purchase[] = sales
+            .map((sale: any) => {
+              const items = sale.sale_items || sale.sapatinho_sale_items || []
+              const createdAt = sale.created_at || sale.createdAt || new Date().toISOString()
+              return {
+                id: sale.id,
+                date: createdAt.split('T')[0],
+                store: sale.category === 'lojinha'
+                  ? 'Lojinha Mágica'
+                  : sale.category === 'lanchonete'
+                    ? 'Lanchonete do Feiticeiro'
+                    : 'Sapatinho velOz',
+                product: items.map((item: any) => item.product_name || item.productName || 'Produto').join(', '),
+                amount: parseFloat(sale.total) || 0,
+                type: sale.category || 'lojinha'
+              }
+            })
+          
           setPurchases(userPurchases)
         } catch (error: any) {
           console.error('MyCardPage: Erro ao carregar dados do cartão:', error)
           // Não quebrar a página se houver erro - apenas não mostrar cartão
+          // IMPORTANTE: Limpar histórico também em caso de erro
           setCard(null)
+          setPurchases([])
         }
       } else {
         // Usar dados locais (modo fallback)
@@ -208,20 +217,8 @@ const MyCardPage: React.FC = () => {
       setPixPayment(payment)
       setShowPixInfo(true)
 
-      // Salvar pagamento no Supabase (se configurado)
-      if (supabaseData && isSupabaseConfigured()) {
-        await supabase
-          .from('pix_payments')
-          .insert({
-            card_id: card.id,
-            amount: parseFloat(amount),
-            pix_code: payment.pixCode,
-            qr_code_url: payment.qrCodeUrl,
-            status: 'pending',
-            payment_method: 'mock',
-            expires_at: payment.expiresAt.toISOString()
-          })
-      }
+      // TODO: Salvar pagamento PIX via Edge Function quando implementado
+      // Por enquanto, o pagamento é apenas simulado
 
     } catch (error) {
       console.error('Erro ao gerar PIX:', error)
@@ -241,59 +238,32 @@ const MyCardPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 2000))
 
       if (supabaseData && isSupabaseConfigured()) {
-        // Atualizar status do pagamento PIX
-        await supabase
-          .from('pix_payments')
-          .update({
-            status: 'confirmed',
-            confirmed_at: new Date().toISOString()
-          })
-          .eq('pix_code', pixPayment.pixCode)
-
-        // Atualizar saldo diretamente no banco primeiro
-        const { data: currentCard, error: fetchError } = await supabase
-          .from('cards')
-          .select('balance')
-          .eq('id', card.id)
-          .single()
-
-        if (fetchError) throw fetchError
-
-        const newBalance = (currentCard.balance || 0) + parseFloat(amount)
-
-        // Atualizar saldo no banco
-        const { error: updateError } = await supabase
-          .from('cards')
-          .update({
-            balance: newBalance,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', card.id)
-
-        if (updateError) throw updateError
-
-        // Criar transação
-        await supabase
-          .from('transactions')
-          .insert({
-            card_id: card.id,
+        // ✅ Usar Edge Function para atualizar saldo via PIX (seguro!)
+        try {
+          const { api } = await import('../lib/api-client')
+          const response = await api.updateBalance({
+            action: 'add',
+            cardId: card.id,
             amount: parseFloat(amount),
-            type: 'credit',
             description: 'Abastecimento via PIX',
-            created_by: user?.id || 'system'
           })
 
-        // Atualizar estado do cartão imediatamente com o novo saldo
-        setCard(prev => prev ? {
-          ...prev,
-          balance: newBalance
-        } : null)
+          if (!response.success) {
+            throw new Error((response as any).error || 'Erro ao atualizar saldo')
+          }
 
-        // Recarregar dados do contexto em background para manter sincronizado
-        if (supabaseData?.loadData) {
-          supabaseData.loadData().catch(() => {
-            // Ignorar erros silenciosamente - o estado já foi atualizado
-          })
+          // Atualizar estado do cartão imediatamente com o novo saldo
+          const newBalance = card.balance + parseFloat(amount)
+          setCard(prev => prev ? {
+            ...prev,
+            balance: newBalance
+          } : null)
+
+          // Recarregar dados do contexto em background para manter sincronizado
+          await loadUserData()
+        } catch (error: any) {
+          console.error('Erro ao confirmar pagamento PIX:', error)
+          throw error
         }
       } else {
         // Usar dados locais

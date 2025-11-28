@@ -21,7 +21,7 @@ export function useCards() {
     queryFn: async () => {
       const response = await api.listCards()
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar cartões')
+        throw new Error((response as any).error || 'Erro ao buscar cartões')
       }
       return Array.isArray(response.data) ? response.data : [response.data].filter(Boolean)
     },
@@ -34,7 +34,7 @@ export function useCard(cardNumber: string, enabled = true) {
     queryFn: async () => {
       const response = await api.getCardByNumber(cardNumber)
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar cartão')
+        throw new Error((response as any).error || 'Erro ao buscar cartão')
       }
       return response.data || null
     },
@@ -48,7 +48,16 @@ export function useCardByUserId(userId: string, enabled = true) {
     queryFn: async () => {
       const response = await api.getCardByUserId(userId)
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar cartão')
+        // Se não encontrou cartão, retornar null (não é erro)
+        const errorMsg = (response as any).error || ''
+        if (errorMsg.includes('não encontrado') || 
+            errorMsg.includes('not found') ||
+            errorMsg.includes('nenhum resultado')) {
+          return null
+        }
+        // Para outros erros, também retornar null ao invés de lançar erro
+        console.warn('Erro ao buscar cartão:', errorMsg)
+        return null
       }
       return response.data || null
     },
@@ -77,19 +86,23 @@ export function useCreateCard() {
         description: params.initialBalance ? `Saldo inicial de R$ ${params.initialBalance.toFixed(2)}` : undefined
       })
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao criar cartão')
+        throw new Error((response as any).error || 'Erro ao criar cartão')
       }
       return response.data?.card || response.data
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: cardKeys.lists() })
+      // A Edge Function retorna card_number (snake_case) do banco
+      const cardNumber = data.card_number || data.cardNumber || 'N/A'
       showSuccess(
         'Cartão Criado!',
-        `Cartão de número ${data.cardNumber} foi criado com sucesso.`
+        `Cartão de número ${cardNumber} foi criado com sucesso.`
       )
     },
     onError: (error: any) => {
-      showError('Erro', error?.message || 'Erro ao criar cartão')
+      // Extrair mensagem de erro completa de diferentes formatos
+      const errorMessage = error?.message || error?.error || error?.toString() || 'Erro ao criar cartão'
+      showError('Erro ao criar cartão', errorMessage)
     },
   })
 }
@@ -103,15 +116,18 @@ export function useAssociateCard() {
       // TODO: Criar Edge Function para associate ou usar updateBalance
       throw new Error('Associate card precisa ser implementado via Edge Function')
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: cardKeys.all })
+      const cardNumber = data?.cardNumber || data?.card_number || 'N/A'
       showSuccess(
         'Cartão Associado!',
-        `Cartão de número ${data.cardNumber} foi associado com sucesso.`
+        `Cartão de número ${cardNumber} foi associado com sucesso.`
       )
     },
     onError: (error: any) => {
-      showError('Erro', error?.message || 'Erro ao associar cartão')
+      // Extrair mensagem de erro completa de diferentes formatos
+      const errorMessage = error?.message || error?.error || error?.toString() || 'Erro ao associar cartão'
+      showError('Erro ao associar cartão', errorMessage)
     },
   })
 }
@@ -129,7 +145,7 @@ export function useUpdateCardBalance() {
         description: params.description
       })
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao atualizar saldo')
+        throw new Error((response as any).error || 'Erro ao atualizar saldo')
       }
       return response.data
     },

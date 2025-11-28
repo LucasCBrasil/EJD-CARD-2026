@@ -30,16 +30,8 @@ const SapatinhoVelozOrdersPage: React.FC = () => {
       // Filtrar apenas pedidos pendentes ou completos (não entregues)
       const openOrders = (response.data || [])
         .filter((order: any) => ['pending', 'completed'].includes(order.status))
-        .map((order: any) => ({
-          id: order.id,
-          saleId: order.sale_id,
-          senderUserId: order.sender_user_id,
-          senderName: order.sender_name || null,
-          senderTeam: order.sender_team || null,
-          recipientName: order.recipient_name,
-          recipientAddress: order.recipient_address,
-          message: order.message || null,
-          items: (order.sapatinho_veloz_order_items || []).map((item: any) => ({
+        .map((order: any) => {
+          const mappedItems = (order.sapatinho_veloz_order_items || []).map((item: any) => ({
             id: item.id,
             orderId: item.order_id,
             productId: item.product_id,
@@ -47,13 +39,25 @@ const SapatinhoVelozOrdersPage: React.FC = () => {
             quantity: item.quantity,
             price: parseFloat(item.price) || 0,
             createdAt: item.created_at
-          })),
-          total: parseFloat(order.total) || 0,
-          status: order.status,
-          createdAt: order.created_at,
-          deliveredAt: order.delivered_at || null,
-          isAnonymous: !order.sender_name && order.sender_user_id !== null
-        } as SapatinhoVelozOrder))
+          }))
+          
+          return {
+            id: order.id,
+            saleId: order.sale_id,
+            senderUserId: order.sender_user_id,
+            senderName: order.sender_name || null,
+            senderTeam: order.sender_team || null,
+            recipientName: order.recipient_name,
+            recipientAddress: order.recipient_address,
+            message: order.message || null,
+            items: mappedItems,
+            total: parseFloat(order.total) || 0,
+            status: order.status,
+            createdAt: order.created_at,
+            deliveredAt: order.delivered_at || null,
+            isAnonymous: !order.sender_name && order.sender_user_id !== null
+          } as SapatinhoVelozOrder
+        })
       
       setOrders(openOrders)
     } catch (error: any) {

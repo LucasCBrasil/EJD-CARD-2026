@@ -20,7 +20,15 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
       const response = await api.listOrders('sapatinho')
       
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao carregar pedidos')
+        // Não quebrar a UI se não autenticado - apenas logar e mostrar array vazio
+        const errorMsg = (response as any).error || 'Erro ao carregar pedidos'
+        if (errorMsg.includes('Não autenticado') || errorMsg.includes('autenticado') || errorMsg.includes('Unauthorized')) {
+          console.warn('Não autenticado - pedidos não serão carregados')
+          setAllOrders([])
+          setIsLoading(false)
+          return
+        }
+        throw new Error(errorMsg)
       }
 
       // Transformar dados da Edge Function para o formato esperado
@@ -28,6 +36,16 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
         // A Edge Function já retorna os dados formatados
         const senderName = order.sender_name || null
         const isAnonymous = !order.sender_name && order.sender_user_id !== null
+        
+        const mappedItems = (order.sapatinho_veloz_order_items || []).map((item: any) => ({
+          id: item.id,
+          orderId: item.order_id,
+          productId: item.product_id,
+          productName: item.product_name,
+          quantity: item.quantity,
+          price: parseFloat(item.price) || 0,
+          createdAt: item.created_at
+        }))
         
         return {
           id: order.id,
@@ -38,15 +56,7 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
           recipientName: order.recipient_name,
           recipientAddress: order.recipient_address,
           message: order.message || null,
-          items: (order.sapatinho_veloz_order_items || []).map((item: any) => ({
-            id: item.id,
-            orderId: item.order_id,
-            productId: item.product_id,
-            productName: item.product_name,
-            quantity: item.quantity,
-            price: parseFloat(item.price) || 0,
-            createdAt: item.created_at
-          })),
+          items: mappedItems,
           total: parseFloat(order.total) || 0,
           status: order.status,
           createdAt: order.created_at,

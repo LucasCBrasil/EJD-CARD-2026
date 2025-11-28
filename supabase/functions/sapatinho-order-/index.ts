@@ -477,21 +477,62 @@ Deno.serve(async (req: Request) => {
     const orderId = orderData.id;
 
     // 11. CRIAR ITENS DO PEDIDO
-    const orderItems = items.map((item: any) => ({
-      order_id: orderId,
-      product_id: item.productId,
-      product_name: item.productName,
-      quantity: item.quantity,
-      price: item.price
-    }));
+    // Garantir que os tipos estão corretos
+    const orderItems = items.map((item: any) => {
+      const product = products.find((p: any) => p.id === item.productId);
+      if (!product) {
+        throw new Error(`Produto não encontrado: ${item.productId}`);
+      }
+      
+      return {
+        order_id: orderId,
+        product_id: item.productId,
+        product_name: item.productName || product.name,
+        quantity: parseInt(String(item.quantity)) || 0,
+        price: parseFloat(String(item.price)) || parseFloat(String(product.price)) || 0
+      };
+    });
 
-    const { error: orderItemsError } = await supabase
+    console.log('Tentando inserir orderItems:', JSON.stringify(orderItems, null, 2));
+
+    const { error: orderItemsError, data: insertedOrderItems } = await supabase
       .from('sapatinho_veloz_order_items')
-      .insert(orderItems);
+      .insert(orderItems)
+      .select();
 
     if (orderItemsError) {
-      console.error('Order items error:', orderItemsError);
-      // Continuar mesmo com erro nos itens do pedido (já foi criado)
+      console.error('❌ Order items error:', orderItemsError);
+      console.error('❌ Order items que falharam:', JSON.stringify(orderItems, null, 2));
+      console.error('❌ Erro completo:', JSON.stringify(orderItemsError, null, 2));
+      // NÃO continuar se houver erro - isso é crítico!
+      // Reverter tudo se os itens não foram criados
+      await supabase.from('sapatinho_veloz_orders').delete().eq('id', orderId);
+      await supabase.from('sapatinho_sale_items').delete().eq('sale_id', saleId);
+      await supabase.from('sapatinho_sales').delete().eq('id', saleId);
+      
+      // Reverter estoque
+      if (productsWithStock.length > 0 && stockUpdates.length > 0) {
+        for (const stockUpdate of stockUpdates) {
+          await supabase
+            .from('sapatinho_products')
+            .update({ stock: stockUpdate.oldStock })
+            .eq('id', stockUpdate.id);
+        }
+      }
+      
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Erro ao criar itens do pedido: ${orderItemsError.message || orderItemsError.details || 'Erro desconhecido'}`
+      }), {
+        status: 500,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    } else {
+      console.log('✅ Order items criados com sucesso:', insertedOrderItems?.length || 0);
+      console.log('✅ Itens criados:', JSON.stringify(insertedOrderItems, null, 2));
     }
 
     // 12. ATUALIZAR SALDO DO CARTÃO

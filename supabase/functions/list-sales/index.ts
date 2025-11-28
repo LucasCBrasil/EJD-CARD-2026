@@ -43,6 +43,13 @@ Deno.serve(async (req) => {
     const url = new URL(req.url)
     const category = url.searchParams.get('category') as 'lojinha' | 'lanchonete' | 'sapatinho' | null
     const cardId = url.searchParams.get('cardId')
+    const pageParam = url.searchParams.get('page')
+    const limitParam = url.searchParams.get('limit')
+    
+    // Paginação: padrão 20 itens por página, página 1
+    const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1
+    const limit = limitParam ? Math.max(1, Math.min(100, parseInt(limitParam, 10))) : 20
+    const offset = (page - 1) * limit
 
     // REGRA: Se cardId foi passado, usuário quer ver vendas do SEU cartão
     //        Se cardId NÃO foi passado, precisa ser admin/lojinha/lanchonete para ver histórico geral
@@ -185,21 +192,66 @@ Deno.serve(async (req) => {
       )
     } else {
       // Vendas normais (lojinha/lanchonete)
+      // Primeiro buscar o total para paginação
+      let countQuery = supabase
+        .from('sales')
+        .select('*', { count: 'exact', head: true })
+
+      // Se cardId foi passado, filtrar por cartão
+      if (cardId) {
+        countQuery = countQuery.eq('card_id', cardId)
+      }
+      
+      // Se categoria foi especificada, filtrar por categoria
+      if (category) {
+        countQuery = countQuery.eq('category', category)
+      }
+
+      const { count, error: countError } = await countQuery
+
+      if (countError) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Erro ao contar vendas'
+          } as ApiResponse),
+          {
+            status: 500,
+            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+          }
+        )
+      }
+
+      // Agora buscar os dados com paginação
       let query = supabase
         .from('sales')
         .select(`
           *,
-          sale_items (*)
+          sale_items (*),
+          app_users:seller_id (
+            id,
+            name,
+            email
+          ),
+          cards:card_id (
+            id,
+            card_number,
+            user_name,
+            user_id
+          )
         `)
         .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1)
 
       // Se cardId foi passado, filtrar por cartão (usuário vendo próprio histórico)
       if (cardId) {
         query = query.eq('card_id', cardId)
       }
       
-      // Se categoria foi especificada (para histórico geral), podemos filtrar
-      // Por enquanto retornamos todas as vendas e o frontend pode filtrar por categoria
+      // Se categoria foi especificada, filtrar por categoria
+      if (category) {
+        query = query.eq('category', category)
+      }
 
       const { data: sales, error } = await query
 
@@ -216,12 +268,12 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Retornar todas as vendas (filtragem por categoria pode ser feita no frontend
-      // ou através de query mais complexa no futuro)
+      // Retornar vendas paginadas com total
       return new Response(
         JSON.stringify({
           success: true,
-          data: sales || []
+          data: sales || [],
+          total: count || 0
         } as ApiResponse),
         {
           status: 200,

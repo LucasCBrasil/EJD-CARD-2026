@@ -69,9 +69,10 @@ const SalesPage: React.FC = () => {
 
   // Filtrar produtos por nome
   const filteredProducts = useMemo(() => {
+    if (!products || !Array.isArray(products)) return []
     if (!searchFilter.trim()) return products
     const filterLower = searchFilter.toLowerCase().trim()
-    return products.filter(p => p.name.toLowerCase().includes(filterLower))
+    return products.filter(p => p && p.name && p.name.toLowerCase().includes(filterLower))
   }, [products, searchFilter])
 
   // Produtos paginados
@@ -96,8 +97,9 @@ const SalesPage: React.FC = () => {
   }, [cartItems])
 
   const total = useMemo(() => {
+    if (!products || !Array.isArray(products)) return 0
     return Object.entries(cartItems).reduce((acc, [productId, qty]) => {
-      const p = products.find(pr => pr.id === productId)
+      const p = products.find(pr => pr && pr.id === productId)
       if (!p) return acc
       return acc + p.price * qty
     }, 0)
@@ -165,7 +167,8 @@ const SalesPage: React.FC = () => {
   }
 
   const handleIncrease = (productId: string) => {
-    const product = products.find(p => p.id === productId)
+    if (!products || !Array.isArray(products)) return
+    const product = products.find(p => p && p.id === productId)
     if (!product) return
     
     // Validar estoque antes de aumentar
@@ -268,11 +271,21 @@ const SalesPage: React.FC = () => {
   const handleConfirmSale = async () => {
     setError(null)
     
+    // VALIDAÇÃO: Verificar se products está carregado
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      setError('Produtos ainda não foram carregados. Aguarde um momento e tente novamente.')
+      showError('Erro', 'Produtos ainda não foram carregados. Aguarde um momento e tente novamente.')
+      return
+    }
+    
     // VALIDAÇÃO ANTES DE FINALIZAR
     const items: SaleItem[] = Object.entries(cartItems)
-      .filter(([productId]) => productId !== null)
+      .filter(([productId]) => productId !== null && productId !== undefined)
       .map(([productId, quantity]) => {
-        const p = products.find(pr => pr.id === productId)!
+        const p = products.find(pr => pr && pr.id === productId)
+        if (!p) {
+          throw new Error(`Produto com ID ${productId} não encontrado`)
+        }
         return {
           id: p.id,
           productId: p.id || '',
@@ -282,6 +295,13 @@ const SalesPage: React.FC = () => {
           image: p.image_url || null
         }
       })
+      
+    // Validar que temos itens válidos
+    if (items.length === 0) {
+      setError('Nenhum item válido no carrinho')
+      showError('Erro', 'Nenhum item válido no carrinho')
+      return
+    }
 
     // Validar estoque ANTES de chamar a função
     const stockErrors: string[] = []
@@ -312,8 +332,19 @@ const SalesPage: React.FC = () => {
 
     setIsLoading(true)
     try {
+      // Validar que temos todos os dados necessários
+      if (!selectedCard || !selectedCard.id) {
+        throw new Error('Cartão não selecionado')
+      }
+      
+      if (!items || items.length === 0) {
+        throw new Error('Nenhum item no carrinho')
+      }
+      
+      // Usar o cardId diretamente do selectedCard, não o userId
+      // Na tela de vendas, já temos o cartão selecionado com seu ID
       await makeSale(
-        selectedCard.userId,
+        selectedCard.id, // Passar cardId diretamente
         items,
         context,
         couponCode,
@@ -325,7 +356,7 @@ const SalesPage: React.FC = () => {
       
       showSuccess(
         'Venda realizada!',
-        `Venda de R$ ${total.toFixed(2)} para cartão ${selectedCard.card_number} de ${selectedCard.user_name} foi realizada com sucesso.`
+        `Venda de R$ ${total.toFixed(2)} para cartão ${selectedCard.cardNumber || 'N/A'} de ${selectedCard.userName || 'N/A'} foi realizada com sucesso.`
       )
       setCardNumber('')
       setSelectedCard(null)
@@ -606,8 +637,8 @@ const SalesPage: React.FC = () => {
                       style={{ maxWidth: '100%' }}
                     >
                       <option value="">Selecione</option>
-                      {coupons.map((coupon, idx) => {
-                        const displayName = coupon.name.length > 20 
+                      {coupons && Array.isArray(coupons) && coupons.map((coupon, idx) => {
+                        const displayName = coupon.name && coupon.name.length > 20 
                           ? `${coupon.name.substring(0, 17)}...` 
                           : coupon.name
                         return (

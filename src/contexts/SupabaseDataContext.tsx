@@ -109,7 +109,8 @@ interface SupabaseDataContextType {
   getProducts: (category: 'lojinha' | 'lanchonete') => Product[]
   
   // Funções de vendas
-  makeSale: (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => Promise<string>
+  // cardIdOrUserId: pode ser cardId (string UUID) ou userId (para buscar o cartão do usuário)
+  makeSale: (cardIdOrUserId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => Promise<string>
   getSales: (category?: 'lojinha' | 'lanchonete' | 'sapatinho', limit?: number) => Promise<Sale[]>
   getSalesByCardId: (cardId: string, limit?: number) => Promise<Sale[]>
   
@@ -187,7 +188,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       
       // Carregar cartões via Edge Function
       const cardsResponse = await api.listCards()
-      if (!cardsResponse.success) throw new Error(cardsResponse.error || 'Erro ao carregar cartões')
+      if (!cardsResponse.success) throw new Error((cardsResponse as any).error || 'Erro ao carregar cartões')
       const cards = cardsResponse.data || []
 
       // Carregar produtos via Edge Function (apenas lojinha e lanchonete para compatibilidade)
@@ -249,7 +250,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       // Por enquanto retornar array vazio - cupons devem ser carregados via getCoupons()
       setData({
         balances,
-        products: productsByCategory,
+        products: productsByCategory as { lojinha: Product[]; lanchonete: Product[] },
         sales: [], // Será carregado sob demanda via getSales() (Edge Function)
         orders: [], // Será carregado sob demanda via getOpenOrders() (Edge Function)
         cards: mappedCards,
@@ -286,7 +287,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       })
 
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao atualizar saldo')
+        throw new Error((response as any).error || 'Erro ao atualizar saldo')
       }
 
       // Recarregar dados
@@ -312,7 +313,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   const addProduct = async (product: Omit<Product, 'id' | 'createdAt'>) => {
     try {
       // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
-      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+      const { data: response, error } = await (supabase.functions.invoke as any)('manage-products', {
         method: 'POST',
         body: {
           name: product.name,
@@ -325,16 +326,40 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
       if (error) {
         console.error('Edge function error:', error)
-        throw new Error(error.message || 'Erro ao adicionar produto')
+        
+        // Verificar se é erro de timeout
+        const isTimeout = (error as any).message?.includes('timeout') || 
+                         (error as any).message?.includes('aborted') || 
+                         (error as any).name === 'AbortError' ||
+                         (error as any).message?.includes('network') ||
+                         (error as any).message?.includes('fetch')
+        
+        if (isTimeout) {
+          throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+        }
+        
+        throw new Error((error as any).message || 'Erro ao adicionar produto')
       }
 
       if (!response?.success) {
-        throw new Error(response?.error || 'Erro ao adicionar produto')
+        throw new Error((response as any)?.error || 'Erro ao adicionar produto')
       }
 
       await loadData()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao adicionar produto:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -342,7 +367,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
       // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
-      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+      const { data: response, error } = await (supabase.functions.invoke as any)('manage-products', {
         method: 'PUT',
         body: {
           id,
@@ -352,16 +377,40 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
       if (error) {
         console.error('Edge function error:', error)
-        throw new Error(error.message || 'Erro ao atualizar produto')
+        
+        // Verificar se é erro de timeout
+        const isTimeout = (error as any).message?.includes('timeout') || 
+                         (error as any).message?.includes('aborted') || 
+                         (error as any).name === 'AbortError' ||
+                         (error as any).message?.includes('network') ||
+                         (error as any).message?.includes('fetch')
+        
+        if (isTimeout) {
+          throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+        }
+        
+        throw new Error((error as any).message || 'Erro ao atualizar produto')
       }
 
       if (!response?.success) {
-        throw new Error(response?.error || 'Erro ao atualizar produto')
+        throw new Error((response as any)?.error || 'Erro ao atualizar produto')
       }
 
       await loadData()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao atualizar produto:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -369,23 +418,47 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   const deleteProduct = async (id: string) => {
     try {
       // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
-      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+      const { data: response, error } = await (supabase.functions.invoke as any)('manage-products', {
         method: 'DELETE',
         body: { id }
       })
 
       if (error) {
         console.error('Edge function error:', error)
-        throw new Error(error.message || 'Erro ao deletar produto')
+        
+        // Verificar se é erro de timeout
+        const isTimeout = (error as any).message?.includes('timeout') || 
+                         (error as any).message?.includes('aborted') || 
+                         (error as any).name === 'AbortError' ||
+                         (error as any).message?.includes('network') ||
+                         (error as any).message?.includes('fetch')
+        
+        if (isTimeout) {
+          throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+        }
+        
+        throw new Error((error as any).message || 'Erro ao deletar produto')
       }
 
       if (!response?.success) {
-        throw new Error(response?.error || 'Erro ao deletar produto')
+        throw new Error((response as any)?.error || 'Erro ao deletar produto')
       }
 
       await loadData()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao deletar produto:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -395,22 +468,51 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   }
 
   // ✅ Agora usa Edge Function via api-client
-  const makeSale = async (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
-    console.log('userId:', userId);
+  // cardIdOrUserId: pode ser cardId (string UUID) ou userId (para buscar o cartão do usuário)
+  const makeSale = async (cardIdOrUserId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
+    console.log('cardIdOrUserId:', cardIdOrUserId);
     console.log('items:', items);
     console.log('category:', category);
+    
+    // VALIDAÇÕES BÁSICAS
+    if (!cardIdOrUserId) {
+      throw new Error('Cartão não informado')
+    }
+    
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      throw new Error('Nenhum item selecionado para venda')
+    }
+    
+    if (!category) {
+      throw new Error('Categoria não informada')
+    }
+    
     try {
-      // Buscar cartão do usuário primeiro
       const { api } = await import('../lib/api-client')
-      const cardResponse = await api.getCardByUserId(userId)
       
-      if (!cardResponse.success || !cardResponse.data) {
-        throw new Error('Cartão não encontrado')
+      // Verificar se é um cardId (UUID) ou userId
+      // UUIDs têm formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 caracteres)
+      const isCardId = cardIdOrUserId && cardIdOrUserId.length === 36 && cardIdOrUserId.includes('-')
+      
+      let cardId: string
+      
+      if (isCardId) {
+        // É um cardId, usar diretamente
+        cardId = cardIdOrUserId
+      } else {
+        // É um userId, buscar o cartão do usuário
+        const cardResponse = await api.getCardByUserId(cardIdOrUserId)
+        
+        if (!cardResponse.success || !cardResponse.data) {
+          throw new Error('Cartão não encontrado')
+        }
+        
+        cardId = cardResponse.data.id
       }
 
       // Chamar Edge Function para fazer venda
       const response = await api.createSale({
-        cardId: cardResponse.data.id,
+        cardId: cardId,
         items: items.map(item => ({
           productId: item.productId,
           productName: item.productName,
@@ -422,7 +524,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         discountedTotal: discountedTotal || undefined
       })
 
-      if (!response.success) throw new Error(response.error || 'Erro ao criar venda')
+      if (!response.success) throw new Error((response as any).error || 'Erro ao criar venda')
 
       await loadData()
       return response.data.saleId || ''
@@ -442,7 +544,10 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       const response = await api.listSales(category)
       
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar vendas')
+        const errorMsg = (response as any).error || 'Erro ao buscar vendas'
+        console.warn('Erro ao buscar vendas:', errorMsg)
+        // Retornar array vazio ao invés de lançar erro - não quebrar a UI
+        return []
       }
 
       // Transformar dados da Edge Function para o formato esperado
@@ -471,7 +576,8 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       return sales
     } catch (error) {
       console.error('Erro ao buscar vendas:', error)
-      throw error
+      // Retornar array vazio ao invés de lançar erro - não quebrar a UI
+      return []
     }
   }
 
@@ -485,7 +591,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       const response = await api.listSales(undefined, cardId)
       
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao buscar vendas')
+        throw new Error((response as any).error || 'Erro ao buscar vendas')
       }
 
       // Transformar e ordenar
@@ -536,7 +642,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     console.log(response)
     
     if (!response.success) {
-      throw new Error(response.error || 'Erro ao buscar pedidos')
+      throw new Error((response as any).error || 'Erro ao buscar pedidos')
     }
 
     // Filtrar apenas pedidos completos (não entregues) e formatar
@@ -575,11 +681,23 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       const { api } = await import('../lib/api-client')
       const response = await api.markOrderAsDelivered(orderId)
 
-      if (!response.success) throw new Error(response.error || 'Erro ao marcar como entregue')
+      if (!response.success) throw new Error((response as any).error || 'Erro ao marcar como entregue')
 
       await loadData()
     } catch (err: any) {
       console.error('Erro ao marcar como entregue:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -604,7 +722,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       })
 
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao criar cartão')
+        throw new Error((response as any).error || 'Erro ao criar cartão')
       }
 
       await loadData()
@@ -621,6 +739,18 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       } as Card
     } catch (err: any) {
       console.error('Erro ao criar cartão:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -633,7 +763,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       const response = await api.associateCard(params)
       
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao associar cartão')
+        throw new Error((response as any).error || 'Erro ao associar cartão')
       }
 
       // Transformar resposta para formato esperado
@@ -685,39 +815,22 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     }
   }
 
-  // Buscar cupons
+  // ✅ Buscar cupons via Edge Function
   const getCoupons = async (category?: 'lojinha' | 'lanchonete'): Promise<Array<{ name: string; discountAmount?: number }>> => {
     try {
-      if (category === 'lanchonete') {
-        // Buscar cupons da lanchonete (com valor fixo)
-        const { data, error } = await supabase
-          .from('lanchonete_coupons')
-          .select('name, discount_amount')
-          .eq('active', true)
-          .order('created_at', { ascending: false })
-        
-        if (error) throw error
-        
-        return (data || []).map((item: { name: string; discount_amount: number }) => ({
-          name: item.name,
-          discountAmount: parseFloat(item.discount_amount.toString())
-        }))
-      } else {
-        // Buscar cupons da lojinha (percentual)
-        const { data, error } = await supabase
-          .from('coupons')
-          .select('name')
-          .order('created_at', { ascending: false })
-        
-        if (error) throw error
-        
-        return (data || []).map((item: { name: string }) => ({
-          name: item.name
-        }))
+      const { api } = await import('../lib/api-client')
+      const response = await api.listCoupons(category)
+      
+      if (!response.success) {
+        console.error('Erro ao buscar cupons:', (response as any).error)
+        return []
       }
+      
+      return response.data || []
     } catch (err) {
       console.error('Erro ao buscar cupons:', err)
-      throw err
+      // Retornar array vazio em caso de erro (não quebrar a aplicação)
+      return []
     }
   }
 
@@ -737,12 +850,24 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       })
 
       if (!response.success) {
-        throw new Error(response.error || 'Erro ao atualizar saldo')
+        throw new Error((response as any).error || 'Erro ao atualizar saldo')
       }
 
       await loadData()
     } catch (err: any) {
       console.error('Erro ao atualizar saldo:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -756,7 +881,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   const loadSeedData = async () => {
     try {
       // Verificar se já existem produtos
-      const { data: existingProducts } = await supabase
+      const { data: existingProducts } = await (supabase as any)
         .from('products')
         .select('id')
         .limit(1)
@@ -778,7 +903,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         { name: 'Batata Frita', price: 8.00, category: 'lanchonete', description: 'Porção média', active: true }
       ]
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('products')
         .insert(seedProducts)
 

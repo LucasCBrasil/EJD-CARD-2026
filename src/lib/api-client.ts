@@ -180,12 +180,14 @@ export const api = {
     }),
 
   // Sales
-  listSales: (category?: string, cardId?: string) =>
-    request<{ success: boolean; data: any[] }>('list-sales', {
+  listSales: (category?: string, cardId?: string, page?: number, limit?: number) =>
+    request<{ success: boolean; data: any[]; total?: number }>('list-sales', {
       method: 'GET',
       query: {
         ...(category ? { category } : {}),
         ...(cardId ? { cardId } : {}),
+        ...(page ? { page: page.toString() } : {}),
+        ...(limit ? { limit: limit.toString() } : {}),
       },
     }),
 
@@ -244,6 +246,13 @@ export const api = {
     request<{ success: boolean; data: any }>('sapatinho-order-', {
       method: 'POST',
       body: data,
+    }),
+
+  // Coupons
+  listCoupons: (category?: string) =>
+    request<{ success: boolean; data: Array<{ name: string; discountAmount?: number }> }>('list-coupons', {
+      method: 'GET',
+      query: category ? { category } : undefined,
     }),
 
   // User Profile

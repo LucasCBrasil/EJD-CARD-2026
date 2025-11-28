@@ -147,9 +147,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       ]).then(([, u]) => {
         if (u && u.id === userId) {
           setUser((prev: User | null) => {
-            // Só atualizar se ainda for o mesmo usuário e o role mudou
-            if (prev?.id === userId && prev.role !== u.role) {
-              return { ...prev, role: u.role }
+            // Só atualizar se ainda for o mesmo usuário e algo mudou
+            if (prev?.id === userId) {
+              // Atualizar nome e role se mudaram
+              if (prev.role !== u.role || prev.name !== u.name) {
+                return { 
+                  ...prev, 
+                  role: u.role,
+                  name: u.name || prev.name
+                }
+              }
             }
             return prev
           })
