@@ -23,7 +23,7 @@ ALTER TABLE sapatinho_veloz_orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own card"
 ON cards FOR SELECT
 USING (
-  auth.uid() = user_id 
+  auth.uid()::text = user_id 
   OR 
   EXISTS (
     SELECT 1 FROM app_users 
@@ -67,12 +67,12 @@ USING (auth.role() = 'service_role');
 -- Usuários podem ver suas próprias vendas
 CREATE POLICY "Users can view their own sales"
 ON sales FOR SELECT
-USING (auth.uid() = (SELECT user_id FROM cards WHERE id = sales.card_id));
+USING (auth.uid()::text = (SELECT user_id FROM cards WHERE id = sales.card_id));
 
 -- Vendedores podem ver vendas que criaram
 CREATE POLICY "Sellers can view their sales"
 ON sales FOR SELECT
-USING (auth.uid() = seller_id);
+USING (auth.uid()::text = seller_id::text);
 
 -- Apenas service_role pode criar/atualizar vendas
 CREATE POLICY "Service role can manage sales"
@@ -94,7 +94,7 @@ USING (
   EXISTS (
     SELECT 1 FROM sales 
     WHERE sales.id = sale_items.sale_id 
-    AND auth.uid() = (SELECT user_id FROM cards WHERE id = sales.card_id)
+    AND auth.uid()::text = (SELECT user_id FROM cards WHERE id = sales.card_id)
   )
 );
 
@@ -105,12 +105,12 @@ USING (
 -- Usuários podem ver suas próprias vendas do sapatinho
 CREATE POLICY "Users can view their own sapatinho sales"
 ON sapatinho_sales FOR SELECT
-USING (auth.uid() = (SELECT user_id FROM cards WHERE id = sapatinho_sales.card_id));
+USING (auth.uid()::text = (SELECT user_id FROM cards WHERE id = sapatinho_sales.card_id));
 
 -- Vendedores podem ver vendas que criaram
 CREATE POLICY "Sellers can view their sapatinho sales"
 ON sapatinho_sales FOR SELECT
-USING (auth.uid() = seller_id);
+USING (auth.uid()::text = seller_id);
 
 -- Apenas service_role pode criar/atualizar
 CREATE POLICY "Service role can manage sapatinho sales"
@@ -131,7 +131,7 @@ USING (
   EXISTS (
     SELECT 1 FROM sapatinho_sales 
     WHERE sapatinho_sales.id = sapatinho_sale_items.sale_id 
-    AND auth.uid() = (SELECT user_id FROM cards WHERE id = sapatinho_sales.card_id)
+    AND auth.uid()::text = (SELECT user_id FROM cards WHERE id = sapatinho_sales.card_id)
   )
 );
 
@@ -142,7 +142,7 @@ USING (
 -- Usuários podem ver apenas transações do seu cartão
 CREATE POLICY "Users can view their own transactions"
 ON transactions FOR SELECT
-USING (auth.uid() = (SELECT user_id FROM cards WHERE id = transactions.card_id));
+USING (auth.uid()::text = (SELECT user_id FROM cards WHERE id = transactions.card_id));
 
 -- Apenas service_role pode criar transações
 CREATE POLICY "Service role can manage transactions"

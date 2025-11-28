@@ -69,18 +69,16 @@ const requireAuth = async (req: Request) => {
   return user;
 };
 
-// ==================== CORS ====================
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-};
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 // ==================== MAIN FUNCTION ====================
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get('origin')
+  
   // Tratar OPTIONS (CORS preflight)
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
-      headers: corsHeaders,
+      headers: getCorsHeaders(origin),
       status: 200
     });
   }
@@ -93,10 +91,35 @@ Deno.serve(async (req: Request) => {
     }
     const user = authResult;
 
-    // 2. EXTRAIR DADOS DA REQUISIÇÃO
+    // 2. VERIFICAR PERMISSÃO PARA VENDER (encontrista NÃO pode vender)
+    const supabaseForRole = createSupabaseClient();
+    
+    const { data: appUser } = await supabaseForRole
+      .from('app_users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = (appUser?.role as string) || 'servico';
+
+    // Encontrista não pode fazer vendas
+    if (userRole === 'encontrista') {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Acesso negado: encontristas não podem realizar vendas'
+      }), {
+        status: 403,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    // 3. EXTRAIR DADOS DA REQUISIÇÃO
     const { cardId, items, category, coupon, discountedTotal } = await req.json();
 
-    // 3. VALIDAÇÕES BÁSICAS
+    // 4. VALIDAÇÕES BÁSICAS
     if (!cardId || !items || items.length === 0 || !category) {
       return new Response(JSON.stringify({
         success: false,
@@ -104,16 +127,16 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
     }
 
-    // 4. CRIAR CLIENTE SUPABASE
+    // 5. CRIAR CLIENTE SUPABASE
     const supabase = createSupabaseClient();
 
-    // 5. BUSCAR CARTÃO
+    // 6. BUSCAR CARTÃO
     const { data: card, error: cardError } = await supabase
       .from('cards')
       .select('id, balance, user_id, user_name')
@@ -128,13 +151,13 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 404,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
     }
 
-    // 6. VALIDAR PREÇOS DOS PRODUTOS
+    // 7. VALIDAR PREÇOS DOS PRODUTOS
     const productIds = items.map((item: any) => item.productId);
     const productsQuery = supabase
       .from('products')
@@ -152,7 +175,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -207,7 +230,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -232,7 +255,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 500,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -251,7 +274,7 @@ Deno.serve(async (req: Request) => {
             }), {
               status: 400,
               headers: {
-                ...corsHeaders,
+                ...getCorsHeaders(origin),
                 'Content-Type': 'application/json'
               }
             });
@@ -263,7 +286,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 400,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -284,7 +307,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 500,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -303,7 +326,7 @@ Deno.serve(async (req: Request) => {
             }), {
               status: 400,
               headers: {
-                ...corsHeaders,
+                ...getCorsHeaders(origin),
                 'Content-Type': 'application/json'
               }
             });
@@ -315,7 +338,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 400,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -331,13 +354,13 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
     }
 
-    // 8. CRIAR VENDA
+    // 9. CRIAR VENDA
     // sale_number é gerado automaticamente pelo trigger trg_set_sale_number no banco
     const { data: saleData, error: saleError } = await supabase
       .from('sales')
@@ -359,7 +382,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -367,7 +390,7 @@ Deno.serve(async (req: Request) => {
 
     const saleId = saleData.id;
 
-    // 9. CRIAR ITENS DA VENDA
+    // 10. CRIAR ITENS DA VENDA
     const saleItems = items.map((item: any) => ({
       sale_id: saleId,
       product_id: item.productId,
@@ -389,13 +412,13 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
     }
 
-    // 10. DIMINUIR ESTOQUE DOS PRODUTOS (otimizado - busca todos de uma vez)
+    // 11. DIMINUIR ESTOQUE DOS PRODUTOS (otimizado - busca todos de uma vez)
     const productsWithStock = items
       .map(item => {
         const product = products.find((p: any) => p.id === item.productId);
@@ -423,7 +446,7 @@ Deno.serve(async (req: Request) => {
         }), {
           status: 500,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(origin),
             'Content-Type': 'application/json'
           }
         });
@@ -442,7 +465,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 400,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -458,7 +481,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 400,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -495,14 +518,14 @@ Deno.serve(async (req: Request) => {
         }), {
           status: 500,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(origin),
             'Content-Type': 'application/json'
           }
         });
       }
     }
 
-    // 11. ATUALIZAR SALDO
+    // 12. ATUALIZAR SALDO
     const { error: balanceError } = await supabase
       .from('cards')
       .update({
@@ -520,13 +543,13 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
     }
 
-    // 12. CRIAR TRANSAÇÃO
+    // 13. CRIAR TRANSAÇÃO
     const { error: transactionError } = await supabase.from('transactions').insert({
       card_id: cardId,
       amount: -finalTotal,
@@ -539,7 +562,7 @@ Deno.serve(async (req: Request) => {
       // Não falhar a venda se a transação não for criada, apenas logar
     }
 
-    // 13. CRIAR PEDIDO SE FOR LOJINHA
+    // 14. CRIAR PEDIDO SE FOR LOJINHA
     if (category === 'lojinha') {
       // Buscar o último código de pedido para gerar o próximo
       const { data: lastOrder } = await supabase
@@ -577,7 +600,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 14. SUCESSO
+    // 15. SUCESSO
     return new Response(JSON.stringify({
       success: true,
       data: {

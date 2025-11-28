@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { Sale, useSupabaseData } from '../../contexts/SupabaseDataContext'
-
+import { Sale } from '../../contexts/SupabaseDataContext'
+import { api } from '../../lib/api-client'
 
 type ContextType = 'lojinha' | 'lanchonete'
 
@@ -9,71 +9,175 @@ const SalesHistoryPage: React.FC = () => {
   const location = useLocation()
   const navigate = useNavigate()
   
-  // TODOS OS HOOKS DEVEM SER CHAMADOS ANTES DE QUALQUER RETURN CONDICIONAL
-  const { getSales } = useSupabaseData()
   const [allSales, setAllSales] = useState<Sale[]>([])
   const [searchName, setSearchName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [totalSales, setTotalSales] = useState(0)
   const itemsPerPage = 20
 
   // Verificar se está na rota correta
   const isCorrectRoute = location.pathname.includes('/historico/lojinha') || location.pathname.includes('/historico/lanchonete')
   const context: ContextType = location.pathname.endsWith('/lojinha') ? 'lojinha' : 'lanchonete'
 
-  const loadSales = useCallback(async () => {
+  const loadSales = useCallback(async (page: number = 1) => {
     if (isLoading) return
     
     try {
       setIsLoading(true)
-        // Carregar até 200 vendas (10 páginas)
-        const fetchedSales = await getSales(context, 200)
-        setAllSales(fetchedSales)
-    } catch (error) {
+      // Usar api.listSales() com paginação server-side
+      const response = await api.listSales(context, undefined, page, itemsPerPage)
+      
+      if (!response.success) {
+        const errorMsg = (response as any).error || 'Erro ao carregar vendas'
+        console.error('Erro ao carregar vendas:', errorMsg)
+        setAllSales([])
+        setTotalSales(0)
+        
+        // Se for erro de permissão, mostrar mensagem mas não redirecionar
+        if (errorMsg.includes('Acesso negado') || errorMsg.includes('permissão') || errorMsg.includes('403')) {
+          console.warn('Sem permissão para ver histórico:', errorMsg)
+        }
+        return
+      }
+      
+      // Converter os dados da API (formato do banco) para o formato Sale esperado
+      const sales = (response.data || []).map((sale: any) => {
+        // Mapear items - pode vir como array ou objeto
+        let items = []
+        if (sale.sale_items) {
+          if (Array.isArray(sale.sale_items)) {
+            items = sale.sale_items.map((item: any) => ({
+              id: item.id,
+              productId: item.product_id || item.productId || '',
+              productName: item.product_name || item.productName || 'Produto sem nome',
+              quantity: item.quantity || 0,
+              price: parseFloat(item.price) || 0
+            }))
+          } else {
+            // Se não for array, tentar tratar como objeto único
+            items = [{
+              id: sale.sale_items.id,
+              productId: sale.sale_items.product_id || sale.sale_items.productId || '',
+              productName: sale.sale_items.product_name || sale.sale_items.productName || 'Produto sem nome',
+              quantity: sale.sale_items.quantity || 0,
+              price: parseFloat(sale.sale_items.price) || 0
+            }]
+          }
+        }
+        
+        // Debug: logar para ver o formato dos dados
+        if (items.length === 0 && sale.sale_items) {
+          console.warn('Sale sem items mapeados:', { sale_id: sale.id, sale_items: sale.sale_items })
+        }
+        
+        return {
+          id: sale.id,
+          userId: sale.card_id || sale.userId || '',
+          sellerId: sale.seller_id || sale.sellerId || '',
+          saleId: sale.sale_number?.toString() || sale.sale_id || sale.id,
+          category: sale.category || context,
+          items: items,
+          total: parseFloat(sale.total) || 0,
+          status: sale.status || 'completed',
+          createdAt: sale.created_at || sale.createdAt || null,
+          card: sale.cards ? (Array.isArray(sale.cards) ? (sale.cards[0] ? {
+            cardNumber: sale.cards[0].card_number || sale.cards[0].cardNumber,
+            userName: sale.cards[0].user_name || sale.cards[0].userName
+          } : null) : {
+            cardNumber: sale.cards.card_number || sale.cards.cardNumber,
+            userName: sale.cards.user_name || sale.cards.userName
+          }) : null,
+          seller: (sale.app_users && (Array.isArray(sale.app_users) ? sale.app_users[0] : sale.app_users)) || sale.seller ? {
+            id: sale.seller_id || (Array.isArray(sale.app_users) ? sale.app_users[0]?.id : sale.app_users?.id) || sale.seller?.id || '',
+            name: (Array.isArray(sale.app_users) ? sale.app_users[0]?.name : sale.app_users?.name) || sale.seller?.name || 'Vendedor',
+            email: (Array.isArray(sale.app_users) ? sale.app_users[0]?.email : sale.app_users?.email) || sale.seller?.email || ''
+          } : null
+        } as Sale
+      })
+      
+      // Atualizar total de vendas para paginação
+      if (response.total !== undefined) {
+        setTotalSales(response.total)
+      } else if (sales.length > 0) {
+        // Se não veio total mas há vendas, estimar baseado no que temos
+        // Isso evita mostrar "Nenhuma venda encontrada" quando há vendas na página
+        setTotalSales(Math.max(totalSales, (page - 1) * itemsPerPage + sales.length))
+      }
+      
+      console.log('Sales mapeadas:', sales.slice(0, 2)) // Debug: ver primeiras 2 vendas
+      setAllSales(sales)
+    } catch (error: any) {
       console.error('Erro ao carregar vendas:', error)
+      // Não quebrar a UI - apenas mostrar array vazio
+      setAllSales([])
+      
+      // Se for erro de permissão, mostrar mensagem mas não redirecionar
+      const errorMsg = error?.message || error?.error || ''
+      if (errorMsg.includes('Acesso negado') || errorMsg.includes('permissão') || errorMsg.includes('403')) {
+        console.warn('Sem permissão para ver histórico:', errorMsg)
+      }
     } finally {
       setIsLoading(false)
     }
-  }, [getSales, context])
+  }, [context, isLoading, itemsPerPage])
 
   useEffect(() => {
     // Só carregar vendas se estiver na rota correta
     if (isCorrectRoute) {
-      loadSales()
+      // Resetar para página 1 quando mudar de contexto
       setCurrentPage(1)
     }
-  }, [context, location.pathname, isCorrectRoute, loadSales])
+  }, [context, location.pathname, isCorrectRoute])
 
+  useEffect(() => {
+    // Carregar vendas quando a página mudar ou quando mudar de contexto
+    if (isCorrectRoute && currentPage > 0) {
+      loadSales(currentPage)
+    }
+  }, [currentPage, context, isCorrectRoute, loadSales])
+
+  // Filtrar por nome do cliente (filtro local na página atual)
   const filteredSales = useMemo(() => {
-    if (!searchName.trim()) return allSales
+    if (!searchName.trim()) {
+      return allSales
+    }
     return allSales.filter(sale =>
-      sale.card?.user_name?.toLowerCase().includes(searchName.toLowerCase())
+      sale.card?.userName?.toLowerCase().includes(searchName.toLowerCase())
     )
   }, [allSales, searchName])
 
-  // Paginação
-  const totalPages = Math.ceil(filteredSales.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedSales = filteredSales.slice(startIndex, startIndex + itemsPerPage)
+  // Paginação baseada no total do servidor
+  const totalPages = Math.ceil(totalSales / itemsPerPage)
+  const paginatedSales = filteredSales // Já vem paginado do servidor
   
-  const isEmpty = useMemo(() => allSales.length === 0, [allSales])
+  const isEmpty = useMemo(() => allSales.length === 0 && !isLoading, [allSales.length, isLoading]);
 
   const goToNextPage = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      setCurrentPage(prev => {
+        const nextPage = prev + 1
+        loadSales(nextPage)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return nextPage
+      })
     }
   }
 
   const goToPrevPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      setCurrentPage(prev => {
+        const prevPage = prev - 1
+        loadSales(prevPage)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return prevPage
+      })
     }
   }
 
   const goToPage = (page: number) => {
     setCurrentPage(page)
+    loadSales(page)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -147,8 +251,16 @@ const SalesHistoryPage: React.FC = () => {
           {/* Info de Paginação */}
           <div className="mb-6 text-center">
             <p className="text-sm text-gray-600">
-              Mostrando {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredSales.length)} de {filteredSales.length} vendas
-              {totalPages > 1 && ` • Página ${currentPage} de ${totalPages}`}
+              {allSales.length > 0 ? (
+                <>
+                  Mostrando {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalSales || (currentPage * itemsPerPage))} de {totalSales || '?'} vendas
+                  {totalPages > 1 && ` • Página ${currentPage} de ${totalPages}`}
+                </>
+              ) : isLoading ? (
+                'Carregando vendas...'
+              ) : (
+                'Nenhuma venda encontrada'
+              )}
             </p>
           </div>
 
@@ -161,18 +273,18 @@ const SalesHistoryPage: React.FC = () => {
                     <div className="flex items-center space-x-4 mb-3">
                       <h3 className="text-2xl font-bold text-black">Venda #{sale.saleId}</h3>
                     </div>
-                    <p className="text-base text-gray-700">
-                      Criado em: {sale.createdAt ? formatDate(sale.createdAt) : 'Data não disponível'}
+                    <p className="text-base text-gray-700 mb-2">
+                      📅 <span className="font-semibold">{sale.createdAt ? formatDate(sale.createdAt) : 'Data não disponível'}</span>
                     </p>
-                    {sale.card?.card_number && sale.card?.user_name && (
-                      <p className="text-base text-gray-700 mt-1">
-                        Cartão: <span className="font-semibold">{sale.card?.card_number}</span> • 
-                        Cliente: <span className="font-semibold">{sale.card?.user_name}</span>
+                    {sale.card?.cardNumber && sale.card?.userName && (
+                      <p className="text-base text-gray-700 mt-2">
+                        💳 Cartão: <span className="font-semibold">{sale.card.cardNumber}</span> • 
+                        👤 Cliente: <span className="font-semibold">{sale.card.userName}</span>
                       </p>
                     )}
                     {sale.seller?.name && (
                       <p className="text-base text-gray-700 mt-1">
-                        Vendedor: <span className="font-semibold">{sale.seller.name}</span>
+                        🏪 Vendedor: <span className="font-semibold">{sale.seller.name}</span>
                       </p>
                     )}
                   </div>
@@ -200,19 +312,23 @@ const SalesHistoryPage: React.FC = () => {
                 <div className="mb-5">
                   <h4 className="text-lg font-bold text-black mb-3">🛍️ Produtos:</h4>
                   <div className="bg-gray-50 rounded-lg p-5 border-2 border-gray-200">
-                    <div className="space-y-3">
-                      {sale.items?.map((item, index) => (
-                        <div key={item.productId || index} className="flex justify-between items-center py-2 border-b border-gray-300 last:border-b-0">
-                          <div>
-                            <span className="text-base font-semibold text-gray-900">{item.productName}</span>
-                            <span className="text-base text-gray-700 ml-3">x{item.quantity}</span>
+                    {sale.items && sale.items.length > 0 ? (
+                      <div className="space-y-3">
+                        {sale.items.map((item, index) => (
+                          <div key={item.productId || item.id || index} className="flex justify-between items-center py-2 border-b border-gray-300 last:border-b-0">
+                            <div>
+                              <span className="text-base font-semibold text-gray-900">{item.productName || 'Produto sem nome'}</span>
+                              <span className="text-base text-gray-700 ml-3">x{item.quantity || 0}</span>
+                            </div>
+                            <span className="text-lg font-bold text-gray-900">
+                              R$ {formatPrice((item.price || 0) * (item.quantity || 0))}
+                            </span>
                           </div>
-                          <span className="text-lg font-bold text-gray-900">
-                            R$ {formatPrice(item.price * item.quantity)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic">Nenhum item encontrado nesta venda</p>
+                    )}
                   </div>
                 </div>
               </div>

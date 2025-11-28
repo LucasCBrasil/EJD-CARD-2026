@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { sapatinhoVelozApi } from '../../api/sapatinho-veloz.api'
+import { api } from '../../lib/api-client'
 import { SapatinhoVelozOrder } from '../../types'
-import { supabase } from '../../lib/supabase'
 
 const SapatinhoSalesHistoryPage: React.FC = () => {
   const [allOrders, setAllOrders] = useState<SapatinhoVelozOrder[]>([])
@@ -17,57 +16,60 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
   const loadOrders = async () => {
     try {
       setIsLoading(true)
-      // Carregar todos os pedidos (incluindo entregues)
-      const fetchedOrders = await sapatinhoVelozApi.getAll()
+      // Carregar todos os pedidos (incluindo entregues) via Edge Function
+      const response = await api.listOrders('sapatinho')
       
-      // ✅ OTIMIZAÇÃO: Buscar todos os cards de uma vez (evita N+1 queries)
-      const userIdsNeedingCards = fetchedOrders
-        .filter(order => !order.senderName && order.senderUserId)
-        .map(order => order.senderUserId)
-        .filter((id, index, self) => self.indexOf(id) === index) // Remove duplicatas
-      
-      let cardsMap = new Map<string, string>()
-      
-      if (userIdsNeedingCards.length > 0) {
-        const { data: cards, error: cardsError } = await supabase
-          .from('cards')
-          .select('user_id, user_name')
-          .in('user_id', userIdsNeedingCards)
-        
-        if (!cardsError && cards) {
-          cards.forEach(card => {
-            if (card.user_name) {
-              cardsMap.set(card.user_id, card.user_name)
-            }
-          })
+      if (!response.success) {
+        // Não quebrar a UI se não autenticado - apenas logar e mostrar array vazio
+        const errorMsg = (response as any).error || 'Erro ao carregar pedidos'
+        if (errorMsg.includes('Não autenticado') || errorMsg.includes('autenticado') || errorMsg.includes('Unauthorized')) {
+          console.warn('Não autenticado - pedidos não serão carregados')
+          setAllOrders([])
+          setIsLoading(false)
+          return
         }
+        throw new Error(errorMsg)
       }
-      
-      // Processar pedidos com os cards já carregados
-      const ordersWithSenders = fetchedOrders.map((order) => {
-        let senderName = order.senderName
-        let isAnonymous = false
+
+      // Transformar dados da Edge Function para o formato esperado
+      const ordersWithSenders = (response.data || []).map((order: any) => {
+        // A Edge Function já retorna os dados formatados
+        const senderName = order.sender_name || null
+        const isAnonymous = !order.sender_name && order.sender_user_id !== null
         
-        // Se não tem sender_name, buscar do map de cards
-        if (!senderName && order.senderUserId) {
-          senderName = cardsMap.get(order.senderUserId) || null
-        }
-        
-        // Verificar se é anônimo (sender_name null)
-        if (!order.senderName) {
-          isAnonymous = true
-        }
+        const mappedItems = (order.sapatinho_veloz_order_items || []).map((item: any) => ({
+          id: item.id,
+          orderId: item.order_id,
+          productId: item.product_id,
+          productName: item.product_name,
+          quantity: item.quantity,
+          price: parseFloat(item.price) || 0,
+          createdAt: item.created_at
+        }))
         
         return {
-          ...order,
-          senderName: senderName || null,
+          id: order.id,
+          saleId: order.sale_id,
+          senderUserId: order.sender_user_id,
+          senderName: senderName,
+          senderTeam: order.sender_team || null,
+          recipientName: order.recipient_name,
+          recipientAddress: order.recipient_address,
+          message: order.message || null,
+          items: mappedItems,
+          total: parseFloat(order.total) || 0,
+          status: order.status,
+          createdAt: order.created_at,
+          deliveredAt: order.delivered_at || null,
           isAnonymous
-        }
+        } as SapatinhoVelozOrder
       })
       
       setAllOrders(ordersWithSenders)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar pedidos:', error)
+      // Não quebrar a UI se houver erro
+      setAllOrders([])
     } finally {
       setIsLoading(false)
     }

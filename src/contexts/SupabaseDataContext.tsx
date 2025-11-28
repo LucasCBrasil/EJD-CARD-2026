@@ -27,7 +27,6 @@ export interface SaleItem {
   id?: string | null
   productId: string
   productName: string
-  product_name?: string
   quantity: number
   price: number
   image?: string | null
@@ -38,16 +37,14 @@ export interface Sale {
   userId: string
   sellerId: string
   saleId?: string
-  sale_id?: string
   category: 'lojinha' | 'lanchonete' | 'sapatinho'
   items: SaleItem[]
   total: number
   status: 'completed' | 'delivered'
   createdAt: string
-  created_at?: string
   card?: {
-    card_number?: string
-    user_name?: string
+    cardNumber?: string
+    userName?: string
   }
   seller?: {
     id: string
@@ -58,7 +55,8 @@ export interface Sale {
 
 export interface Order {
   id: string
-  saleId: string
+  saleId: string,
+  saleNumber: string,
   orderCode?: string
   sale?: any
   userId: string
@@ -68,18 +66,14 @@ export interface Order {
   total: number
   status: 'pending' | 'completed' | 'delivered'
   createdAt: string
-  created_at?: string
   deliveredAt?: string
 }
 
 export interface Card {
   id: string
   userId: string
-  user_id?: string
   userName: string
-  user_name?: string
   cardNumber: string
-  card_number?: string
   phoneNumber: string
   balance: number
   createdAt: string
@@ -115,7 +109,8 @@ interface SupabaseDataContextType {
   getProducts: (category: 'lojinha' | 'lanchonete') => Product[]
   
   // Funções de vendas
-  makeSale: (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => Promise<string>
+  // cardIdOrUserId: pode ser cardId (string UUID) ou userId (para buscar o cartão do usuário)
+  makeSale: (cardIdOrUserId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => Promise<string>
   getSales: (category?: 'lojinha' | 'lanchonete' | 'sapatinho', limit?: number) => Promise<Sale[]>
   getSalesByCardId: (cardId: string, limit?: number) => Promise<Sale[]>
   
@@ -175,57 +170,72 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     loadData()
   }, [])
 
+  // ⚠️ DEPRECATED: loadData ainda faz queries diretas - idealmente deveria usar Edge Functions
+  // Mantido para compatibilidade, mas carrega apenas dados básicos
+  // Dados completos devem ser carregados via getSales(), getOpenOrders(), etc. (que usam Edge Functions)
   const loadData = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      // Carregar apenas dados essenciais no início (cards e produtos)
-      // Vendas, transações e pedidos serão carregados sob demanda
+      // ⚠️ NOTA: Esta função ainda usa queries diretas para compatibilidade
+      // Idealmente deveria usar Edge Functions, mas isso quebraria código legado
+      // Dados críticos (sales, orders, transactions) já são carregados via Edge Functions em outros métodos
       
-      // Carregar cartões
-      const { data: cards, error: cardsError } = await supabase
-        .from('cards')
-        .select('*')
-        .order('created_at', { ascending: false })
+      // Carregar apenas dados básicos (cards e produtos) - exposição limitada
+      // Para dados sensíveis, use os métodos específicos que usam Edge Functions
+      const { api } = await import('../lib/api-client')
+      
+      // Carregar cartões via Edge Function
+      const cardsResponse = await api.listCards()
+      if (!cardsResponse.success) throw new Error((cardsResponse as any).error || 'Erro ao carregar cartões')
+      const cards = cardsResponse.data || []
 
-      if (cardsError) throw cardsError
-
-      // Carregar produtos
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-
-      if (productsError) throw productsError
-
-      // Carregar cupons
-      const { data: coupons, error: couponsError } = await supabase
-        .from('coupons')
-        .select('name')
-        .order('created_at', { ascending: false })
-
-      if (couponsError) throw couponsError
+      // Carregar produtos via Edge Function (apenas lojinha e lanchonete para compatibilidade)
+      const [lojinhaResponse, lanchoneteResponse] = await Promise.all([
+        api.listProducts('lojinha').catch(() => ({ success: false, data: [] })),
+        api.listProducts('lanchonete').catch(() => ({ success: false, data: [] }))
+      ])
+      
+      const lojinhaProducts = lojinhaResponse.success ? lojinhaResponse.data || [] : []
+      const lanchoneteProducts = lanchoneteResponse.success ? lanchoneteResponse.data || [] : []
 
       // Processar apenas dados essenciais carregados
       const balances = new Map<string, { balance: number; transactions: Transaction[] }>()
       
       // Inicializar saldos dos cartões
-      cards?.forEach(card => {
+      cards.forEach((card: any) => {
         if (!balances.has(card.id)) {
-          balances.set(card.id, { balance: card.balance || 0, transactions: [] })
+          balances.set(card.id, { balance: parseFloat(card.balance) || 0, transactions: [] })
         }
       })
 
       // Processar produtos
       const productsByCategory = {
-        lojinha: products?.filter(p => p.category === 'lojinha') || [],
-        lanchonete: products?.filter(p => p.category === 'lanchonete') || []
+        lojinha: lojinhaProducts.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: parseFloat(p.price) || 0,
+          category: 'lojinha',
+          description: p.description,
+          stock: p.stock || 0,
+          active: p.active !== false,
+          createdAt: p.created_at,
+        })),
+        lanchonete: lanchoneteProducts.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: parseFloat(p.price) || 0,
+          category: 'lanchonete',
+          description: p.description,
+          stock: p.stock || 0,
+          active: p.active !== false,
+          createdAt: p.created_at,
+        }))
       }
 
-      // Mapear cartões do formato Supabase (snake_case) para formato Card (camelCase)
-      const mappedCards: Card[] = (cards || []).map((card: any) => ({
+      // Mapear cartões
+      const mappedCards: Card[] = cards.map((card: any) => ({
         id: card.id,
         userId: card.user_id || '',
         userName: card.user_name || '',
@@ -236,13 +246,15 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         updatedAt: card.updated_at || ''
       }))
 
+      // Cupons ainda precisam ser carregados (não temos Edge Function ainda)
+      // Por enquanto retornar array vazio - cupons devem ser carregados via getCoupons()
       setData({
         balances,
-        products: productsByCategory,
-        sales: [], // Será carregado sob demanda via getSales()
-        orders: [], // Será carregado sob demanda via getOpenOrders()
+        products: productsByCategory as { lojinha: Product[]; lanchonete: Product[] },
+        sales: [], // Será carregado sob demanda via getSales() (Edge Function)
+        orders: [], // Será carregado sob demanda via getOpenOrders() (Edge Function)
         cards: mappedCards,
-        coupons: coupons?.map(c => c.name) || []
+        coupons: [] // Será carregado sob demanda via getCoupons()
       })
 
     } catch (err) {
@@ -253,41 +265,30 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     }
   }
 
-  // Funções de saldo
+  // ✅ Agora usa Edge Function via api-client
   const addBalance = async (userId: string, amount: number, description: string, createdBy?: string) => {
     try {
-      // Buscar cartão do usuário
-      const { data: card, error: cardError } = await supabase
-        .from('cards')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
+      // Buscar cartão do usuário primeiro
+      const { api } = await import('../lib/api-client')
+      const cardResponse = await api.getCardByUserId(userId)
+      
+      if (!cardResponse.success || !cardResponse.data) {
+        throw new Error('Cartão não encontrado')
+      }
 
-      if (cardError) throw cardError
+      const card = cardResponse.data
 
-      // Criar transação
-      const { error: transactionError } = await supabase
-        .from('transactions')
-        .insert({
-          card_id: card.id,
-          amount,
-          type: amount > 0 ? 'credit' : 'debit',
-          description,
-          created_by: createdBy
-        })
+      // Usar Edge Function para atualizar saldo (seguro!)
+      const response = await api.updateBalance({
+        action: amount > 0 ? 'credit' : 'debit',
+        cardId: card.id,
+        amount: Math.abs(amount),
+        description: description || (amount > 0 ? 'Crédito' : 'Débito'),
+      })
 
-      if (transactionError) throw transactionError
-
-      // Atualizar saldo do cartão
-      const { error: balanceError } = await supabase
-        .from('cards')
-        .update({
-          balance: card.balance - amount, // TODO: Implementar incremento correto
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', card.id)
-
-      if (balanceError) throw balanceError
+      if (!response.success) {
+        throw new Error((response as any).error || 'Erro ao atualizar saldo')
+      }
 
       // Recarregar dados
       await loadData()
@@ -312,7 +313,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   const addProduct = async (product: Omit<Product, 'id' | 'createdAt'>) => {
     try {
       // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
-      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+      const { data: response, error } = await (supabase.functions.invoke as any)('manage-products', {
         method: 'POST',
         body: {
           name: product.name,
@@ -325,16 +326,40 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
       if (error) {
         console.error('Edge function error:', error)
-        throw new Error(error.message || 'Erro ao adicionar produto')
+        
+        // Verificar se é erro de timeout
+        const isTimeout = (error as any).message?.includes('timeout') || 
+                         (error as any).message?.includes('aborted') || 
+                         (error as any).name === 'AbortError' ||
+                         (error as any).message?.includes('network') ||
+                         (error as any).message?.includes('fetch')
+        
+        if (isTimeout) {
+          throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+        }
+        
+        throw new Error((error as any).message || 'Erro ao adicionar produto')
       }
 
       if (!response?.success) {
-        throw new Error(response?.error || 'Erro ao adicionar produto')
+        throw new Error((response as any)?.error || 'Erro ao adicionar produto')
       }
 
       await loadData()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao adicionar produto:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -342,7 +367,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
       // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
-      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+      const { data: response, error } = await (supabase.functions.invoke as any)('manage-products', {
         method: 'PUT',
         body: {
           id,
@@ -352,16 +377,40 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
       if (error) {
         console.error('Edge function error:', error)
-        throw new Error(error.message || 'Erro ao atualizar produto')
+        
+        // Verificar se é erro de timeout
+        const isTimeout = (error as any).message?.includes('timeout') || 
+                         (error as any).message?.includes('aborted') || 
+                         (error as any).name === 'AbortError' ||
+                         (error as any).message?.includes('network') ||
+                         (error as any).message?.includes('fetch')
+        
+        if (isTimeout) {
+          throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+        }
+        
+        throw new Error((error as any).message || 'Erro ao atualizar produto')
       }
 
       if (!response?.success) {
-        throw new Error(response?.error || 'Erro ao atualizar produto')
+        throw new Error((response as any)?.error || 'Erro ao atualizar produto')
       }
 
       await loadData()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao atualizar produto:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -369,23 +418,47 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   const deleteProduct = async (id: string) => {
     try {
       // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
-      const { data: response, error } = await supabase.functions.invoke('manage-products', {
+      const { data: response, error } = await (supabase.functions.invoke as any)('manage-products', {
         method: 'DELETE',
         body: { id }
       })
 
       if (error) {
         console.error('Edge function error:', error)
-        throw new Error(error.message || 'Erro ao deletar produto')
+        
+        // Verificar se é erro de timeout
+        const isTimeout = (error as any).message?.includes('timeout') || 
+                         (error as any).message?.includes('aborted') || 
+                         (error as any).name === 'AbortError' ||
+                         (error as any).message?.includes('network') ||
+                         (error as any).message?.includes('fetch')
+        
+        if (isTimeout) {
+          throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+        }
+        
+        throw new Error((error as any).message || 'Erro ao deletar produto')
       }
 
       if (!response?.success) {
-        throw new Error(response?.error || 'Erro ao deletar produto')
+        throw new Error((response as any)?.error || 'Erro ao deletar produto')
       }
 
       await loadData()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao deletar produto:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -394,13 +467,52 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     return data.products[category].filter(p => p.active)
   }
 
-  // Funções de vendas
-  const makeSale = async (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
-    // ✅ AGORA USA EDGE FUNCTION (SEGURO!)
-    // Chama função na nuvem que valida tudo antes de criar a venda
-    const { data: response, error } = await supabase.functions.invoke('make-sale', {
-      body: {
-        cardId: userId,
+  // ✅ Agora usa Edge Function via api-client
+  // cardIdOrUserId: pode ser cardId (string UUID) ou userId (para buscar o cartão do usuário)
+  const makeSale = async (cardIdOrUserId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
+    console.log('cardIdOrUserId:', cardIdOrUserId);
+    console.log('items:', items);
+    console.log('category:', category);
+    
+    // VALIDAÇÕES BÁSICAS
+    if (!cardIdOrUserId) {
+      throw new Error('Cartão não informado')
+    }
+    
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      throw new Error('Nenhum item selecionado para venda')
+    }
+    
+    if (!category) {
+      throw new Error('Categoria não informada')
+    }
+    
+    try {
+      const { api } = await import('../lib/api-client')
+      
+      // Verificar se é um cardId (UUID) ou userId
+      // UUIDs têm formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 caracteres)
+      const isCardId = cardIdOrUserId && cardIdOrUserId.length === 36 && cardIdOrUserId.includes('-')
+      
+      let cardId: string
+      
+      if (isCardId) {
+        // É um cardId, usar diretamente
+        cardId = cardIdOrUserId
+      } else {
+        // É um userId, buscar o cartão do usuário
+        const cardResponse = await api.getCardByUserId(cardIdOrUserId)
+        
+        if (!cardResponse.success || !cardResponse.data) {
+          throw new Error('Cartão não encontrado')
+        }
+        
+        cardId = cardResponse.data.id
+      }
+
+      // Chamar Edge Function para fazer venda
+      const response = await api.createSale({
+        cardId: cardId,
         items: items.map(item => ({
           productId: item.productId,
           productName: item.productName,
@@ -408,254 +520,106 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
           price: item.price
         })),
         category,
-        coupon,
-        discountedTotal
-      }
-    })
+        coupon: coupon || undefined,
+        discountedTotal: discountedTotal || undefined
+      })
 
-    if (error) {
-      console.error('Edge function error:', error)
-      throw new Error(error.message || 'Erro ao criar venda')
+      if (!response.success) throw new Error((response as any).error || 'Erro ao criar venda')
+
+      await loadData()
+      return response.data.saleId || ''
+    } catch (err: any) {
+      console.error('Erro ao fazer venda:', err)
+      throw err
     }
-
-    if (!response?.success) {
-      throw new Error(response?.error || 'Erro ao criar venda')
-    }
-
-    // Recarregar dados após venda
-    await loadData()
-
-    // Retornar ID da venda criada
-    return response.data.saleId
   }
 
+  // ⚠️ DEPRECATED: Use api.listSales() do api-client.ts em vez disso
+  // Mantido apenas para compatibilidade com código legado
   const getSales = async (category?: 'lojinha' | 'lanchonete' | 'sapatinho', limit: number = 100): Promise<Sale[]> => {
-    if (category) {
-      // Para sapatinho, usar tabelas diferentes COM JOINs (evita N+1)
-      if (category === 'sapatinho') {
-        const { data: salesData, error: salesError } = await supabase
-          .from('sapatinho_sales')
-          .select(`
-            *,
-            card: cards!sapatinho_sales_card_id_fkey (
-              id,
-              card_number,
-              user_name
-            ),
-            items: sapatinho_sale_items (
-              id,
-              product_id,
-              product_name,
-              quantity,
-              price
-            ),
-            order: sapatinho_veloz_orders!sapatinho_veloz_orders_sale_id_fkey (
-              message,
-              sender_name,
-              sender_team,
-              recipient_name,
-              recipient_address
-            )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(limit)
-        
-        if (salesError) {
-          console.error('Erro ao buscar vendas do sapatinho:', salesError)
-          throw salesError
-        }
-        
-        // Processar dados já carregados em 1 query
-        const salesWithDetails = (salesData || []).map((sale: any) => ({
-          ...sale,
-          sale_id: sale.id,
-          category: 'sapatinho',
-          card: sale.card || null,
-          items: (sale.items || []).map((item: any) => ({
-            id: item.id,
-            productId: item.product_id,
-            productName: item.product_name,
-            product_name: item.product_name,
-            quantity: item.quantity,
-            price: parseFloat(item.price) || 0
-          })),
-          message: sale.order?.message || null,
-          senderName: sale.order?.sender_name || null,
-          senderTeam: sale.order?.sender_team || null,
-          recipientName: sale.order?.recipient_name || null,
-          recipientAddress: sale.order?.recipient_address || null,
-          seller: {
-            id: sale.seller_id,
-            name: sale.seller_id,
-            email: ''
-          }
-        }))
-        
-        return salesWithDetails
-      }
-      
-      // Para lojinha e lanchonete, usar tabela sales normal COM JOIN de seller (evita N+1)
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select(`
-          *,
-          card: cards!sales_card_id_fkey (
-            id,
-            card_number,
-            user_name
-          ),
-          items: sale_items (
-            id,
-            product_id,
-            product_name,
-            quantity,
-            price
-          ),
-          seller: app_users!sales_seller_id_fkey (
-            id,
-            name,
-            email
-          )
-        `)
-        .eq('category', category)
-        .order('created_at', { ascending: false })
-        .limit(limit)
-      
-      if (salesError) {
-        console.error('Erro ao buscar vendas:', salesError)
-        throw salesError
-      }
-      
-      // Processar dados já carregados em 1 query (sem N+1!)
-      const processedSales = (salesData || []).map((sale: any) => ({
-        id: sale.id,
-        userId: sale.user_id,
-        sellerId: sale.seller_id,
-        saleId: sale.sale_number,
-        category: sale.category,
-        items: (sale.items || []).map((item: any) => ({
-          productId: item.product_id || '',
-          productName: item.product_name,
-          quantity: item.quantity,
-          price: parseFloat(item.price) || 0
-        })),
-        total: parseFloat(sale.total) || 0,
-        status: sale.status,
-        createdAt: sale.created_at,
-        card: sale.card || null,
-        seller: sale.seller ? {
-          id: sale.seller.id,
-          name: sale.seller.name || sale.seller.email || 'Vendedor',
-          email: sale.seller.email || ''
-        } : undefined
-      }))
-      
-      return processedSales
-    }
+    console.warn('⚠️ SupabaseDataContext.getSales() está DEPRECATED. Use api.listSales() do api-client.ts')
     
-    // Se não especificou categoria, retornar vazio (não carregar tudo)
-    console.warn('getSales() chamado sem categoria - retornando array vazio')
-    return []
-  }
-
-  // Buscar vendas de um cartão específico (todas as categorias)
-  const getSalesByCardId = async (cardId: string, limit: number = 50): Promise<Sale[]> => {
     try {
-      const allSales: Sale[] = []
+      const { api } = await import('../lib/api-client')
+      const response = await api.listSales(category)
+      
+      if (!response.success) {
+        const errorMsg = (response as any).error || 'Erro ao buscar vendas'
+        console.warn('Erro ao buscar vendas:', errorMsg)
+        // Retornar array vazio ao invés de lançar erro - não quebrar a UI
+        return []
+      }
 
-      // Buscar vendas normais (lojinha e lanchonete)
-      const { data: regularSales, error: regularError } = await supabase
-        .from('sales')
-        .select(`
-          *,
-          card: cards!sales_card_id_fkey (
-            id,
-            card_number,
-            user_name
-          ),
-          items: sale_items (
-            id,
-            product_id,
-            product_name,
-            quantity,
-            price
-          )
-        `)
-        .eq('card_id', cardId)
-        .order('created_at', { ascending: false })
-        .limit(limit)
-
-      if (regularError) throw regularError
-
-      // Processar vendas normais
-      if (regularSales) {
-        allSales.push(...regularSales.map((sale: any) => ({
+      // Transformar dados da Edge Function para o formato esperado
+      const sales = (response.data || []).slice(0, limit).map((sale: any) => {
+        // Mapear formato da Edge Function para formato esperado
+        return {
           id: sale.id,
           userId: sale.card_id,
           sellerId: sale.seller_id,
-          category: sale.category,
-          items: (sale.items || []).map((item: any) => ({
+          saleId: sale.sale_number || sale.id,
+          category: sale.category || category || 'lojinha',
+          items: ((sale.sale_items || sale.sapatinho_sale_items) || []).map((item: any) => ({
+            id: item.id,
             productId: item.product_id || '',
             productName: item.product_name,
             quantity: item.quantity,
-            price: item.price
+            price: parseFloat(item.price) || 0
           })),
-          total: sale.total,
+          total: parseFloat(sale.total) || 0,
           status: sale.status,
           createdAt: sale.created_at,
-          card: sale.card
-        })))
+          card: sale.cards || null,
+        } as Sale
+      })
+      
+      return sales
+    } catch (error) {
+      console.error('Erro ao buscar vendas:', error)
+      // Retornar array vazio ao invés de lançar erro - não quebrar a UI
+      return []
+    }
+  }
+
+  // ⚠️ DEPRECATED: Use api.listSales(undefined, cardId) do api-client.ts em vez disso
+  // Mantido apenas para compatibilidade com código legado
+  const getSalesByCardId = async (cardId: string, limit: number = 50): Promise<Sale[]> => {
+    console.warn('⚠️ SupabaseDataContext.getSalesByCardId() está DEPRECATED. Use api.listSales(undefined, cardId) do api-client.ts')
+    
+    try {
+      const { api } = await import('../lib/api-client')
+      const response = await api.listSales(undefined, cardId)
+      
+      if (!response.success) {
+        throw new Error((response as any).error || 'Erro ao buscar vendas')
       }
 
-      // Buscar vendas do sapatinho veloz
-      const { data: sapatinhoSales, error: sapatinhoError } = await supabase
-        .from('sapatinho_sales')
-        .select(`
-          *,
-          card: cards!sapatinho_sales_card_id_fkey (
-            id,
-            card_number,
-            user_name
-          ),
-          items: sapatinho_sale_items (
-            id,
-            product_id,
-            product_name,
-            quantity,
-            price
-          )
-        `)
-        .eq('card_id', cardId)
-        .order('created_at', { ascending: false })
-        .limit(limit)
-
-      if (sapatinhoError) throw sapatinhoError
-
-      // Processar vendas do sapatinho
-      if (sapatinhoSales) {
-        allSales.push(...sapatinhoSales.map((sale: any) => ({
+      // Transformar e ordenar
+      const sales = (response.data || [])
+        .slice(0, limit)
+        .sort((a: any, b: any) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+        .map((sale: any) => ({
           id: sale.id,
           userId: sale.card_id,
           sellerId: sale.seller_id,
-          category: 'sapatinho' as const,
-          items: (sale.items || []).map((item: any) => ({
-            productId: item.product_id,
+          saleId: sale.sale_number || sale.id,
+          category: sale.category || 'lojinha',
+          items: ((sale.sale_items || sale.sapatinho_sale_items) || []).map((item: any) => ({
+            id: item.id,
+            productId: item.product_id || '',
             productName: item.product_name,
             quantity: item.quantity,
             price: parseFloat(item.price) || 0
           })),
-          total: sale.total,
+          total: parseFloat(sale.total) || 0,
           status: sale.status,
           createdAt: sale.created_at,
-          card: sale.card
-        })))
-      }
-
-      // Ordenar todas as vendas por data (mais recentes primeiro)
-      return allSales.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ).slice(0, limit)
-
+          card: sale.card || null,
+        } as Sale))
+      
+      return sales
     } catch (error) {
       console.error('Erro ao buscar vendas do cartão:', error)
       return []
@@ -664,105 +628,46 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   // Funções de pedidos
   // Função helper para gerar código sequencial de pedido
-  const generateOrderCode = async (): Promise<string> => {
-    try {
-      // Buscar o último código de pedido
-      const { data: lastOrder, error } = await supabase
-        .from('orders')
-        .select('order_code')
-        .not('order_code', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+  // ⚠️ REMOVIDO: generateOrderCode() - A geração de código agora é feita pela Edge Function make-sale
+  // Este método não é mais usado
 
-      let nextNumber = 1
-      
-      if (!error && lastOrder?.order_code) {
-        // Extrair o número do último código (ex: "00001" -> 1)
-        const lastNumber = parseInt(lastOrder.order_code, 10)
-        if (!isNaN(lastNumber)) {
-          nextNumber = lastNumber + 1
-        }
-      }
-
-      // Formatar como 5 dígitos com zeros à esquerda
-      return nextNumber.toString().padStart(5, '0')
-    } catch (err) {
-      console.error('Error generating order code:', err)
-      // Fallback: usar timestamp se houver erro
-      return Date.now().toString().slice(-5)
-    }
-  }
-
+ // ⚠️ DEPRECATED: Use api.getOpenOrders() ou api.listOrders('lojinha') do api-client.ts em vez disso
+ // Mantido apenas para compatibilidade com código legado
  const getOpenOrders = async (): Promise<Order[]> => {
+  console.warn('⚠️ SupabaseDataContext.getOpenOrders() está DEPRECATED. Use api.getOpenOrders() ou api.listOrders() do api-client.ts')
+  
   try {
-    // Buscar vendas da lojinha com status 'completed' (ainda não entregues)
-    const { data: salesData, error: salesError } = await supabase
-      .from('sales')
-      .select(`
-        *,
-        card: cards!sales_card_id_fkey (
-          id,
-          user_name,
-          card_number
-        )
-      `)
-      .eq('category', 'lojinha')
-      .eq('status', 'completed')
-      .order('created_at', { ascending: false })
-
-    if (salesError) {
-      console.error('Erro ao buscar pedidos pendentes:', salesError)
-      throw salesError
-    }
+    const { api } = await import('../lib/api-client')
+    const response = await api.listSales('lojinha')
+    console.log(response)
     
-    if (!salesData || salesData.length === 0) {
-      return []
+    if (!response.success) {
+      throw new Error((response as any).error || 'Erro ao buscar pedidos')
     }
-    
-    // Buscar itens e formatar pedidos
-    const formattedOrders = await Promise.all((salesData || []).map(async (sale: any) => {
-      // Buscar itens da venda
-      const { data: saleItems, error: itemsError } = await supabase
-        .from('sale_items')
-        .select('*')
-        .eq('sale_id', sale.id)
-      
-      if (itemsError) {
-        console.error(`Erro ao buscar itens da venda ${sale.id}:`, itemsError)
-      }
-      
-      const items = (!itemsError && saleItems) ? saleItems.map((item: any) => ({
-        productId: item.product_id,
-        productName: item.product_name,
-        quantity: item.quantity,
-        price: parseFloat(item.price) || 0
-      })) : []
 
-      // Buscar código do pedido na tabela orders (se existir)
-      const { data: orderData } = await supabase
-        .from('orders')
-        .select('order_code, delivered_at')
-        .eq('sale_id', sale.id)
-        .maybeSingle()
-
-      const customerName = sale.card?.user_name || 'Cliente'
-
-      return {
-        id: sale.id,
-        saleId: sale.sale_number,
-        orderCode: orderData?.order_code || null,
-        userId: sale.card_id,
-        customerName: customerName,
-        items: items,
-        total: parseFloat(sale.total) || 0,
+    // Filtrar apenas pedidos completos (não entregues) e formatar
+    const orders = (response.data || [])
+      .filter((order: any) => order.status === 'completed')
+      .map((order: any) => ({
+        id: order.id,
+        saleId: order.sale_id || order.id,
+        saleNumber: order.sale_number,
+        orderCode: order.order_code || null,
+        userId: order.card_id,
+        customerName: order.cards.user_name || 'Cliente',
+        items: (order.sale_items || []).map((item: any) => ({
+          productId: item.product_id,
+          productName: item.product_name,
+          quantity: item.quantity,
+          price: parseFloat(item.price) || 0
+        })),
+        total: parseFloat(order.total) || 0,
         status: 'completed' as const,
-        createdAt: sale.created_at,
-        deliveredAt: orderData?.delivered_at || null
-      }
-    }))
+        createdAt: order.created_at,
+        deliveredAt: order.delivered_at || null
+      } as Order))
 
-    return formattedOrders
+    return orders
 
   } catch (err) {
     console.error('Error in getOpenOrders:', err)
@@ -770,23 +675,29 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   }
 }
 
+  // ✅ Agora usa Edge Function via api-client
   const markAsDelivered = async (orderId: string) => {
     try {
-      // orderId é o ID da venda na tabela sales
-      // Atualizar status da venda para 'delivered'
-      const { data: updated, error: updateSaleError } = await supabase.functions.invoke('mark-sale-delivered', {
-        body: {
-          saleId: orderId,
-        }
-      })
-      if (updateSaleError) {
-        console.error('Erro ao atualizar venda:', updateSaleError)
-        throw updateSaleError
-      }
+      const { api } = await import('../lib/api-client')
+      const response = await api.markOrderAsDelivered(orderId)
+
+      if (!response.success) throw new Error((response as any).error || 'Erro ao marcar como entregue')
 
       await loadData()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao marcar como entregue:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -796,173 +707,167 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     return data.cards.find(c => c.userId === userId) || null
   }
 
+  // ✅ Agora usa Edge Function via api-client
   const createCard = async (params: { name: string; cardNumber: string; cardCode: string; phoneNumber: string; initialBalance?: number }): Promise<Card> => {
     try {
-      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins/comunicacao!)
-      const { data: response, error } = await supabase.functions.invoke('update-balance', {
-        body: {
-          action: 'create',
-          name: params.name,
-          cardNumber: params.cardNumber,
-          cardCode: params.cardCode,
-          phoneNumber: params.phoneNumber,
-          initialBalance: params.initialBalance || 0,
-          description: params.initialBalance ? `Saldo inicial de R$ ${params.initialBalance.toFixed(2)}` : undefined
-        }
+      const { api } = await import('../lib/api-client')
+      const response = await api.updateBalance({
+        action: 'create',
+        name: params.name,
+        cardNumber: params.cardNumber,
+        cardCode: params.cardCode,
+        phoneNumber: params.phoneNumber,
+        initialBalance: params.initialBalance || 0,
+        description: params.initialBalance ? `Saldo inicial de R$ ${params.initialBalance.toFixed(2)}` : undefined
       })
 
-      if (error) {
-        console.error('Edge function error:', error)
-        throw new Error(error.message || 'Erro ao criar cartão')
-      }
-
-      if (!response?.success) {
-        throw new Error(response?.error || 'Erro ao criar cartão')
+      if (!response.success) {
+        throw new Error((response as any).error || 'Erro ao criar cartão')
       }
 
       await loadData()
-      return response.data.card as any
-    } catch (err) {
+      const cardData = response.data.card || response.data
+      return {
+        id: cardData.id,
+        userId: cardData.user_id || '',
+        userName: cardData.user_name || '',
+        cardNumber: cardData.card_number || '',
+        phoneNumber: cardData.phone_number || '',
+        balance: parseFloat(cardData.balance) || 0,
+        createdAt: cardData.created_at || '',
+        updatedAt: cardData.updated_at || ''
+      } as Card
+    } catch (err: any) {
       console.error('Erro ao criar cartão:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
 
   // Associação de cartão existente ao usuário atual
+  // ✅ Agora usa Edge Function via api-client
   const associateCard = async (params: { cardNumber: string; cardCode: string }): Promise<Card> => {
     try {
-      // Verificar existência e status (valida por card_number + card_code)
-      const { data: existing, error: findError } = await supabase
-        .from('cards')
-        .select('id, is_associated, card_code')
-        .eq('card_number', params.cardNumber)
-        .maybeSingle()
-      if (findError) throw findError
-      if (!existing) throw new Error('Cartão inexistente')
-      if (existing.card_code !== params.cardCode) throw new Error('Código do cartão inválido')
-      if (existing.is_associated) throw new Error('Cartão já associado, fale com a coordenação do encontro se quiser mudar a conta do cartão associado')
+      const { api } = await import('../lib/api-client')
+      const response = await api.associateCard(params)
+      
+      if (!response.success) {
+        throw new Error((response as any).error || 'Erro ao associar cartão')
+      }
 
-      // Obter usuário
-      const { data: session } = await supabase.auth.getSession()
-      const userId = session.session?.user?.id
-      if (!userId) throw new Error('Sessão inválida')
-
-      const { data: authUser } = await supabase.auth.getUser()
-      const userName = authUser.user?.user_metadata?.name || null
-
-      // Associar
-      const { data: updated, error: updError } = await supabase
-        .from('cards')
-        .update({
-          user_id: userId,
-          user_name: userName,
-          is_associated: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existing.id)
-        .eq('is_associated', false)
-        .select('*')
-        .single()
-      if (updError) throw updError
-
-      // Mapear do formato Supabase para Card
+      // Transformar resposta para formato esperado
+      const cardData = response.data
       const mappedCard: Card = {
-        id: updated.id,
-        userId: updated.user_id || '',
-        userName: updated.user_name || '',
-        cardNumber: updated.card_number || '',
-        phoneNumber: updated.phone_number || '',
-        balance: parseFloat(updated.balance) || 0,
-        createdAt: updated.created_at || '',
-        updatedAt: updated.updated_at || ''
+        id: cardData.id,
+        userId: cardData.user_id || '',
+        userName: cardData.user_name || '',
+        cardNumber: cardData.card_number || '',
+        phoneNumber: cardData.phone_number || '',
+        balance: parseFloat(cardData.balance) || 0,
+        createdAt: cardData.created_at || '',
+        updatedAt: cardData.updated_at || ''
       }
 
       await loadData()
       return mappedCard
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao associar cartão:', err)
       throw err
     }
   }
 
-  // Buscar cartão por número
+  // ✅ Agora usa Edge Function via api-client
   const getCardByNumber = async (cardNumber: string): Promise<Card | null> => {
     try {
-      const { data, error } = await supabase
-        .from('cards')
-        .select('*')
-        .eq('card_number', cardNumber)
-        .maybeSingle()
+      const { api } = await import('../lib/api-client')
+      const response = await api.getCardByNumber(cardNumber)
       
-      if (error) throw error
-      return data as any || null
+      if (!response.success || !response.data) {
+        return null
+      }
+
+      const cardData = response.data
+      console.log('card:', cardData);
+      return {
+        id: cardData.id,
+        userId: cardData.user_id || '',
+        userName: cardData.user_name || '',
+        cardNumber: cardData.card_number || '',
+        phoneNumber: cardData.phone_number || '',
+        balance: parseFloat(cardData.balance) || 0,
+        createdAt: cardData.created_at || '',
+        updatedAt: cardData.updated_at || ''
+      }
     } catch (err) {
       console.error('Erro ao buscar cartão:', err)
-      throw err
+      return null
     }
   }
 
-  // Buscar cupons
+  // ✅ Buscar cupons via Edge Function
   const getCoupons = async (category?: 'lojinha' | 'lanchonete'): Promise<Array<{ name: string; discountAmount?: number }>> => {
     try {
-      if (category === 'lanchonete') {
-        // Buscar cupons da lanchonete (com valor fixo)
-        const { data, error } = await supabase
-          .from('lanchonete_coupons')
-          .select('name, discount_amount')
-          .eq('active', true)
-          .order('created_at', { ascending: false })
-        
-        if (error) throw error
-        
-        return (data || []).map((item: { name: string; discount_amount: number }) => ({
-          name: item.name,
-          discountAmount: parseFloat(item.discount_amount.toString())
-        }))
-      } else {
-        // Buscar cupons da lojinha (percentual)
-        const { data, error } = await supabase
-          .from('coupons')
-          .select('name')
-          .order('created_at', { ascending: false })
-        
-        if (error) throw error
-        
-        return (data || []).map((item: { name: string }) => ({
-          name: item.name
-        }))
+      const { api } = await import('../lib/api-client')
+      const response = await api.listCoupons(category)
+      
+      if (!response.success) {
+        console.error('Erro ao buscar cupons:', (response as any).error)
+        return []
       }
+      
+      return response.data || []
     } catch (err) {
       console.error('Erro ao buscar cupons:', err)
-      throw err
+      // Retornar array vazio em caso de erro (não quebrar a aplicação)
+      return []
     }
   }
 
-  // Atualizar saldo do cartão
+  // ✅ Agora usa Edge Function via api-client
   const updateCardBalance = async (cardId: string, amount: number, type: 'credit' | 'debit', description?: string): Promise<void> => {
     try {
-      // ✅ AGORA USA EDGE FUNCTION (SEGURO - apenas admins!)
-      const { data: response, error } = await supabase.functions.invoke('update-balance', {
-        body: {
-          cardId,
-          amount,
-          type,
-          description
-        }
+
+      console.log('cardId:', cardId)
+      console.log('amount:', amount)
+      console.log('type:', type)
+      const { api } = await import('../lib/api-client')
+      const response = await api.updateBalance({
+        cardId,
+        amount,
+        type: type,
+        description: description || (type === 'credit' ? 'Crédito' : 'Débito'),
       })
 
-      if (error) {
-        console.error('Edge function error:', error)
-        throw new Error(error.message || 'Erro ao atualizar saldo')
-      }
-
-      if (!response?.success) {
-        throw new Error(response?.error || 'Erro ao atualizar saldo')
+      if (!response.success) {
+        throw new Error((response as any).error || 'Erro ao atualizar saldo')
       }
 
       await loadData()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao atualizar saldo:', err)
+      
+      // Verificar se é erro de timeout
+      const isTimeout = err?.message?.includes('timeout') || 
+                       err?.message?.includes('aborted') || 
+                       err?.name === 'AbortError' ||
+                       err?.message?.includes('network') ||
+                       err?.message?.includes('fetch')
+      
+      if (isTimeout) {
+        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
+      }
+      
       throw err
     }
   }
@@ -976,7 +881,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   const loadSeedData = async () => {
     try {
       // Verificar se já existem produtos
-      const { data: existingProducts } = await supabase
+      const { data: existingProducts } = await (supabase as any)
         .from('products')
         .select('id')
         .limit(1)
@@ -998,7 +903,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         { name: 'Batata Frita', price: 8.00, category: 'lanchonete', description: 'Porção média', active: true }
       ]
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('products')
         .insert(seedProducts)
 

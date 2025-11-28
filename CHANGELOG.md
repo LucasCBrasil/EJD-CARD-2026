@@ -118,9 +118,15 @@ Para atualizar um ambiente existente:
 ### ⚙️ **Configuração**
 
 **Variáveis de Ambiente (.env):**
+
+**Frontend (variáveis VITE_*):**
 - `VITE_SUPABASE_URL` - URL do projeto Supabase
-- `VITE_SUPABASE_ANON_KEY` - Chave pública (anon)
-- `VITE_SUPABASE_SERVICE_ROLE_KEY` - Chave privada (service_role)
+- `VITE_SUPABASE_ANON_KEY` - Chave pública (anon) - SEGURA para frontend com RLS ativado
+
+**Backend/Edge Functions (NUNCA no frontend!):**
+- `SUPABASE_URL` - URL do projeto Supabase (usado nas Edge Functions)
+- `SUPABASE_ANON_KEY` - Chave pública (usado nas Edge Functions para validar tokens)
+- `SUPABASE_SERVICE_ROLE_KEY` - Chave privada (service_role) - ⚠️ **NUNCA** colocar no frontend! Apenas em Edge Functions ou servidor backend.
 
 **Supabase Edge Functions:**
 - Deployadas via Dashboard (sem Docker necessário)

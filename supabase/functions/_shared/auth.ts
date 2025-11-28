@@ -107,6 +107,17 @@ export const canAddBalance = async (req: Request): Promise<boolean> => {
 }
 
 /**
+ * Verificar se usuário é admin
+ */
+export const isAdmin = async (req: Request): Promise<boolean> => {
+  const user = await getAuthUser(req)
+  if (!user) return false
+  
+  const userRole = await getUserRole(user.id)
+  return userRole === 'admin'
+}
+
+/**
  * Middleware para validar autenticação
  * Retorna erro se não autenticado
  */

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, Header } from '../../components/shared'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
+import { Card } from '../../types'
 
 interface CheckBalanceProps {
   onBack?: () => void
@@ -8,7 +9,7 @@ interface CheckBalanceProps {
 
 const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
   const { getCardByNumber } = useSupabaseData()
-  const [selectedCard, setSelectedCard] = useState<any | null>(null)
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [searchNumber, setSearchNumber] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,6 +20,7 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
     
     try {
       const card = await getCardByNumber(searchNumber.replace(/\s+/g, ''))
+      console.log(card)
       setSelectedCard(card)
       if (!card) {
         setError('Cartão não encontrado')
@@ -93,14 +95,14 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
                     💳 Cartão Encontrado
                   </h3>
                   <p className="text-3xl text-black font-farmhand">
-                    {selectedCard.user_name || 'Sem nome'}
+                    {selectedCard.userName || 'Sem nome'}
                   </p>
                 </div>
 
                 <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-6 mb-6">
                   <p className="text-black text-sm mb-2">Número do Cartão</p>
                   <p className="text-2xl font-mono font-bold text-black">
-                    {formatCardNumber(selectedCard.card_number || '')}
+                    {formatCardNumber(selectedCard.cardNumber || '')}
                   </p>
                 </div>
 

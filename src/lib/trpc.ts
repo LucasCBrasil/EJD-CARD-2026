@@ -1,31 +1,41 @@
 /**
- * tRPC Client - Frontend
+ * ⚠️ DEPRECATED - Não use mais tRPC diretamente
  * 
- * Cliente type-safe para chamar o backend
- * Integrado com TanStack Query
+ * Para evitar exposição da estrutura da API no bundle, use api-client.ts
+ * Este arquivo mantém compatibilidade temporária mas será removido.
+ * 
+ * Em produção, tipos não são mais expostos para proteger a estrutura da API.
  */
+
+// Apenas importar tipos em desenvolvimento para type-checking
+// Em produção, não importa AppRouter para não expor no bundle
+// ⚠️ REMOVIDO: require não funciona em ESM - tipos agora são any para evitar exposição
+let AppRouterType: any = null
+// Não importar AppRouter para não expor no bundle
+// Se precisar de tipos, usar type-only imports ou definir manualmente
 
 import { createTRPCReact } from '@trpc/react-query'
 import { httpBatchLink } from '@trpc/client'
-import type { AppRouter } from '../server/routers/_app'
-import { supabase } from './supabase'
+import { auth } from './auth-client'
 import superjson from 'superjson'
 
 /**
- * Cliente tRPC com tipos do backend
+ * Cliente tRPC - apenas para desenvolvimento
+ * Em produção, use api-client.ts para ocultar estrutura
  */
-export const trpc = createTRPCReact<AppRouter>()
+export const trpc = createTRPCReact<any>()
 
 /**
  * Função para obter token de autenticação
  */
 async function getAuthToken(): Promise<string | null> {
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session } } = await auth.getSession()
   return session?.access_token || null
 }
 
 /**
  * Configuração do cliente tRPC
+ * ⚠️ DEPRECATED - Use api-client.ts em vez disso
  */
 export function getTrpcClient() {
   // Em desenvolvimento, usar servidor Express local

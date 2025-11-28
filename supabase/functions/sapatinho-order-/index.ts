@@ -64,17 +64,14 @@ const requireAuth = async (req: Request) => {
   return user;
 };
 
-// ==================== CORS ====================
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-};
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 // ==================== MAIN FUNCTION ====================
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get('origin')
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
-      headers: corsHeaders,
+      headers: getCorsHeaders(origin),
       status: 200
     });
   }
@@ -87,10 +84,34 @@ Deno.serve(async (req: Request) => {
     }
     const user = authResult;
 
-    // 2. EXTRAIR DADOS
+    // 2. VERIFICAR PERMISSÃO - ENCONTRISTA NÃO PODE FAZER PEDIDOS
+    const supabaseForRole = createSupabaseClient();
+    const { data: appUser } = await supabaseForRole
+      .from('app_users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = (appUser?.role as string) || 'servico';
+
+    // Encontrista não pode fazer pedidos no Sapatinho
+    if (userRole === 'encontrista') {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Acesso negado: encontristas não podem fazer pedidos no Sapatinho Veloz'
+      }), {
+        status: 403,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    // 3. EXTRAIR DADOS
     const { senderTeam, recipientName, recipientAddress, message, isAnonymous, items } = await req.json();
 
-    // 3. VALIDAÇÕES
+    // 4. VALIDAÇÕES
     if (!senderTeam || !recipientName || !recipientAddress || !items || items.length === 0) {
       return new Response(JSON.stringify({
         success: false,
@@ -98,7 +119,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -106,7 +127,7 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createSupabaseClient();
 
-    // 4. BUSCAR CARTÃO DO USUÁRIO
+    // 5. BUSCAR CARTÃO DO USUÁRIO
     const { data: card, error: cardError } = await supabase
       .from('cards')
       .select('id, balance, user_name')
@@ -120,13 +141,13 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 404,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
     }
 
-    // 5. VALIDAR PRODUTOS E ESTOQUE (✅ TABELA CORRETA: sapatinho_products)
+    // 6. VALIDAR PRODUTOS E ESTOQUE (✅ TABELA CORRETA: sapatinho_products)
     const productIds = items.map((item: any) => item.productId);
     console.log('Buscando produtos com IDs:', productIds);
     
@@ -143,7 +164,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -157,7 +178,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -223,7 +244,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -239,7 +260,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 400,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -265,7 +286,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -295,7 +316,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -332,7 +353,7 @@ Deno.serve(async (req: Request) => {
         }), {
           status: 500,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(origin),
             'Content-Type': 'application/json'
           }
         });
@@ -351,7 +372,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 400,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -367,7 +388,7 @@ Deno.serve(async (req: Request) => {
           }), {
             status: 400,
             headers: {
-              ...corsHeaders,
+              ...getCorsHeaders(origin),
               'Content-Type': 'application/json'
             }
           });
@@ -404,7 +425,7 @@ Deno.serve(async (req: Request) => {
         }), {
           status: 500,
           headers: {
-            ...corsHeaders,
+            ...getCorsHeaders(origin),
             'Content-Type': 'application/json'
           }
         });
@@ -447,7 +468,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -456,21 +477,62 @@ Deno.serve(async (req: Request) => {
     const orderId = orderData.id;
 
     // 11. CRIAR ITENS DO PEDIDO
-    const orderItems = items.map((item: any) => ({
-      order_id: orderId,
-      product_id: item.productId,
-      product_name: item.productName,
-      quantity: item.quantity,
-      price: item.price
-    }));
+    // Garantir que os tipos estão corretos
+    const orderItems = items.map((item: any) => {
+      const product = products.find((p: any) => p.id === item.productId);
+      if (!product) {
+        throw new Error(`Produto não encontrado: ${item.productId}`);
+      }
+      
+      return {
+        order_id: orderId,
+        product_id: item.productId,
+        product_name: item.productName || product.name,
+        quantity: parseInt(String(item.quantity)) || 0,
+        price: parseFloat(String(item.price)) || parseFloat(String(product.price)) || 0
+      };
+    });
 
-    const { error: orderItemsError } = await supabase
+    console.log('Tentando inserir orderItems:', JSON.stringify(orderItems, null, 2));
+
+    const { error: orderItemsError, data: insertedOrderItems } = await supabase
       .from('sapatinho_veloz_order_items')
-      .insert(orderItems);
+      .insert(orderItems)
+      .select();
 
     if (orderItemsError) {
-      console.error('Order items error:', orderItemsError);
-      // Continuar mesmo com erro nos itens do pedido (já foi criado)
+      console.error('❌ Order items error:', orderItemsError);
+      console.error('❌ Order items que falharam:', JSON.stringify(orderItems, null, 2));
+      console.error('❌ Erro completo:', JSON.stringify(orderItemsError, null, 2));
+      // NÃO continuar se houver erro - isso é crítico!
+      // Reverter tudo se os itens não foram criados
+      await supabase.from('sapatinho_veloz_orders').delete().eq('id', orderId);
+      await supabase.from('sapatinho_sale_items').delete().eq('sale_id', saleId);
+      await supabase.from('sapatinho_sales').delete().eq('id', saleId);
+      
+      // Reverter estoque
+      if (productsWithStock.length > 0 && stockUpdates.length > 0) {
+        for (const stockUpdate of stockUpdates) {
+          await supabase
+            .from('sapatinho_products')
+            .update({ stock: stockUpdate.oldStock })
+            .eq('id', stockUpdate.id);
+        }
+      }
+      
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Erro ao criar itens do pedido: ${orderItemsError.message || orderItemsError.details || 'Erro desconhecido'}`
+      }), {
+        status: 500,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    } else {
+      console.log('✅ Order items criados com sucesso:', insertedOrderItems?.length || 0);
+      console.log('✅ Itens criados:', JSON.stringify(insertedOrderItems, null, 2));
     }
 
     // 12. ATUALIZAR SALDO DO CARTÃO
@@ -502,7 +564,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -558,7 +620,7 @@ Deno.serve(async (req: Request) => {
       }), {
         status: 500,
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
           'Content-Type': 'application/json'
         }
       });
@@ -576,7 +638,7 @@ Deno.serve(async (req: Request) => {
     }), {
       status: 200,
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(origin),
         'Content-Type': 'application/json'
       }
     });
@@ -589,7 +651,7 @@ Deno.serve(async (req: Request) => {
     }), {
       status: 500,
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(origin),
         'Content-Type': 'application/json'
       }
     });

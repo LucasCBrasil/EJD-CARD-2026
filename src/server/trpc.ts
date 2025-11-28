@@ -20,7 +20,7 @@ export async function createContext(opts: any) {
   // Extrair token do header Authorization
   // Suporta tanto Express req quanto Fetch Request
   let authHeader: string | null = null
-  console.log('opts.req.headers', opts)
+  // ⚠️ NUNCA logar opts.req.headers - pode expor tokens e informações sensíveis
 
   if (opts.req.headers) {
     
@@ -87,6 +87,11 @@ const t = initTRPC.context<Context>().create({
  * Router e procedure builders
  */
 export const router = t.router
+
+/**
+ * ⚠️ DEPRECATED - Não use mais publicProcedure
+ * Todas as procedures devem ser protegidas para segurança
+ */
 export const publicProcedure = t.procedure
 
 /**

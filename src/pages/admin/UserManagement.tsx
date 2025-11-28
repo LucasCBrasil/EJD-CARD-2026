@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../../components/shared'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api-client'
 import { UserRole } from '../../lib/roles'
 import { useToastContext } from '../../contexts/ToastContext'
 
@@ -53,31 +53,17 @@ const UserManagement: React.FC = () => {
     return () => clearTimeout(timeoutId)
   }, [searchEmail, canManageUsers])
 
+  // ✅ Agora usa Edge Function via api-client (seguro!)
   const searchUsers = async (email: string) => {
     setIsLoading(true)
     try {
-      // Buscar diretamente de app_users (email e name são salvos automaticamente no login/registro)
-      const { data, error } = await supabase
-        .from('app_users')
-        .select('id, email, name, role, created_at')
-        .ilike('email', `%${email}%`)
-        .order('email', { ascending: true })
-        .limit(50)
+      const response = await api.searchUsers(email)
 
-      if (error) {
-        // Se erro for sobre coluna não existir, sugerir adicionar colunas
-        if (error.message?.includes('does not exist') || error.message?.includes('column')) {
-          showError(
-            'Configuração necessária',
-            'Execute: ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS email text; ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS name text;'
-          )
-          setUsers([])
-          return
-        }
-        throw error
+      if (!response.success || !response.data) {
+        throw new Error('Erro ao buscar usuários')
       }
 
-      setUsers((data as User[]) || [])
+      setUsers(response.data as User[])
     } catch (error: any) {
       console.error('Erro ao buscar usuários:', error)
       showError('Erro ao buscar usuários', error?.message || 'Não foi possível buscar usuários')
@@ -87,6 +73,7 @@ const UserManagement: React.FC = () => {
     }
   }
 
+  // ✅ Agora usa Edge Function via api-client (seguro!)
   const updateUserRole = async (userId: string, role: UserRole) => {
     try {
       // Validar que não está alterando o próprio role
@@ -103,12 +90,11 @@ const UserManagement: React.FC = () => {
         return
       }
 
-      const { error } = await supabase
-        .from('app_users')
-        .update({ role })
-        .eq('id', userId)
+      const response = await api.updateUserRole(userId, role)
 
-      if (error) throw error
+      if (!response.success || !response.data) {
+        throw new Error('Erro ao atualizar role')
+      }
 
       // Atualizar estado local imediatamente
       setUsers(users.map(user =>

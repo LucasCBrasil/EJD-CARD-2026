@@ -1,5 +1,13 @@
 // Webhook handler para PIX (preparado para implementação futura)
 // Este arquivo contém a estrutura para receber webhooks da API PIX
+// 
+// ⚠️ NOTA: Webhooks geralmente rodam no SERVIDOR, não no frontend.
+// Se este código rodar no frontend, precisa ser migrado para Edge Function.
+// Se rodar no servidor (Express.js), as queries diretas são aceitáveis.
+
+// ⚠️ IMPORTANTE: Verificar onde este código é executado!
+// Se executar no frontend: MIGRAR para Edge Function 'pix-webhook'
+// Se executar no servidor: OK (mas idealmente usar Edge Function também)
 
 import { supabase } from '../../lib/supabase'
 

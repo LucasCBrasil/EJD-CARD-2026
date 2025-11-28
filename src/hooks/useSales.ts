@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { salesApi } from '../api/sales.api'
+import { api } from '../lib/api-client'
 import { useToastContext } from '../contexts/ToastContext'
 import type { ProductCategory } from '../types'
 
@@ -13,7 +13,13 @@ export const saleKeys = {
 export function useSales(category?: ProductCategory) {
   return useQuery({
     queryKey: saleKeys.list(category),
-    queryFn: () => salesApi.getAll(category),
+    queryFn: async () => {
+      const response = await api.listSales(category)
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao buscar vendas')
+      }
+      return response.data || []
+    },
   })
 }
 
@@ -22,7 +28,13 @@ export function useCreateSale() {
   const { showSuccess, showError } = useToastContext()
 
   return useMutation({
-    mutationFn: salesApi.create,
+    mutationFn: async (data: any) => {
+      const response = await api.createSale(data)
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao criar venda')
+      }
+      return response.data
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: saleKeys.lists() })
       queryClient.invalidateQueries({ queryKey: ['cards'] })
