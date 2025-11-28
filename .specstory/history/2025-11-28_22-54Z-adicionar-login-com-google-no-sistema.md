@@ -5219,3 +5219,249 @@ Pronto! O texto "Sistema de Gestão - Encontrão 2025" agora tem:
 
 ---
 
+_**User (2025-11-28 22:33Z)**_
+
+Quero que agora nosso dominio principal seja www.ejdcard.com.br
+
+
+
+Então se em prod (que estava um .vercel.app) estiver vercel, deveriamos redirect
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+O usuário quer configurar um redirect do domínio antigo (provavelmente algo.vercel.app) para o novo domínio www.ejdcard.com.br.
+
+Isso pode ser feito de várias formas:
+1. No vercel.json com redirects
+2. No middleware do Vercel
+3. No próprio código
+
+A forma mais limpa é usar o vercel.json para configurar redirects. Vou verificar o vercel.json atual e adicionar a configuração de redirect.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/lucis/computacao/EJD-CARD-2025/vercel.json</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Vou adicionar um redirect no vercel.json para redirecionar qualquer acesso ao domínio .vercel.app para www.ejdcard.com.br. 
+
+No Vercel, podemos usar redirects com a propriedade `has` para verificar o host.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **code_edit** • Edit file: /Users/lucis/computacao/EJD-CARD-2025/vercel.json</summary>
+
+**Chunk 1**
+Lines added: 13, lines removed: undefined
+
+```diff
+@@ -3,4 +3,17 @@
+    &quot;buildCommand&quot;: &quot;npm run build&quot;,
+    &quot;installCommand&quot;: &quot;npm install&quot;,
++   &quot;redirects&quot;: [
++     {
++       &quot;source&quot;: &quot;/:path*&quot;,
++       &quot;has&quot;: [
++         {
++           &quot;type&quot;: &quot;host&quot;,
++           &quot;value&quot;: &quot;(?&lt;host&gt;.*\\.vercel\\.app)&quot;
++         }
++       ],
++       &quot;destination&quot;: &quot;https://www.ejdcard.com.br/:path*&quot;,
++       &quot;permanent&quot;: true
++     }
++   ],
+    &quot;rewrites&quot;: [
+      { &quot;source&quot;: &quot;/((?!api).*)&quot;, &quot;destination&quot;: &quot;/index.html&quot; }
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Adicionei um redirect permanente (301) que:
+1. Captura qualquer path (/:path*)
+2. Verifica se o host é *.vercel.app
+3. Redireciona para https://www.ejdcard.com.br mantendo o path
+
+Também preciso atualizar o auth-client.ts para usar o domínio correto no redirectTo do OAuth do Google.</details></think>
+
+---
+
+Agora vou atualizar também o redirect do OAuth do Google para usar o domínio correto:
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/lucis/computacao/EJD-CARD-2025/src/lib/auth-client.ts</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+O `redirectTo: window.location.origin` vai funcionar corretamente porque:
+- Em dev: vai redirecionar para http://localhost:5173
+- Em prod: quando acessado via www.ejdcard.com.br, vai redirecionar para https://www.ejdcard.com.br
+
+O problema é que se alguém acessar via .vercel.app e tentar logar com Google, o redirect vai para o .vercel.app primeiro (que depois redireciona para o domínio principal). Mas isso não é ideal para OAuth.
+
+Posso forçar o redirect para o domínio principal em produção. Vou fazer isso.</details></think>
+
+---
+
+Vou ajustar o OAuth para sempre usar o domínio principal em produção:
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **code_edit** • Edit file: /Users/lucis/computacao/EJD-CARD-2025/src/lib/auth-client.ts</summary>
+
+**Chunk 1**
+Lines added: 5, lines removed: 1
+
+```diff
+@@ -71,8 +71,12 @@
+    signInWithGoogle: async () =&gt; {
+      const client = getAuthClient()
++     // Em produção, sempre redireciona para o domínio principal
++     const redirectUrl = isDev 
++       ? window.location.origin 
++       : &#39;https://www.ejdcard.com.br&#39;
+      return client.auth.signInWithOAuth({
+        provider: &#39;google&#39;,
+        options: {
+-         redirectTo: window.location.origin,
++         redirectTo: redirectUrl,
+        }
+      })
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Perfeito! Agora:
+
+1. **vercel.json**: Redireciona qualquer acesso a *.vercel.app para www.ejdcard.com.br (redirect 301 permanente)
+
+2. **auth-client.ts**: O OAuth do Google sempre redireciona para www.ejdcard.com.br em produção
+
+Lembre o usuário de:
+- Configurar o domínio www.ejdcard.com.br no Vercel
+- Adicionar https://www.ejdcard.com.br como redirect URL autorizado no Supabase Dashboard
+- Adicionar https://www.ejdcard.com.br como origem autorizada e redirect URI no Google Cloud Console</details></think>
+
+---
+
+Pronto! Configurei:
+
+**1. vercel.json** - Redirect automático:
+- Qualquer acesso a `*.vercel.app` → `https://www.ejdcard.com.br`
+- Redirect permanente (301) - bom para SEO
+
+**2. auth-client.ts** - OAuth do Google:
+- Em dev: usa `localhost`
+- Em prod: sempre usa `https://www.ejdcard.com.br`
+
+**Próximos passos manuais:**
+
+1. **No Vercel Dashboard:**
+   - Adicionar o domínio `www.ejdcard.com.br` ao projeto
+   - Configurar DNS do domínio
+
+2. **No Supabase Dashboard** (Authentication > URL Configuration):
+   - Site URL: `https://www.ejdcard.com.br`
+   - Redirect URLs: adicionar `https://www.ejdcard.com.br`
+
+3. **No Google Cloud Console:**
+   - Origens JavaScript autorizadas: `https://www.ejdcard.com.br`
+   - URIs de redirecionamento: `https://<seu-projeto>.supabase.co/auth/v1/callback`
+
+---
+
+_**User (2025-11-28 22:33Z)**_
+
+Qual URL de auth callback deveriamos configurar?
+
+
+
+Agora que estamos usando em www.ejdcard.com.br
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+O usuário está perguntando qual URL de callback de autenticação deve configurar no Supabase e Google Cloud Console agora que estão usando www.ejdcard.com.br.
+
+Para o Supabase Auth com OAuth (Google), o callback URL é gerenciado pelo Supabase. O fluxo é:
+
+1. Usuário clica em "Login com Google"
+2. É redirecionado para o Google
+3. Google redireciona para o Supabase: `https://<project-ref>.supabase.co/auth/v1/callback`
+4. Supabase processa e redireciona para o `redirectTo` configurado (www.ejdcard.com.br)
+
+Então preciso descobrir qual é o project-ref do Supabase deles. Posso verificar nas variáveis de ambiente ou no código.</details></think>
+
+---
+
+Para o fluxo OAuth com Supabase, você precisa configurar:
+
+## No Google Cloud Console
+
+**URIs de redirecionamento autorizados:**
+```
+https://<SEU-PROJECT-REF>.supabase.co/auth/v1/callback
+```
+
+O `<SEU-PROJECT-REF>` é o ID do seu projeto Supabase (ex: `abcdefghijklmnop`).
+
+Você pode encontrar esse valor:
+- No Supabase Dashboard → Settings → API → URL (é a parte antes de `.supabase.co`)
+- Ou na sua variável de ambiente `VITE_SUPABASE_URL`
+
+**Origens JavaScript autorizadas:**
+```
+https://www.ejdcard.com.br
+http://localhost:5173
+```
+
+## No Supabase Dashboard (Authentication → URL Configuration)
+
+**Site URL:**
+```
+https://www.ejdcard.com.br
+```
+
+**Redirect URLs:**
+```
+https://www.ejdcard.com.br
+http://localhost:5173
+```
+
+---
+
+Quer que eu verifique qual é o seu `project-ref` do Supabase nos arquivos do projeto?
+
+---
+

@@ -70,10 +70,14 @@ export const auth = {
   
   signInWithGoogle: async () => {
     const client = getAuthClient()
+    // Em produção, sempre redireciona para o domínio principal
+    const redirectUrl = isDev 
+      ? window.location.origin 
+      : 'https://www.ejdcard.com.br'
     return client.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: redirectUrl,
       }
     })
   },
