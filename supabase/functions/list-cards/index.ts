@@ -42,9 +42,19 @@ Deno.serve(async (req) => {
     const userRole = await getUserRole(authResult.id)
     const supabase = createSupabaseClient()
     const url = new URL(req.url)
-    const cardNumber = url.searchParams.get('cardNumber')
+    const cardNumberParam = url.searchParams.get('cardNumber')
     const userId = url.searchParams.get('userId')
     const userName = url.searchParams.get('userName')
+
+    // Normalizar número do cartão para 3 dígitos
+    // "73" -> "073", "0073" -> "073", "7" -> "007"
+    const normalizeCardNumber = (num: string): string => {
+      const asNumber = parseInt(num, 10)
+      if (isNaN(asNumber)) return num
+      return asNumber.toString().padStart(3, '0')
+    }
+    
+    const cardNumber = cardNumberParam ? normalizeCardNumber(cardNumberParam) : null
 
     // Verificar se é role privilegiado (pode ver todos os cartões)
     const isPrivileged = userRole === 'admin' || userRole === 'lojinha' || userRole === 'lanchonete' || userRole === 'comunicacao'
@@ -63,7 +73,7 @@ Deno.serve(async (req) => {
       // Limitar resultados para busca por nome (performance)
       query = query.limit(10)
     }
-    // Filtro por número do cartão
+    // Filtro por número do cartão (já normalizado)
     else if (cardNumber) {
       query = query.eq('card_number', cardNumber)
       

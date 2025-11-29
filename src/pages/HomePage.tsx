@@ -408,6 +408,15 @@ const HomePage: React.FC = () => {
             gradient: 'border-compass-300'
           },
           {
+            icon: '💳',
+            title: 'Cartões em Débito',
+            description: 'Ver cartões com saldo negativo',
+            path: '/admin-debitos',
+            canAccess: canViewAdmin,
+            color: 'from-red-100 to-red-200',
+            gradient: 'border-red-300'
+          },
+          {
             icon: '📡',
             title: 'Acompanhar',
             description: 'Pulso do sistema em tempo real',
@@ -534,10 +543,22 @@ const HomePage: React.FC = () => {
               <div className="text-6xl md:text-7xl lg:text-8xl">🌈</div>
             )}
           </div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-golden-300 mb-2 md:mb-3 font-cardinal drop-shadow-[0_4px_20px_rgba(251,191,36,0.8)] tracking-wider">
+          <h1 
+            className="text-3xl md:text-4xl lg:text-5xl font-bold text-golden-300 mb-2 md:mb-3 font-cardinal drop-shadow-[0_4px_20px_rgba(251,191,36,0.8)] tracking-wider"
+            style={{ 
+              WebkitTextStroke: '1px rgba(255,255,255,0.5)',
+              textShadow: '0 0 10px rgba(0,0,0,0.5), 0 4px 20px rgba(251,191,36,0.8)'
+            }}
+          >
             Encontrão 2025
           </h1>
-          <p className="text-lg md:text-xl lg:text-2xl text-emerald-300 font-newyorker drop-shadow-[0_4px_15px_rgba(16,185,129,0.6)]">
+          <p 
+            className="text-lg md:text-xl lg:text-2xl text-emerald-300 font-newyorker drop-shadow-[0_4px_15px_rgba(16,185,129,0.6)]"
+            style={{ 
+              WebkitTextStroke: '0.5px rgba(255,255,255,0.4)',
+              textShadow: '0 0 8px rgba(0,0,0,0.5), 0 4px 15px rgba(16,185,129,0.6)'
+            }}
+          >
             em caminhos mágicos
           </p>
           {/* Linha decorativa */}

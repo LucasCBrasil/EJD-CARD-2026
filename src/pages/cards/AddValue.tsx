@@ -74,11 +74,12 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
   // Detecta se a busca é por número (só dígitos) ou por nome
   const isNumberSearch = (value: string) => /^\d+$/.test(value.trim())
 
-  // Normaliza número do cartão - remove zeros à esquerda
-  // Ex: "0639" -> "639", "0032" -> "32", "001" -> "1"
+  // Normaliza número do cartão para 3 dígitos
+  // Ex: "0073" -> "073", "73" -> "073", "7" -> "007"
   const normalizeCardNumber = (value: string) => {
     const num = parseInt(value, 10)
-    return isNaN(num) ? value : num.toString()
+    if (isNaN(num)) return value
+    return num.toString().padStart(3, '0')
   }
 
   // Busca unificada - detecta automaticamente se é número ou nome

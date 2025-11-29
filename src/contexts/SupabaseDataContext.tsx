@@ -721,7 +721,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         updatedAt: cardData.updated_at || ''
       }
 
-      await loadData()
+      // Não precisa chamar loadData() - a página MyCardPage usa getMyCardHistory()
       return mappedCard
     } catch (err: any) {
       console.error('Erro ao associar cartão:', err)

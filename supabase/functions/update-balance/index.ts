@@ -120,24 +120,44 @@ Deno.serve(async (req: Request) => {
         })
       }
 
-      // Buscar cartão por número e código
+      // Normalizar número do cartão:
+      // - Remove zeros à esquerda extras mas mantém formato de 3 dígitos
+      // - "0063" -> "063", "63" -> "063", "063" -> "063"
+      const normalizeCardNumber = (num: string): string => {
+        // Remove todos os zeros à esquerda e converte para número
+        const asNumber = parseInt(num, 10)
+        if (isNaN(asNumber)) return num
+        // Formata de volta com 3 dígitos (padding com zeros)
+        return asNumber.toString().padStart(3, '0')
+      }
+      
+      const normalizedCardNumber = normalizeCardNumber(cardNumber)
+      
+      // Normalizar código do cartão para minúsculo
+      const normalizedCardCode = cardCode.toLowerCase().trim()
+
+      console.log(`[${new Date().toISOString()}] Número normalizado: ${cardNumber} -> ${normalizedCardNumber}, Código normalizado para lowercase`)
+
+      // Buscar cartão por número normalizado
       const { data: existingCard, error: findError } = await supabase
         .from('cards')
         .select('id, is_associated, card_code, user_name')
-        .eq('card_number', cardNumber)
+        .eq('card_number', normalizedCardNumber)
         .maybeSingle()
 
       if (findError || !existingCard) {
         return new Response(JSON.stringify({
           success: false,
-          error: 'Cartão não encontrado'
+          error: `Cartão não encontrado. Verifique se o número está correto (tentamos buscar: ${normalizedCardNumber})`
         }), {
           status: 404,
           headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
         })
       }
 
-      if (existingCard.card_code !== cardCode) {
+      // Comparar código em lowercase (banco já está em lowercase)
+      const dbCardCode = (existingCard.card_code || '').toLowerCase().trim()
+      if (dbCardCode !== normalizedCardCode) {
         return new Response(JSON.stringify({
           success: false,
           error: 'Código do cartão inválido'

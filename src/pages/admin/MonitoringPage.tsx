@@ -46,10 +46,13 @@ function timeAgo(dateString: string): string {
 }
 
 // Formatar valor monetário
-function formatCurrency(value: string | number): string {
+function formatCurrency(value: string | number, hidden: boolean = false): string {
+  if (hidden) return '•••••'
   const num = typeof value === 'string' ? parseFloat(value) : value
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
+
+type TabType = 'transactions' | 'cards'
 
 // Componente de Heartbeat animado
 const Heartbeat: React.FC<{ isActive: boolean }> = ({ isActive }) => (
@@ -75,9 +78,18 @@ const CountdownBar: React.FC<{ progress: number; isFetching: boolean }> = ({ pro
   </div>
 )
 
+interface CardData {
+  id: string
+  user_name: string | null
+  card_number: string
+  balance: string
+  created_at: string
+}
+
 const MonitoringPage: React.FC = () => {
   const { canManageUsers } = usePermissions()
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [todayCards, setTodayCards] = useState<CardData[]>([])
   const [loading, setLoading] = useState(true)
   const [isFetching, setIsFetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,6 +101,10 @@ const MonitoringPage: React.FC = () => {
   const previousIdsRef = useRef<Set<string>>(new Set())
   const intervalRef = useRef<number | null>(null)
   const countdownRef = useRef<number | null>(null)
+  
+  // Estados para abas e visibilidade de valores
+  const [activeTab, setActiveTab] = useState<TabType>('transactions')
+  const [showValues, setShowValues] = useState(false) // Padrão: escondido
 
   // Estatísticas calculadas
   const stats = useMemo(() => {
@@ -124,12 +140,61 @@ const MonitoringPage: React.FC = () => {
     }
   }, [transactions])
 
+  // Estatísticas dos cartões cadastrados hoje
+  const cardStats = useMemo(() => {
+    if (todayCards.length === 0) {
+      return { 
+        count: 0, 
+        totalBalance: 0, 
+        avgBalance: 0, 
+        withBalance: 0, 
+        withoutBalance: 0,
+        maxBalance: 0,
+        minBalance: 0
+      }
+    }
+
+    let totalBalance = 0
+    let withBalance = 0
+    let withoutBalance = 0
+    let maxBalance = 0
+    let minBalance = Infinity
+
+    todayCards.forEach(card => {
+      const balance = parseFloat(card.balance) || 0
+      totalBalance += balance
+      if (balance > 0) {
+        withBalance++
+      } else {
+        withoutBalance++
+      }
+      if (balance > maxBalance) maxBalance = balance
+      if (balance < minBalance) minBalance = balance
+    })
+
+    return {
+      count: todayCards.length,
+      totalBalance,
+      avgBalance: todayCards.length > 0 ? totalBalance / todayCards.length : 0,
+      withBalance,
+      withoutBalance,
+      maxBalance,
+      minBalance: minBalance === Infinity ? 0 : minBalance
+    }
+  }, [todayCards])
+
   const fetchTransactions = async () => {
     setIsFetching(true)
     try {
-      const response = await api.listTransactions()
-      if (response.success && response.data) {
-        const newData = response.data as Transaction[]
+      // Buscar transações e cartões em paralelo
+      const [transactionsResponse, cardsResponse] = await Promise.all([
+        api.listTransactions(),
+        api.listCards()
+      ])
+
+      // Processar transações
+      if (transactionsResponse.success && transactionsResponse.data) {
+        const newData = transactionsResponse.data as Transaction[]
         
         // Detectar novas transações
         const newIds = new Set(newData.map(t => t.id))
@@ -148,13 +213,27 @@ const MonitoringPage: React.FC = () => {
         
         previousIdsRef.current = newIds
         setTransactions(newData)
-        setLastUpdate(new Date())
-        setError(null)
-      } else {
-        setError(response.error || 'Erro ao buscar transações')
       }
+
+      // Processar cartões - filtrar apenas os cadastrados hoje
+      if (cardsResponse.success && cardsResponse.data) {
+        const allCards = cardsResponse.data as CardData[]
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        const cardsToday = allCards.filter(card => {
+          const cardDate = new Date(card.created_at)
+          cardDate.setHours(0, 0, 0, 0)
+          return cardDate.getTime() === today.getTime()
+        })
+        
+        setTodayCards(cardsToday)
+      }
+
+      setLastUpdate(new Date())
+      setError(null)
     } catch (err: any) {
-      setError(err.message || 'Erro ao buscar transações')
+      setError(err.message || 'Erro ao buscar dados')
     } finally {
       setLoading(false)
       setIsFetching(false)
@@ -233,6 +312,20 @@ const MonitoringPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Toggle de valores */}
+              <button
+                onClick={() => setShowValues(!showValues)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+                  showValues 
+                    ? 'bg-amber-100 border-amber-300 text-amber-700' 
+                    : 'bg-slate-100 border-slate-300 text-slate-600'
+                }`}
+                title={showValues ? 'Esconder valores' : 'Mostrar valores'}
+              >
+                <span>{showValues ? '👁️' : '🙈'}</span>
+                <span className="text-sm font-medium">{showValues ? 'R$' : '•••'}</span>
+              </button>
+
               {/* Indicador LIVE com heartbeat */}
               <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 rounded-lg border border-emerald-300">
                 <Heartbeat isActive={!isFetching} />
@@ -260,44 +353,139 @@ const MonitoringPage: React.FC = () => {
             <CountdownBar progress={(countdown / 5) * 100} isFetching={isFetching} />
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className={`bg-slate-50 rounded-xl p-4 border border-slate-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
-              <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Transações</div>
-              <div className="text-2xl font-bold text-slate-800 tabular-nums">{stats.count}</div>
-            </div>
-            <div className={`bg-cyan-50 rounded-xl p-4 border border-cyan-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''} ${stats.last5min > 0 ? 'ring-2 ring-cyan-300 ring-opacity-50' : ''}`}>
-              <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
-                Últimos 5min
-                {stats.last5min > 0 && <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />}
-              </div>
-              <div className="text-2xl font-bold text-cyan-600 tabular-nums">{stats.last5min}</div>
-            </div>
-            <div className={`bg-emerald-50 rounded-xl p-4 border border-emerald-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
-              <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
-                Créditos
-                <span className="text-emerald-500">↑</span>
-              </div>
-              <div className="text-xl font-bold text-emerald-600 tabular-nums">{formatCurrency(stats.totalCredits)}</div>
-            </div>
-            <div className={`bg-rose-50 rounded-xl p-4 border border-rose-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
-              <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
-                Débitos
-                <span className="text-rose-500">↓</span>
-              </div>
-              <div className="text-xl font-bold text-rose-600 tabular-nums">{formatCurrency(stats.totalDebits)}</div>
-            </div>
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isFetching ? 'opacity-70' : ''} ${stats.netFlow >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
-              <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Fluxo Líquido</div>
-              <div className={`text-xl font-bold tabular-nums ${stats.netFlow >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {formatCurrency(stats.netFlow)}
-              </div>
-            </div>
+          {/* Abas */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setActiveTab('transactions')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'transactions'
+                  ? 'bg-emerald-500 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <span>📊</span>
+              <span>Transações</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                activeTab === 'transactions' ? 'bg-emerald-600' : 'bg-slate-200'
+              }`}>
+                {stats.count}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('cards')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'cards'
+                  ? 'bg-amber-500 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <span>💳</span>
+              <span>Cartões Hoje</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                activeTab === 'cards' ? 'bg-amber-600' : 'bg-slate-200'
+              }`}>
+                {cardStats.count}
+              </span>
+            </button>
           </div>
+
+          {/* Stats Cards - Transações */}
+          {activeTab === 'transactions' && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className={`bg-slate-50 rounded-xl p-4 border border-slate-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Transações</div>
+                <div className="text-2xl font-bold text-slate-800 tabular-nums">{stats.count}</div>
+              </div>
+              <div className={`bg-cyan-50 rounded-xl p-4 border border-cyan-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''} ${stats.last5min > 0 ? 'ring-2 ring-cyan-300 ring-opacity-50' : ''}`}>
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
+                  Últimos 5min
+                  {stats.last5min > 0 && <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />}
+                </div>
+                <div className="text-2xl font-bold text-cyan-600 tabular-nums">{stats.last5min}</div>
+              </div>
+              <div className={`bg-emerald-50 rounded-xl p-4 border border-emerald-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
+                  Créditos
+                  <span className="text-emerald-500">↑</span>
+                </div>
+                <div className="text-xl font-bold text-emerald-600 tabular-nums">{formatCurrency(stats.totalCredits, !showValues)}</div>
+              </div>
+              <div className={`bg-rose-50 rounded-xl p-4 border border-rose-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
+                  Débitos
+                  <span className="text-rose-500">↓</span>
+                </div>
+                <div className="text-xl font-bold text-rose-600 tabular-nums">{formatCurrency(stats.totalDebits, !showValues)}</div>
+              </div>
+              <div className={`rounded-xl p-4 border transition-all duration-300 ${isFetching ? 'opacity-70' : ''} ${stats.netFlow >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Fluxo Líquido</div>
+                <div className={`text-xl font-bold tabular-nums ${stats.netFlow >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {formatCurrency(stats.netFlow, !showValues)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stats Cards - Cartões Hoje */}
+          {activeTab === 'cards' && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Total</div>
+                <div className="text-2xl font-bold text-amber-600 tabular-nums">{cardStats.count}</div>
+              </div>
+              <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Com Saldo</div>
+                <div className="text-2xl font-bold text-emerald-600 tabular-nums">{cardStats.withBalance}</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Sem Saldo</div>
+                <div className="text-2xl font-bold text-slate-600 tabular-nums">{cardStats.withoutBalance}</div>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Soma Saldos</div>
+                <div className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(cardStats.totalBalance, !showValues)}</div>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Média</div>
+                <div className="text-lg font-bold text-purple-600 tabular-nums">{formatCurrency(cardStats.avgBalance, !showValues)}</div>
+              </div>
+              <div className="bg-cyan-50 rounded-xl p-4 border border-cyan-200">
+                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Maior Saldo</div>
+                <div className="text-lg font-bold text-cyan-600 tabular-nums">{formatCurrency(cardStats.maxBalance, !showValues)}</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Lista de Cartões Hoje */}
+      {activeTab === 'cards' && cardStats.count > 0 && (
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-amber-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-slate-800">Lista de Cartões Cadastrados Hoje</h3>
+            <span className="text-sm text-slate-500">{cardStats.count} cartões</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-96 overflow-y-auto">
+            {todayCards.map(card => (
+              <div 
+                key={card.id} 
+                className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-sm border border-slate-100"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-mono text-slate-400">#{card.card_number}</span>
+                  <span className="text-slate-700 truncate">{card.user_name || 'Sem nome'}</span>
+                </div>
+                <span className={`font-medium tabular-nums ${parseFloat(card.balance) > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  {formatCurrency(card.balance, !showValues)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Transactions Table with MUI */}
+      {activeTab === 'transactions' && (
       <Paper 
         elevation={0}
         sx={{ 
@@ -455,7 +643,7 @@ const MonitoringPage: React.FC = () => {
                             color={isCredit ? 'success.main' : 'error.main'}
                             sx={{ fontVariantNumeric: 'tabular-nums' }}
                           >
-                            {isCredit ? '+' : ''}{formatCurrency(amount)}
+                            {isCredit ? '+' : ''}{formatCurrency(amount, !showValues)}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -526,6 +714,7 @@ const MonitoringPage: React.FC = () => {
           </Box>
         )}
       </Paper>
+      )}
     </div>
   )
 }

@@ -1,18 +1,26 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { Button } from '../../components/shared'
 import { useNavigate } from '@tanstack/react-router'
-import { useQueryClient } from '@tanstack/react-query'
-import { cardKeys } from '../../hooks/useCards'
 
 const AssociateCard: React.FC = () => {
   const dataCtx: any = useSupabaseData()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [cardNumber, setCardNumber] = useState('')
   const [cardCode, setCardCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Normalizar número do cartão para preview
+  const normalizedCardNumber = useMemo(() => {
+    if (!cardNumber) return ''
+    const asNumber = parseInt(cardNumber, 10)
+    if (isNaN(asNumber)) return cardNumber
+    return asNumber.toString().padStart(3, '0')
+  }, [cardNumber])
+
+  // Mostrar preview de normalização se diferente
+  const showNumberNormalization = cardNumber && normalizedCardNumber !== cardNumber
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,12 +28,7 @@ const AssociateCard: React.FC = () => {
     setIsLoading(true)
     try {
       await dataCtx.associateCard({ cardNumber, cardCode })
-      // Invalidar todas as queries de cartões para atualizar o cache
-      await queryClient.invalidateQueries({ queryKey: cardKeys.all })
-      // Forçar refetch de todas as queries relacionadas a cartões
-      await queryClient.refetchQueries({ queryKey: cardKeys.all })
-      // Aguardar um pouco para garantir que as queries sejam atualizadas
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Simplesmente navegar para MyCardPage - ela usa getMyCardHistory() que busca os dados diretamente
       navigate({ to: '/mycard' as any })
     } catch (err: any) {
       // Extrair mensagem de erro completa de diferentes formatos
@@ -47,20 +50,30 @@ const AssociateCard: React.FC = () => {
             inputMode="numeric"
             value={cardNumber}
             onChange={(e) => setCardNumber(e.target.value.replace(/\s+/g, ''))}
-            placeholder="Digite o número"
+            placeholder="Ex: 063 ou 63"
             className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 bg-white/90"
             required
           />
+          {showNumberNormalization && (
+            <p className="text-xs text-emerald-600 mt-1">
+              ✓ Será buscado como: <span className="font-mono font-bold">{normalizedCardNumber}</span>
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-semibold text-black mb-2">Código do Cartão</label>
           <input
             value={cardCode}
             onChange={(e) => setCardCode(e.target.value.replace(/\s+/g, ''))}
-            placeholder="Digite o código"
-            className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 bg-white/90"
+            placeholder="Digite o código (maiúsculo ou minúsculo)"
+            className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 bg-white/90 font-mono"
             required
           />
+          {cardCode && (
+            <p className="text-xs text-gray-500 mt-1">
+              Aceita maiúsculas e minúsculas
+            </p>
+          )}
         </div>
         {error && (
           <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">

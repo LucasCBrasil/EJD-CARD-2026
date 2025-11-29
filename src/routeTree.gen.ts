@@ -15,6 +15,7 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutPedidosSapatinhoVelozRouteImport } from './routes/_layout/pedidos-sapatinho-veloz'
 import { Route as LayoutPedidosLojinhaRouteImport } from './routes/_layout/pedidos-lojinha'
 import { Route as LayoutMycardRouteImport } from './routes/_layout/mycard'
+import { Route as LayoutAdminDebitosRouteImport } from './routes/_layout/admin-debitos'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutAcompanharRouteImport } from './routes/_layout/acompanhar'
 import { Route as LayoutSapatinhoVelozIndexRouteImport } from './routes/_layout/sapatinho-veloz/index'
@@ -75,6 +76,11 @@ const LayoutPedidosLojinhaRoute = LayoutPedidosLojinhaRouteImport.update({
 const LayoutMycardRoute = LayoutMycardRouteImport.update({
   id: '/mycard',
   path: '/mycard',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutAdminDebitosRoute = LayoutAdminDebitosRouteImport.update({
+  id: '/admin-debitos',
+  path: '/admin-debitos',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
@@ -251,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/acompanhar': typeof LayoutAcompanharRoute
   '/admin': typeof LayoutAdminRoute
+  '/admin-debitos': typeof LayoutAdminDebitosRoute
   '/mycard': typeof LayoutMycardRoute
   '/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
   '/pedidos-sapatinho-veloz': typeof LayoutPedidosSapatinhoVelozRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/acompanhar': typeof LayoutAcompanharRoute
   '/admin': typeof LayoutAdminRoute
+  '/admin-debitos': typeof LayoutAdminDebitosRoute
   '/mycard': typeof LayoutMycardRoute
   '/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
   '/pedidos-sapatinho-veloz': typeof LayoutPedidosSapatinhoVelozRoute
@@ -329,6 +337,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_layout/acompanhar': typeof LayoutAcompanharRoute
   '/_layout/admin': typeof LayoutAdminRoute
+  '/_layout/admin-debitos': typeof LayoutAdminDebitosRoute
   '/_layout/mycard': typeof LayoutMycardRoute
   '/_layout/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
   '/_layout/pedidos-sapatinho-veloz': typeof LayoutPedidosSapatinhoVelozRoute
@@ -369,6 +378,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/acompanhar'
     | '/admin'
+    | '/admin-debitos'
     | '/mycard'
     | '/pedidos-lojinha'
     | '/pedidos-sapatinho-veloz'
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/acompanhar'
     | '/admin'
+    | '/admin-debitos'
     | '/mycard'
     | '/pedidos-lojinha'
     | '/pedidos-sapatinho-veloz'
@@ -446,6 +457,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_layout/acompanhar'
     | '/_layout/admin'
+    | '/_layout/admin-debitos'
     | '/_layout/mycard'
     | '/_layout/pedidos-lojinha'
     | '/_layout/pedidos-sapatinho-veloz'
@@ -528,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/mycard'
       fullPath: '/mycard'
       preLoaderRoute: typeof LayoutMycardRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/admin-debitos': {
+      id: '/_layout/admin-debitos'
+      path: '/admin-debitos'
+      fullPath: '/admin-debitos'
+      preLoaderRoute: typeof LayoutAdminDebitosRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/admin': {
@@ -753,6 +772,7 @@ declare module '@tanstack/react-router' {
 interface LayoutRouteChildren {
   LayoutAcompanharRoute: typeof LayoutAcompanharRoute
   LayoutAdminRoute: typeof LayoutAdminRoute
+  LayoutAdminDebitosRoute: typeof LayoutAdminDebitosRoute
   LayoutMycardRoute: typeof LayoutMycardRoute
   LayoutPedidosLojinhaRoute: typeof LayoutPedidosLojinhaRoute
   LayoutPedidosSapatinhoVelozRoute: typeof LayoutPedidosSapatinhoVelozRoute
@@ -791,6 +811,7 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAcompanharRoute: LayoutAcompanharRoute,
   LayoutAdminRoute: LayoutAdminRoute,
+  LayoutAdminDebitosRoute: LayoutAdminDebitosRoute,
   LayoutMycardRoute: LayoutMycardRoute,
   LayoutPedidosLojinhaRoute: LayoutPedidosLojinhaRoute,
   LayoutPedidosSapatinhoVelozRoute: LayoutPedidosSapatinhoVelozRoute,

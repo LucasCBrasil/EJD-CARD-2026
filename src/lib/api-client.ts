@@ -324,5 +324,19 @@ export const api = {
       method: 'PUT',
       body: { key, enabled },
     }),
+
+  // My Card History (para encontristas verem seu próprio histórico)
+  getMyCardHistory: () =>
+    request<{ 
+      success: boolean; 
+      data: { 
+        card: any | null;
+        transactions: any[];
+        sales: any[];
+        sapatinhoSales: any[];
+      } 
+    }>('my-card-history', {
+      method: 'GET',
+    }),
 }
 

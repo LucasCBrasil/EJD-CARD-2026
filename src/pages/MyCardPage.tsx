@@ -110,52 +110,52 @@ const MyCardPage: React.FC = () => {
             return
           }
           
-          const response = await api.getCardByUserId(user.id)
+          // Usar a nova função que retorna tudo de uma vez de forma segura
+          const response = await api.getMyCardHistory()
           
-          if (!response.success || !response.data) {
+          if (!response.success) {
+            console.error('Erro ao carregar histórico:', response)
             setCard(null)
             setPurchases([])
             return
           }
 
-          const cardData = response.data
-          const userCard = {
-            id: cardData.id,
-            userId: cardData.user_id || '',
-            userName: cardData.user_name || '',
-            cardNumber: cardData.card_number || '',
-            phoneNumber: cardData.phone_number || '',
-            balance: parseFloat(cardData.balance) || 0,
-          }
+          const { card: cardData, sales, sapatinhoSales } = response.data
 
-          if (!userCard.id || !userCard.cardNumber || userCard.userId !== user.id) {
+          // Se não tem cartão associado
+          if (!cardData) {
             setCard(null)
             setPurchases([])
             return
           }
 
           setCard({
-            id: userCard.id,
-            name: userCard.userName || 'Sem nome',
-            cardNumber: userCard.cardNumber || '',
-            balance: userCard.balance || 0,
-            phoneNumber: userCard.phoneNumber || ''
+            id: cardData.id,
+            name: cardData.user_name || 'Sem nome',
+            cardNumber: cardData.card_number || '',
+            balance: parseFloat(cardData.balance) || 0,
+            phoneNumber: cardData.phone_number || ''
           })
 
-          // Carregar histórico
-          const salesResponse = await api.listSales(undefined, userCard.id)
-          const sales = salesResponse.success ? (salesResponse.data || []).slice(0, 20) : []
+          // Combinar vendas normais + sapatinho
+          const allSales = [
+            ...(sales || []).map((sale: any) => ({ ...sale, category: sale.category })),
+            ...(sapatinhoSales || []).map((sale: any) => ({ ...sale, category: 'sapatinho' }))
+          ]
           
-          const userPurchases: Purchase[] = sales.map((sale: any) => {
+          // Ordenar por data decrescente
+          allSales.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          
+          const userPurchases: Purchase[] = allSales.slice(0, 20).map((sale: any) => {
             const items = sale.sale_items || sale.sapatinho_sale_items || []
             const createdAt = sale.created_at || sale.createdAt || new Date().toISOString()
             return {
               id: sale.id,
-              date: createdAt.split('T')[0],
+              date: createdAt, // Guardar data completa com horário
               store: sale.category === 'lojinha' ? 'Lojinha Mágica'
                 : sale.category === 'lanchonete' ? 'Lanchonete do Feiticeiro'
                 : 'Sapatinho velOz',
-              product: items.map((item: any) => item.product_name || item.productName || 'Produto').join(', '),
+              product: items.map((item: any) => item.product_name || item.productName || 'Produto').join(', ') || 'Compra',
               amount: parseFloat(sale.total) || 0,
               type: sale.category || 'lojinha'
             }
@@ -199,6 +199,13 @@ const MyCardPage: React.FC = () => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('pt-BR')
+  }
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const dateStr = date.toLocaleDateString('pt-BR')
+    const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    return `${dateStr} às ${timeStr}`
   }
 
   // Loading inicial
@@ -323,7 +330,7 @@ const MyCardPage: React.FC = () => {
                         <h4 className="font-semibold text-black">{purchase.product}</h4>
                       </div>
                       <p className="text-sm text-gray-600">
-                        {purchase.store} • {formatDate(purchase.date)}
+                        {purchase.store} • {formatDateTime(purchase.date)}
                       </p>
                     </div>
                     <div className="text-right">

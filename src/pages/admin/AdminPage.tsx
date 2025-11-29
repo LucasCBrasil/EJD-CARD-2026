@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from '@tanstack/react-router'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import UserManagement from './UserManagement'
@@ -26,6 +27,34 @@ const AdminPage: React.FC = () => {
         <p className="text-sm text-gray-600 mb-4">
           Logado como: <span className="font-semibold">{user?.name || user?.email}</span>
         </p>
+      </div>
+
+      {/* Atalhos rápidos */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">📋 Atalhos Rápidos</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link
+            to="/admin-debitos"
+            className="flex items-center gap-3 p-4 bg-red-50 hover:bg-red-100 border-2 border-red-200 rounded-xl transition-all hover:scale-105 hover:shadow-lg"
+          >
+            <div className="text-3xl">💳</div>
+            <div>
+              <div className="font-bold text-red-700">Cartões em Débito</div>
+              <div className="text-sm text-red-600">Ver cartões com saldo negativo</div>
+            </div>
+          </Link>
+          
+          <Link
+            to="/acompanhar"
+            className="flex items-center gap-3 p-4 bg-cyan-50 hover:bg-cyan-100 border-2 border-cyan-200 rounded-xl transition-all hover:scale-105 hover:shadow-lg"
+          >
+            <div className="text-3xl">📡</div>
+            <div>
+              <div className="font-bold text-cyan-700">Acompanhar</div>
+              <div className="text-sm text-cyan-600">Pulso do sistema em tempo real</div>
+            </div>
+          </Link>
+        </div>
       </div>
 
       {/* Feature Flags */}
