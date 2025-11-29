@@ -76,7 +76,7 @@ export function useCardByUserId(userId: string, enabled = true) {
 // Mutations
 export function useCreateCard() {
   const queryClient = useQueryClient()
-  const { showSuccess, showError } = useToastContext()
+  const { showError } = useToastContext()
 
   return useMutation({
     mutationFn: async (params: { name: string; cardNumber: string; cardCode: string; phoneNumber: string; initialBalance?: number }) => {
@@ -94,14 +94,9 @@ export function useCreateCard() {
       }
       return response.data?.card || response.data
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cardKeys.lists() })
-      // A Edge Function retorna card_number (snake_case) do banco
-      const cardNumber = data.card_number || data.cardNumber || 'N/A'
-      showSuccess(
-        'Cartão Criado!',
-        `Cartão de número ${cardNumber} foi criado com sucesso.`
-      )
+      // Feedback de sucesso é mostrado diretamente na tela (CreateCard.tsx)
     },
     onError: (error: any) => {
       // Extrair mensagem de erro completa de diferentes formatos

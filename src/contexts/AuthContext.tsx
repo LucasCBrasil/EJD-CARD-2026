@@ -18,6 +18,7 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>
   logout: () => Promise<void>
   getAccessToken: () => Promise<string | null>
+  refreshUserProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -32,6 +33,7 @@ const authFallback: AuthContextType = {
   register: async () => { throw new Error('AuthProvider not mounted') },
   logout: async () => { throw new Error('AuthProvider not mounted') },
   getAccessToken: async () => null,
+  refreshUserProfile: async () => { throw new Error('AuthProvider not mounted') },
 }
 
 export const useAuth = () => {
@@ -279,6 +281,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  // Função para forçar refresh do perfil do usuário (útil quando admin muda o role)
+  const refreshUserProfile = async (): Promise<void> => {
+    try {
+      console.log('[AuthProvider] Refreshing user profile...')
+      const { data } = await auth.getSession()
+      
+      if (!data.session?.user) {
+        console.warn('[AuthProvider] No session to refresh')
+        return
+      }
+
+      // Forçar reload do perfil ignorando cache
+      const userProfile = await loadUserProfile(data.session.user.id, data.session.user)
+      store.setUser(userProfile)
+      console.log('[AuthProvider] Profile refreshed:', userProfile?.role)
+    } catch (error) {
+      console.error('[AuthProvider] Error refreshing profile:', error)
+      throw error
+    }
+  }
+
   const value: AuthContextType = {
     user,
     session,
@@ -288,6 +311,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     getAccessToken,
+    refreshUserProfile,
   }
 
   return (

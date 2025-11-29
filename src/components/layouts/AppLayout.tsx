@@ -9,6 +9,7 @@ const AppLayout = () => {
   const navigate = useNavigate()
   const routerState = useRouterState()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
   // Fechar menu ao clicar fora
@@ -25,10 +26,12 @@ const AppLayout = () => {
   // Tentar usar useAuth, mas tratar erro caso não esteja disponível
   let user = null
   let logout = () => {}
+  let refreshUserProfile = async () => {}
   try {
     const auth = useAuth()
     user = auth.user
     logout = auth.logout
+    refreshUserProfile = auth.refreshUserProfile
   } catch (error) {
     // AuthContext não disponível - isso não deveria acontecer, mas tratamos graciosamente
     console.warn('AuthContext não disponível no AppLayout')
@@ -120,6 +123,17 @@ const AppLayout = () => {
       console.log('Logout concluído')
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
+    }
+  }
+
+  const handleRefreshProfile = async () => {
+    setIsRefreshing(true)
+    try {
+      await refreshUserProfile()
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error)
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -299,6 +313,31 @@ const AppLayout = () => {
                     >
                       {user?.email || 'Não informado'}
                     </div>
+                  </div>
+                  
+                  {/* Botão Renovar o Feitiço */}
+                  <div className="pt-3 mt-3" style={{ borderTop: '1px solid #e5e7eb' }}>
+                    <button
+                      onClick={handleRefreshProfile}
+                      disabled={isRefreshing}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 active:scale-95 disabled:opacity-60"
+                      style={{
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                        color: '#ffffff',
+                        boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
+                      }}
+                    >
+                      <span className={isRefreshing ? 'animate-spin' : ''}>
+                        {isRefreshing ? '✨' : '🪄'}
+                      </span>
+                      {isRefreshing ? 'Renovando...' : 'Renovar o Feitiço'}
+                    </button>
+                    <p 
+                      className="text-center mt-2"
+                      style={{ color: '#9ca3af', fontSize: '11px' }}
+                    >
+                      Atualiza suas permissões mágicas
+                    </p>
                   </div>
                 </div>
               )}

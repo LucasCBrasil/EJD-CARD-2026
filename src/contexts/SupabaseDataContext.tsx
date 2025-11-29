@@ -734,7 +734,8 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       const { api } = await import('../lib/api-client')
       const response = await api.getCardByNumber(cardNumber)
       
-      if (!response.success || !response.data) {
+      // Verifica se não tem dados ou se retornou array vazio
+      if (!response.success || !response.data || (Array.isArray(response.data) && response.data.length === 0)) {
         return null
       }
 

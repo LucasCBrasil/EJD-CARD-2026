@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Header } from '../../components/shared'
+import { Button } from '../../components/shared'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { Card } from '../../types'
 
@@ -13,10 +13,12 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
   const [searchNumber, setSearchNumber] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasSearched, setHasSearched] = useState(false)
 
   const handleSearch = async () => {
     setError(null)
     setIsLoading(true)
+    setHasSearched(true)
     
     try {
       const card = await getCardByNumber(searchNumber.replace(/\s+/g, ''))
@@ -36,83 +38,122 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
   const handleInputChange = (value: string) => {
     setSearchNumber(value)
     setSelectedCard(null)
+    setHasSearched(false)
+    setError(null)
   }
 
   const formatCardNumber = (number: string) => {
     return number.replace(/(\d{4})(?=\d)/g, '$1 ')
   }
 
+  const handleNewSearch = () => {
+    setSearchNumber('')
+    setSelectedCard(null)
+    setHasSearched(false)
+    setError(null)
+  }
+
   return (
-    <div className="space-y-4">
-      <Header 
-            title="Conferir Saldo"
-            subtitle="Verifique o saldo de um cartão mágico"
-            showLogo={false}
-        />
-    <div className="w-full relative z-10">
+    <div className="space-y-3">
+      {/* Header compacto */}
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-emerald-600 font-cardinal">
+          💳 Conferir Saldo
+        </h1>
+      </div>
+
+      <div className="w-full relative z-10">
         <div className="mx-auto w-full">
 
-          {/* Formulário de Busca */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8 mb-6">
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="cardNumber" className="block text-sm font-semibold text-black mb-2">
-                  💳 Número do Cartão
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  id="cardNumber"
-                  value={searchNumber}
-                  onChange={(e) => handleInputChange(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
-                  placeholder="001"
-                />
-              </div>
-
-              {error && (
-                <div className="bg-red-100 border border-red-300 rounded-lg p-4 text-center">
-                  <p className="text-red-800">{error}</p>
-                </div>
-              )}
-
-              <Button
-                onClick={handleSearch}
-                size="lg"
-                className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
-                disabled={isLoading || !searchNumber}
-              >
-                {isLoading ? '🔍 Buscando...' : '🔍 Consultar Saldo'}
-              </Button>
-            </div>
-          </div>
-
-          {/* Resultado da Consulta */}
+          {/* Estado: Resultado encontrado */}
           {selectedCard && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-6 animate-fade-in">
               <div className="text-center">
-                <div className="mb-6">
-                  <h3 className="font-bold text-black mb-2 font-cardinal">
-                    💳 Cartão Encontrado
-                  </h3>
-                  <p className="text-3xl text-black font-farmhand">
-                    {selectedCard.userName || 'Sem nome'}
-                  </p>
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <span className="text-2xl">✅</span>
+                  <div className="text-left">
+                    <p className="font-bold text-black font-cardinal">
+                      Cartão #{formatCardNumber(selectedCard.cardNumber || '')}
+                    </p>
+                    <p className="text-lg text-black font-farmhand">
+                      {selectedCard.userName || 'Sem nome'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-6 mb-6">
-                  <p className="text-black text-sm mb-2">Número do Cartão</p>
-                  <p className="text-2xl font-mono font-bold text-black">
-                    {formatCardNumber(selectedCard.cardNumber || '')}
-                  </p>
-                </div>
-
-                <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-xl p-6">
-                  <p className="text-black text-sm mb-2">Saldo Disponível</p>
+                <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-xl p-5 mb-4">
+                  <p className="text-black text-xs mb-1">Saldo Disponível</p>
                   <p className="text-4xl font-bold text-black">
                     R$ {(selectedCard.balance || 0).toFixed(2).replace('.', ',')}
                   </p>
                 </div>
+
+                <Button
+                  onClick={handleNewSearch}
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                >
+                  🔍 Nova Consulta
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Estado: Cartão não encontrado */}
+          {hasSearched && !selectedCard && error && (
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-red-200 p-6 animate-fade-in">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <span className="text-3xl">❌</span>
+                  <div className="text-left">
+                    <h3 className="font-bold text-red-800 text-lg">
+                      Cartão não encontrado
+                    </h3>
+                    <p className="text-red-600 text-sm">
+                      O cartão #{searchNumber} não existe
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleNewSearch}
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                >
+                  🔍 Tentar Novamente
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Estado: Formulário de busca (inicial ou digitando) */}
+          {!hasSearched && (
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-6">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="cardNumber" className="block text-sm font-semibold text-black mb-2">
+                    Número do Cartão
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    id="cardNumber"
+                    value={searchNumber}
+                    onChange={(e) => handleInputChange(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                    className="w-full px-4 py-4 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 text-center text-3xl font-mono"
+                    placeholder="001"
+                    autoFocus
+                  />
+                </div>
+
+                <Button
+                  onClick={handleSearch}
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                  disabled={isLoading || !searchNumber}
+                >
+                  {isLoading ? '🔍 Buscando...' : '🔍 Consultar'}
+                </Button>
               </div>
             </div>
           )}
