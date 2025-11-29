@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useSupabaseData, getCardByUserId } from '../../contexts/SupabaseDataContext'
+import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { useProducts } from '../../hooks/useProducts'
 import { SaleItem } from '../../types'
 import { Button, LoadingSpinner } from '../../components/shared'
@@ -25,7 +25,7 @@ const TEAMS = [
 
 const SapatinhoVelozPage: React.FC = () => {
   const { user } = useAuth()
-  const { getBalance } = useSupabaseData()
+  const { getBalance, getCardByUserId } = useSupabaseData()
   const { data: products = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useProducts('sapatinho')
   const { showSuccess, showError } = useToastContext()
 
@@ -44,10 +44,15 @@ const SapatinhoVelozPage: React.FC = () => {
   }, [refetchProducts])
 
   useEffect(() => {
-    if (user?.id) {
-      const card = getCardByUserId(user.id)
-      setUserBalance(card.balance);
+    const fetchUserBalance = async () => {
+      if (user?.id) {
+        const card = await getCardByUserId(user.id)
+        if (card) {
+          setUserBalance(card.balance)
+        }
+      }
     }
+    fetchUserBalance()
   }, [user?.id, getCardByUserId])
 
   const handleProductToggle = (productId: string) => {
