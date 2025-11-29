@@ -135,7 +135,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
             </button>
           )}
           {/* Sapatinho Veloz - visível apenas se tiver cartão associado */}
-          {hasAssociatedCard && userRole !== 'encontrista' && (
+          {hasAssociatedCard && userRole === 'admin' && (
             <button
               onClick={() => safeNavigate('/sapatinho-veloz')}
               className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
