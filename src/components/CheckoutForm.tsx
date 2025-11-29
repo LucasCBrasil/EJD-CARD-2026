@@ -123,6 +123,7 @@ export function CheckoutForm() {
             <label className="text-sm font-medium text-gray-700">
               CPF/CNPJ
               <input
+                inputMode="numeric"
                 value={cpfCnpj}
                 onChange={(e) => setCpfCnpj(e.target.value)}
                 required
@@ -132,6 +133,7 @@ export function CheckoutForm() {
             <label className="text-sm font-medium text-gray-700">
               Telefone
               <input
+                inputMode="numeric"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="mt-1 w-full rounded-lg border px-3 py-2"
@@ -143,6 +145,7 @@ export function CheckoutForm() {
             Valor (R$)
             <input
               type="number"
+              inputMode="numeric"
               min={1}
               step={1}
               value={amount}

@@ -116,17 +116,33 @@ const ListProductsPage = () => {
       if (!productId) {
         showError('Erro', 'ID do produto não encontrado')
         setProductToDelete(null)
+        setIsLoading(false)
         return
       }
-      const success = await productService.deleteProduct(context, productId)
-      if (success) {
-        await loadProducts()
-        showSuccess('Sucesso', context === 'lojinha' ? 'Produto excluído com sucesso!' : 'Item excluído com sucesso!')
-        setProductToDelete(null)
-      } else {
+      
+      try {
+        const success = await productService.deleteProduct(context, productId)
+        if (success) {
+          // Pequeno delay para garantir que a atualização no banco foi processada
+          await new Promise(resolve => setTimeout(resolve, 300))
+          
+          // Forçar recarregamento dos produtos
+          await loadProducts()
+          
+          // Remover o produto da lista localmente também (otimização)
+          setProducts(prev => prev.filter(p => p.id !== productId))
+          
+          showSuccess('Sucesso', context === 'lojinha' ? 'Produto excluído com sucesso!' : 'Item excluído com sucesso!')
+          setProductToDelete(null)
+        } else {
+          showError('Erro', 'Falha ao excluir item.')
+        }
+      } catch (error) {
+        console.error('Erro ao excluir produto:', error)
         showError('Erro', 'Falha ao excluir item.')
+      } finally {
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }
   }
 

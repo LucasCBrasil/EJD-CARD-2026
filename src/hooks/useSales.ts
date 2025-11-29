@@ -20,6 +20,9 @@ export function useSales(category?: ProductCategory) {
       }
       return response.data || []
     },
+    staleTime: 1000 * 60, // 1 minuto - histórico pode ter cache maior
+    refetchOnMount: false,
+    refetchOnWindowFocus: true,
   })
 }
 

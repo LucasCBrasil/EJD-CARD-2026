@@ -61,6 +61,7 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   id="cardNumber"
                   value={searchNumber}
                   onChange={(e) => handleInputChange(e.target.value.replace(/\D/g, '').slice(0, 3))}

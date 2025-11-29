@@ -148,6 +148,7 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   id="cardNumber"
                   value={cardNumber}
                   onChange={handleCardNumberChange}
@@ -171,6 +172,7 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   id="amount"
                   value={formattedAmount}
                   onChange={handleAmountChange}

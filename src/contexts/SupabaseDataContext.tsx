@@ -170,97 +170,28 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     loadData()
   }, [])
 
-  // ⚠️ DEPRECATED: loadData ainda faz queries diretas - idealmente deveria usar Edge Functions
-  // Mantido para compatibilidade, mas carrega apenas dados básicos
-  // Dados completos devem ser carregados via getSales(), getOpenOrders(), etc. (que usam Edge Functions)
+  // ✅ Simplificado: Apenas inicializar estrutura - dados carregados pelos hooks quando necessário
+  // Isso elimina carregamento duplicado no mount (hooks já fazem isso via React Query)
   const loadData = async () => {
     try {
       setIsLoading(true)
       setError(null)
-
-      // ⚠️ NOTA: Esta função ainda usa queries diretas para compatibilidade
-      // Idealmente deveria usar Edge Functions, mas isso quebraria código legado
-      // Dados críticos (sales, orders, transactions) já são carregados via Edge Functions em outros métodos
       
-      // Carregar apenas dados básicos (cards e produtos) - exposição limitada
-      // Para dados sensíveis, use os métodos específicos que usam Edge Functions
-      const { api } = await import('../lib/api-client')
-      
-      // Carregar cartões via Edge Function
-      const cardsResponse = await api.listCards()
-      if (!cardsResponse.success) throw new Error((cardsResponse as any).error || 'Erro ao carregar cartões')
-      const cards = cardsResponse.data || []
-
-      // Carregar produtos via Edge Function (apenas lojinha e lanchonete para compatibilidade)
-      const [lojinhaResponse, lanchoneteResponse] = await Promise.all([
-        api.listProducts('lojinha').catch(() => ({ success: false, data: [] })),
-        api.listProducts('lanchonete').catch(() => ({ success: false, data: [] }))
-      ])
-      
-      const lojinhaProducts = lojinhaResponse.success ? lojinhaResponse.data || [] : []
-      const lanchoneteProducts = lanchoneteResponse.success ? lanchoneteResponse.data || [] : []
-
-      // Processar apenas dados essenciais carregados
-      const balances = new Map<string, { balance: number; transactions: Transaction[] }>()
-      
-      // Inicializar saldos dos cartões
-      cards.forEach((card: any) => {
-        if (!balances.has(card.id)) {
-          balances.set(card.id, { balance: parseFloat(card.balance) || 0, transactions: [] })
-        }
-      })
-
-      // Processar produtos
-      const productsByCategory = {
-        lojinha: lojinhaProducts.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          price: parseFloat(p.price) || 0,
-          category: 'lojinha',
-          description: p.description,
-          stock: p.stock || 0,
-          active: p.active !== false,
-          createdAt: p.created_at,
-        })),
-        lanchonete: lanchoneteProducts.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          price: parseFloat(p.price) || 0,
-          category: 'lanchonete',
-          description: p.description,
-          stock: p.stock || 0,
-          active: p.active !== false,
-          createdAt: p.created_at,
-        }))
-      }
-
-      // Mapear cartões
-      const mappedCards: Card[] = cards.map((card: any) => ({
-        id: card.id,
-        userId: card.user_id || '',
-        userName: card.user_name || '',
-        cardNumber: card.card_number || '',
-        phoneNumber: card.phone_number || '',
-        balance: parseFloat(card.balance) || 0,
-        createdAt: card.created_at || '',
-        updatedAt: card.updated_at || ''
-      }))
-
-      // Cupons ainda precisam ser carregados (não temos Edge Function ainda)
-      // Por enquanto retornar array vazio - cupons devem ser carregados via getCoupons()
+      // Apenas inicializar estrutura vazia - dados serão carregados pelos hooks (useCards, useProducts, etc.)
+      // quando necessário, aproveitando o cache do React Query
       setData({
-        balances,
-        products: productsByCategory as { lojinha: Product[]; lanchonete: Product[] },
+        balances: new Map(),
+        products: { lojinha: [], lanchonete: [] },
         sales: [], // Será carregado sob demanda via getSales() (Edge Function)
         orders: [], // Será carregado sob demanda via getOpenOrders() (Edge Function)
-        cards: mappedCards,
+        cards: [],
         coupons: [] // Será carregado sob demanda via getCoupons()
       })
-
+      
+      setIsLoading(false)
     } catch (err) {
-      console.error('Erro ao carregar dados:', err)
+      console.error('Erro ao inicializar dados:', err)
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
-    } finally {
       setIsLoading(false)
     }
   }
@@ -298,15 +229,20 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     }
   }
 
+  // ⚠️ DEPRECATED: Use hooks ou API diretamente
+  // Mantido apenas para compatibilidade com código legado
   const getBalance = (userId: string): number => {
-    const card = data.cards.find(c => c.userId === userId)
-    return card?.balance || 0
+    // data.cards não é mais populado no mount - use hooks ou API diretamente
+    console.warn('⚠️ SupabaseDataContext.getBalance() está DEPRECATED. Use useCardByUserId() hook para obter saldo')
+    return 0
   }
 
+  // ⚠️ DEPRECATED: Use hooks ou API diretamente
+  // Mantido apenas para compatibilidade com código legado
   const getTransactions = (userId: string): Transaction[] => {
-    const card = data.cards.find(c => c.userId === userId)
-    if (!card) return []
-    return data.balances.get(card.id)?.transactions || []
+    // data.cards não é mais populado no mount - use hooks ou API diretamente
+    console.warn('⚠️ SupabaseDataContext.getTransactions() está DEPRECATED. Use useTransactions() hook')
+    return []
   }
 
   // Funções de produtos
@@ -703,8 +639,13 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   }
 
   // Funções de cartão
+  // ⚠️ DEPRECATED: Use useCardByUserId() hook ou api.getCardByUserId() diretamente
+  // Mantido apenas para compatibilidade com código legado
   const getCardByUserId = (userId: string): Card | null => {
-    return data.cards.find(c => c.userId === userId) || null
+    // data.cards não é mais populado no mount - use hooks ou API diretamente
+    // Retornar null e deixar componentes usarem hooks (useCardByUserId)
+    console.warn('⚠️ SupabaseDataContext.getCardByUserId() está DEPRECATED. Use useCardByUserId() hook ou api.getCardByUserId()')
+    return null
   }
 
   // ✅ Agora usa Edge Function via api-client

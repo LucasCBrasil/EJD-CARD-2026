@@ -130,6 +130,7 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   id="cardNumber"
                   value={cardNumber}
                   onChange={handleCardNumberChange}
@@ -153,6 +154,7 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   id="amount"
                   value={formattedAmount}
                   onChange={handleAmountChange}

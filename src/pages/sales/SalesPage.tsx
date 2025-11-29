@@ -533,6 +533,7 @@ const SalesPage: React.FC = () => {
               <label className="block text-xs font-semibold text-gray-700 mb-1">Número do Cartão</label>
               <input
                 type="text"
+                inputMode="numeric"
                 value={cardNumber}
                 onChange={handleCardNumberChange}
                 className="w-full px-2.5 py-1.5 border-2 border-gray-300 rounded-md

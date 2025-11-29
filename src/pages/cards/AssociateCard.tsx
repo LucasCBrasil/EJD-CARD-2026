@@ -44,6 +44,7 @@ const AssociateCard: React.FC = () => {
         <div>
           <label className="block text-sm font-semibold text-black mb-2">Número do Cartão</label>
           <input
+            inputMode="numeric"
             value={cardNumber}
             onChange={(e) => setCardNumber(e.target.value.replace(/\s+/g, ''))}
             placeholder="Digite o número"

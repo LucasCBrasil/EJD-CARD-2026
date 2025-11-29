@@ -57,6 +57,21 @@ export const productService = {
   // ✅ Agora usa Edge Function via api-client
   deleteProduct: async (category: ProductCategory, id: string): Promise<boolean> => {
     try {
+      // Produtos do sapatinho usam uma Edge Function diferente
+      if (category === 'sapatinho') {
+        const response = await api.manageSapatinhoProducts(
+          { id },
+          'DELETE'
+        )
+
+        if (!response.success) {
+          console.error('productService.deleteProduct (sapatinho) error:', (response as any).error)
+          return false
+        }
+        return true
+      }
+
+      // Produtos normais (lojinha/lanchonete)
       const response = await api.manageProducts(
         {
           action: 'delete',

@@ -25,6 +25,9 @@ export function useCards() {
       }
       return Array.isArray(response.data) ? response.data : [response.data].filter(Boolean)
     },
+    staleTime: 1000 * 30, // 30 segundos - saldo é crítico
+    refetchOnMount: false,
+    refetchOnWindowFocus: true, // Refetch ao voltar para a aba (importante para saldo)
   })
 }
 
@@ -64,8 +67,9 @@ export function useCardByUserId(userId: string, enabled = true) {
     enabled: enabled && !!userId,
     retry: false, // Não tentar novamente se falhar
     throwOnError: false, // Não lançar erro, apenas retornar null
-    refetchOnMount: true, // Refetch quando o componente montar
-    refetchOnWindowFocus: true, // Refetch quando a janela ganhar foco
+    staleTime: 1000 * 30,     // 30 segundos - saldo é crítico
+    refetchOnMount: false,
+    refetchOnWindowFocus: true, // Refetch ao voltar para a aba (importante para saldo)
   })
 }
 

@@ -18,6 +18,9 @@ export function useOrders() {
       }
       return response.data || []
     },
+    staleTime: 1000 * 30, // 30 segundos - pedidos mudam frequentemente
+    refetchOnMount: false,
+    refetchOnWindowFocus: true, // Refetch ao voltar para a aba
   })
 }
 
@@ -32,6 +35,9 @@ export function useOpenOrders() {
       // Filtrar apenas pedidos abertos
       return (response.data || []).filter((order: any) => !order.delivered_at)
     },
+    staleTime: 1000 * 15, // 15 segundos - entregadores precisam de dados frescos
+    refetchOnMount: false,
+    refetchOnWindowFocus: true, // Refetch ao voltar para a aba
   })
 }
 

@@ -59,11 +59,11 @@ const Header: React.FC<HeaderProps> = ({
           {/* Subtítulo */}
           {subtitle && (
             <p 
-              className="text-center"
+              className="text-center header-subtitle"
               style={{ 
-                color: '#065f46',
-                fontWeight: '600',
+                fontWeight: '700',
                 fontSize: '16px',
+                letterSpacing: '0.5px',
               }}
             >
               ✨ {subtitle} ✨

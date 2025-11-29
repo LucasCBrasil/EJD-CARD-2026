@@ -18,6 +18,9 @@ export function useTransactions(cardId?: string) {
       return response.data || []
     },
     enabled: !!cardId || !cardId, // Sempre habilitado
+    staleTime: 1000 * 60 * 2, // 2 minutos
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   })
 }
 

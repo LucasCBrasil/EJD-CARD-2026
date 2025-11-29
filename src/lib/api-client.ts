@@ -24,9 +24,20 @@ if (isDev) {
 
 /**
  * Obter token de autenticação
+ * Agora usa cache do Zustand store para evitar chamadas redundantes
  */
 async function getAuthToken(): Promise<string | null> {
   try {
+    const { useAuthStore } = await import('../stores/authStore')
+    const store = useAuthStore.getState()
+    
+    // Tentar pegar do cache primeiro
+    const cachedSession = store.getCachedSession()
+    if (cachedSession?.session?.access_token) {
+      return cachedSession.session.access_token
+    }
+    
+    // Se não tiver cache válido, buscar sessão (que já vai atualizar o cache)
     const { auth } = await import('./auth-client')
     const { data: { session } } = await auth.getSession()
     return session?.access_token || null
@@ -236,11 +247,20 @@ export const api = {
       body: data,
     }),
 
-  manageSapatinhoProducts: (data: any, method: 'POST' | 'PUT' | 'DELETE' = 'POST') =>
-    request<{ success: boolean; data: any }>('manage-sapatinho-products', {
+  manageSapatinhoProducts: (data: any, method: 'POST' | 'PUT' | 'DELETE' = 'POST') => {
+    // Para DELETE, a Edge Function espera o ID como query parameter
+    if (method === 'DELETE' && data?.id) {
+      return request<{ success: boolean; data: any }>('manage-sapatinho-products', {
+        method,
+        query: { id: data.id },
+      })
+    }
+    // Para POST e PUT, enviar no body
+    return request<{ success: boolean; data: any }>('manage-sapatinho-products', {
       method,
       body: data,
-    }),
+    })
+  },
     
   createSapatinhoOrder: (data: any) =>
     request<{ success: boolean; data: any }>('sapatinho-order-', {

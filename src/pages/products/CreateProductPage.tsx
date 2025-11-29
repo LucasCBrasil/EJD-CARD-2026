@@ -347,6 +347,7 @@ const CreateProductPage = () => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   id="price"
                   value={formData.price}
                   onChange={handlePriceChange}
@@ -362,6 +363,7 @@ const CreateProductPage = () => {
                 </label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   id="stock"
                   value={formData.stock}
                   onChange={(e) => handleInputChange('stock', e.target.value)}

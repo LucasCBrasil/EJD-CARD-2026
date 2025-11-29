@@ -107,6 +107,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   id="cardNumber"
                   value={cardNumber}
                   onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
@@ -140,6 +141,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   id="phoneNumber"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 11))}
@@ -156,6 +158,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   id="initialBalance"
                   value={formattedBalance}
                   onChange={handleBalanceChange}

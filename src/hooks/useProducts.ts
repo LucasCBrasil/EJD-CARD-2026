@@ -20,7 +20,9 @@ export function useProducts(category?: ProductCategory) {
       }
       return response.data || []
     },
-    refetchOnMount: 'always', // Sempre buscar dados frescos quando o componente for montado
+    staleTime: 1000 * 60 * 2, // 2 minutos - produtos mudam menos frequentemente
+    refetchOnMount: false,    // Não refaz se cache válido
+    refetchOnWindowFocus: true, // Refetch ao voltar para a aba (caso admin tenha alterado)
   })
 }
 

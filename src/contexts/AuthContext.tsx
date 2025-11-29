@@ -1,13 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { auth } from '../lib/auth-client'
 import { api } from '../lib/api-client'
-
-interface User {
-  id: string
-  email: string
-  name?: string | null
-  role: 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista'
-}
+import { useAuthStore, useUser, useIsLoading, type User } from '../stores/authStore'
 
 interface Session {
   access_token: string
@@ -59,172 +53,191 @@ interface AuthProviderProps {
   children: React.ReactNode
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  // Verificar sessão via Supabase
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const { data } = await auth.getSession()
-        // Atualizar sessão
-        if (data.session) {
-          setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-            expires_at: data.session.expires_at,
-          })
-        }
-        // Finalizar loading imediatamente
-        setIsLoading(false)
-        // Não bloquear a UI esperando o carregamento de role
-        void handleAuthChange(data.session?.user?.id || null)
-      } catch (e) {
-        console.error('Auth init error:', e)
-        setIsLoading(false)
+/**
+ * Carrega perfil completo do usuário via Edge Function
+ * Esta função é chamada apenas UMA vez por login/sessão
+ */
+const loadUserProfile = async (userId: string, authUser: any): Promise<User | null> => {
+  try {
+    // Buscar perfil via Edge Function (seguro!)
+    // A Edge Function já garante que a linha existe e está atualizada
+    const response = await api.getUserProfile()
+    
+    if (!response.success || !response.data) {
+      // Se falhar, retornar usuário básico com role padrão
+      return {
+        id: authUser.id,
+        email: authUser.email || '',
+        name: authUser.user_metadata?.name || null,
+        role: 'encontrista',
       }
     }
-    void init()
 
-    const { data: sub } = auth.onAuthStateChange(async (_event, supaSession) => {
+    return {
+      id: response.data.id,
+      email: response.data.email || authUser.email || '',
+      name: response.data.name || authUser.user_metadata?.name || null,
+      role: (response.data.role as any) || 'encontrista',
+    }
+  } catch (error) {
+    console.error('Error loading user profile:', error)
+    // Em caso de erro, retornar usuário básico
+    return {
+      id: authUser.id,
+      email: authUser.email || '',
+      name: authUser.user_metadata?.name || null,
+      role: 'encontrista',
+    }
+  }
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const store = useAuthStore()
+  const user = useUser()
+  const isLoading = useIsLoading()
+  const initRef = useRef(false)
+  const [session, setSession] = useState<Session | null>(null)
+
+  // Inicialização única - esperar hidratação do Zustand
+  useEffect(() => {
+    if (initRef.current) return
+    
+    const init = async () => {
+      // Aguardar hidratação do Zustand (máximo 100ms)
+      let attempts = 0
+      while (!useAuthStore.getState()._hasHydrated && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 10))
+        attempts++
+      }
+      
+      if (initRef.current) return // Double-check após await
+      initRef.current = true
+      
       try {
-        // Atualizar sessão
+        console.log('[AuthProvider] Iniciando autenticação...')
+        store.setLoading(true)
+        
+        // Sempre verificar sessão do Supabase primeiro (fonte da verdade)
+        console.log('[AuthProvider] Chamando auth.getSession()...')
+        const { data, error } = await auth.getSession()
+        console.log('[AuthProvider] auth.getSession() retornou:', { hasSession: !!data?.session, error })
+        
+        if (!data.session?.user) {
+          // Sem sessão válida - limpar tudo e redirecionar para login
+          console.log('[AuthProvider] Sem sessão, resetando...')
+          store.reset()
+          setSession(null)
+          return
+        }
+        
+        // Temos sessão válida - atualizar sessão local
+        setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at,
+        })
+        
+        // Verificar se já temos user no store E se é o mesmo usuário
+        const currentStoreUser = useAuthStore.getState().user
+        if (currentStoreUser && currentStoreUser.id === data.session.user.id) {
+          // User já está no store e é o mesmo - usar cache
+          console.log('[AuthProvider] Usando user do cache')
+          store.setLoading(false)
+          store.setInitialized(true)
+          return
+        }
+        
+        // Carregar perfil completo (UMA única chamada)
+        console.log('[AuthProvider] Carregando perfil do usuário...')
+        const userProfile = await loadUserProfile(data.session.user.id, data.session.user)
+        store.setUser(userProfile)
+        store.setLoading(false)
+        store.setInitialized(true)
+        console.log('[AuthProvider] Autenticação concluída')
+        
+      } catch (e) {
+        console.error('[AuthProvider] Auth init error:', e)
+        store.reset()
+        setSession(null)
+      }
+    }
+    
+    init()
+  }, [])
+
+  // Escutar mudanças de autenticação do Supabase
+  // Registrar listener após inicialização para capturar login/logout futuros
+  useEffect(() => {
+    // Aguardar inicialização antes de registrar listener
+    if (!store.isInitialized) {
+      console.log('[AuthProvider] Aguardando inicialização para registrar listener...')
+      return
+    }
+    
+    console.log('[AuthProvider] Registrando onAuthStateChange listener')
+    const { data: sub } = auth.onAuthStateChange(async (_event, supaSession) => {
+      // Ignorar evento INITIAL_SESSION - já tratamos na inicialização
+      if (_event === 'INITIAL_SESSION') {
+        console.log('[AuthProvider] Ignorando INITIAL_SESSION (já tratado)')
+        return
+      }
+      
+      console.log('[AuthProvider] onAuthStateChange disparado:', _event)
+      try {
+        const store = useAuthStore.getState()
+        
         if (supaSession) {
+          // Atualizar sessão
           setSession({
             access_token: supaSession.access_token,
             refresh_token: supaSession.refresh_token,
             expires_at: supaSession.expires_at,
           })
+          
+          // Atualizar cache
+          store.setCachedSession(supaSession)
+          
+          // Se o usuário mudou ou não temos user no store, carregar perfil
+          if (!store.user || store.user.id !== supaSession.user.id) {
+            const userProfile = await loadUserProfile(supaSession.user.id, supaSession.user)
+            store.setUser(userProfile)
+          }
         } else {
+          // Logout
+          store.reset()
           setSession(null)
         }
-        // também não bloquear
-        void handleAuthChange(supaSession?.user?.id || null)
       } catch (e) {
         console.error('handleAuthChange error (onAuthStateChange):', e)
       }
     })
+    
     return () => {
       sub.subscription.unsubscribe()
     }
-  }, [])
-
-  // ✅ Agora usa Edge Function segura
-  const loadUserWithRole = async (userId: string): Promise<User | null> => {
-    const { data: authUser } = await auth.getUser()
-    if (!authUser.user) return null
-
-    try {
-      // Buscar perfil via Edge Function (seguro!)
-      const response = await api.getUserProfile()
-      
-      if (!response.success || !response.data) {
-        // Se falhar, retornar usuário básico com role padrão
-        return {
-          id: authUser.user.id,
-          email: authUser.user.email || '',
-          name: authUser.user.user_metadata?.name || null,
-          role: 'encontrista',
-        }
-      }
-
-      return {
-        id: response.data.id,
-        email: response.data.email || authUser.user.email || '',
-        name: response.data.name || authUser.user.user_metadata?.name || null,
-        role: (response.data.role as any) || 'encontrista',
-      }
-    } catch (error) {
-      console.error('Error loading user profile:', error)
-      // Em caso de erro, retornar usuário básico
-      return {
-        id: authUser.user.id,
-        email: authUser.user.email || '',
-        name: authUser.user.user_metadata?.name || null,
-        role: 'encontrista',
-      }
-    }
-  }
-
-  // ✅ A Edge Function já garante que a linha existe e está atualizada
-  const ensureAppUserRow = async (userId: string) => {
-    // Apenas chamar a Edge Function que já faz isso automaticamente
-    try {
-      await api.getUserProfile()
-    } catch (error) {
-      console.warn('ensureAppUserRow warning:', error)
-    }
-  }
-
-  const handleAuthChange = async (userId: string | null) => {
-    try {
-      if (!userId) {
-        setUser(null)
-        return
-      }
-
-      // Definir usuário básico imediatamente
-      const { data: authUser } = await auth.getUser()
-      if (!authUser.user || authUser.user.id !== userId) {
-        setUser(null)
-        return
-      }
-      
-      const basicUser = {
-        id: authUser.user.id,
-        email: authUser.user.email || '',
-        name: authUser.user.user_metadata?.name || null,
-        role: 'encontrista' as const,
-      }
-      
-      // Só atualizar se o usuário mudou
-      setUser((prev: User | null) => {
-        if (prev?.id === userId) {
-          return prev // Não precisa atualizar, já temos o mesmo usuário
-        }
-        return basicUser
-      })
-      
-      // Em segundo plano: garantir linha e carregar role real (não bloquear)
-      Promise.all([
-        ensureAppUserRow(userId).catch(console.error),
-        loadUserWithRole(userId).catch(console.error)
-      ]).then(([, u]) => {
-        if (u && u.id === userId) {
-          setUser((prev: User | null) => {
-            // Só atualizar se ainda for o mesmo usuário e algo mudou
-            if (prev?.id === userId) {
-              // Atualizar nome e role se mudaram
-              if (prev.role !== u.role || prev.name !== u.name) {
-                return { 
-                  ...prev, 
-                  role: u.role,
-                  name: u.name || prev.name
-                }
-              }
-            }
-            return prev
-          })
-        }
-      })
-    } catch (e) {
-      console.error('handleAuthChange fatal:', e)
-      setUser(null)
-    }
-  }
+  }, [store.isInitialized])
 
   const login = async (email: string, password: string) => {
     const cleanEmail = (email || '').trim().toLowerCase()
     const { error } = await auth.signInWithPassword({ email: cleanEmail, password })
     if (error) throw error
+    
     const { data: sessionData } = await auth.getSession()
     const userId = sessionData.session?.user?.id
     if (!userId) return
-    await ensureAppUserRow(userId)
-    const u = await loadUserWithRole(userId)
-    setUser(u)
+    
+    // Carregar perfil completo (UMA única chamada)
+    const userProfile = await loadUserProfile(userId, sessionData.session.user)
+    store.setUser(userProfile)
+    
+    // Atualizar sessão
+    if (sessionData.session) {
+      setSession({
+        access_token: sessionData.session.access_token,
+        refresh_token: sessionData.session.refresh_token,
+        expires_at: sessionData.session.expires_at,
+      })
+    }
   }
 
   const register = async (email: string, password: string, name: string) => {
@@ -251,7 +264,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     await auth.signOut()
-    setUser(null)
+    // auth.signOut() já chama store.reset() internamente
     setSession(null)
     // O redirecionamento será feito automaticamente pelo __root.tsx
   }

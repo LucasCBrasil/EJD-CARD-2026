@@ -508,3 +508,23 @@ html {
 .text-white-override * {
   color: #ffffff !important;
 }
+
+/* Dropdown do menu do usuário - força fundo branco */
+.user-dropdown-menu {
+  background-color: #ffffff !important;
+}
+
+.user-dropdown-menu div {
+  background-color: transparent !important;
+}
+
+/* Subtítulo do Header com efeito bevel and emboss */
+.header-subtitle {
+  color: #047857 !important;
+  text-shadow: 
+    0 1px 0 rgba(255,255,255,1),
+    0 -1px 0 rgba(0,0,0,0.15),
+    1px 1px 0 rgba(255,255,255,0.8),
+    -1px -1px 0 rgba(0,0,0,0.05) !important;
+  font-weight: 700 !important;
+}

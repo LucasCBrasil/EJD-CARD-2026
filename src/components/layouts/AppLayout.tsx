@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Header, Button } from '../shared'
 import { GlobalLoading } from '../shared/GlobalLoading'
@@ -7,6 +8,19 @@ import { useAuth } from '../../contexts/AuthContext'
 const AppLayout = () => {
   const navigate = useNavigate()
   const routerState = useRouterState()
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
   
   // Tentar usar useAuth, mas tratar erro caso não esteja disponível
   let user = null
@@ -145,55 +159,161 @@ const AppLayout = () => {
         <div className={`${isHomePage ? 'w-full' : 'max-w-4xl mx-auto w-full'}`}>
           {/* Topbar minimalista */}
           <div 
-            className={`flex justify-between items-center py-2 px-3 mb-4 ${isHomePage ? 'relative' : ''}`}
+            className={`flex justify-between items-center py-2 px-2 sm:px-3 mb-4 ${isHomePage ? 'relative' : ''}`}
             style={{ 
               zIndex: isHomePage ? 50 : 1,
             }}
           >
-            {/* Info do usuário */}
-            <div 
-              className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs sm:text-sm"
-              style={{ 
-                background: isHomePage ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.05)',
-                backdropFilter: 'blur(4px)',
-              }}
-            >
-              <span>👋</span>
-              <span 
-                className="text-white-override"
+            {/* Info do usuário - clicável */}
+            <div className="relative flex-1 min-w-0" ref={userMenuRef}>
+              <button 
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl cursor-pointer active:scale-95 transition-all duration-150"
                 style={{ 
-                  color: '#ffffff', 
-                  fontWeight: '700',
-                  textShadow: isHomePage ? '0 1px 3px rgba(0,0,0,0.5)' : 'none',
+                  background: isHomePage ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.95)',
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: isHomePage ? 'none' : '0 2px 8px rgba(0,0,0,0.1)',
+                  border: isHomePage ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.08)',
                 }}
               >
-                {user?.name || user?.email?.split('@')[0]}
-              </span>
-              <span 
-                className="px-1.5 py-0.5 rounded-full text-xs"
-                style={{
-                  background: isHomePage ? 'rgba(16,185,129,0.5)' : '#10b981',
-                  color: '#ffffff',
-                }}
-              >
-                {user?.role === 'admin' ? '👑 Admin' : 
-                 user?.role === 'lojinha' ? '🏪 Lojinha' :
-                 user?.role === 'lanchonete' ? '🍔 Lanchonete' :
-                 user?.role === 'comunicacao' ? '📢 Comunicação' :
-                 user?.role === 'servico' ? '⚙️ Serviço' :
-                 '👤 Encontrista'}
-              </span>
+                {/* Avatar com inicial */}
+                <div 
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0"
+                  style={{ 
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  }}
+                >
+                  {(user?.name || user?.email || '?')[0].toUpperCase()}
+                </div>
+                
+                {/* Nome truncado */}
+                <span 
+                  className="font-semibold truncate max-w-[80px] sm:max-w-[120px] text-xs sm:text-sm"
+                  style={{ 
+                    color: isHomePage ? '#ffffff' : '#1f2937',
+                    textShadow: isHomePage ? '0 1px 3px rgba(0,0,0,0.5)' : 'none',
+                  }}
+                >
+                  {user?.name || user?.email?.split('@')[0] || 'Usuário'}
+                </span>
+                
+                {/* Badge de role - compacto em mobile */}
+                <span 
+                  className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{
+                    background: isHomePage ? 'rgba(16,185,129,0.4)' : '#dcfce7',
+                    color: isHomePage ? '#ffffff' : '#166534',
+                  }}
+                >
+                  {user?.role === 'admin' ? '👑 Admin' : 
+                   user?.role === 'lojinha' ? '🏪 Lojinha' :
+                   user?.role === 'lanchonete' ? '🍔 Lanchonete' :
+                   user?.role === 'comunicacao' ? '📢 Comunicação' :
+                   user?.role === 'servico' ? '⚙️ Serviço' :
+                   '👤 Encontrista'}
+                </span>
+                
+                {/* Apenas emoji em mobile */}
+                <span 
+                  className="sm:hidden text-sm"
+                  style={{
+                    filter: isHomePage ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' : 'none',
+                  }}
+                >
+                  {user?.role === 'admin' ? '👑' : 
+                   user?.role === 'lojinha' ? '🏪' :
+                   user?.role === 'lanchonete' ? '🍔' :
+                   user?.role === 'comunicacao' ? '📢' :
+                   user?.role === 'servico' ? '⚙️' :
+                   '👤'}
+                </span>
+                
+                {/* Seta */}
+                <svg 
+                  className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-200 flex-shrink-0 ${showUserMenu ? 'rotate-180' : ''}`}
+                  style={{ color: isHomePage ? '#ffffff' : '#6b7280' }}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {/* Dropdown com e-mail */}
+              {showUserMenu && (
+                <div 
+                  className="absolute left-0 right-auto sm:right-auto top-full mt-2 rounded-xl shadow-2xl py-3 px-4 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[280px] max-w-[320px] z-50 user-dropdown-menu"
+                  style={{ 
+                    animation: 'fadeIn 0.2s ease-out',
+                    maxWidth: 'calc(100vw - 1rem)',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                  }}
+                >
+                  {/* Header do dropdown */}
+                  <div 
+                    className="flex items-center gap-3 pb-3"
+                    style={{ borderBottom: '1px solid #e5e7eb' }}
+                  >
+                    <div 
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
+                      style={{ 
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      }}
+                    >
+                      {(user?.name || user?.email || '?')[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div 
+                        className="font-semibold truncate"
+                        style={{ color: '#111827' }}
+                      >
+                        {user?.name || 'Usuário'}
+                      </div>
+                      <div style={{ color: '#6b7280', fontSize: '12px' }}>
+                        {user?.role === 'admin' ? '👑 Administrador' : 
+                         user?.role === 'lojinha' ? '🏪 Equipe Lojinha' :
+                         user?.role === 'lanchonete' ? '🍔 Equipe Lanchonete' :
+                         user?.role === 'comunicacao' ? '📢 Comunicação' :
+                         user?.role === 'servico' ? '⚙️ Serviço' :
+                         '👤 Encontrista'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Info do e-mail */}
+                  <div className="pt-3">
+                    <div 
+                      className="flex items-center gap-2 mb-1"
+                      style={{ color: '#6b7280', fontSize: '12px' }}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      E-mail
+                    </div>
+                    <div 
+                      className="break-all pl-5"
+                      style={{ color: '#111827', fontSize: '14px', fontWeight: '500' }}
+                    >
+                      {user?.email || 'Não informado'}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Botões */}
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 sm:gap-2 flex-shrink-0 ml-2">
               {!isHomePage && (
                 <button 
                   onClick={() => navigate({ to: '/' as any })}
-                  className="px-2 py-1 rounded-full text-xs sm:text-sm font-medium transition-opacity hover:opacity-80"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-sm sm:text-base font-medium transition-all duration-150 active:scale-95"
                   style={{
                     background: '#fbbf24',
                     color: '#78350f',
+                    boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)',
                   }}
                 >
                   🏠
@@ -201,14 +321,17 @@ const AppLayout = () => {
               )}
               <button 
                 onClick={handleLogout}
-                className="px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-opacity hover:opacity-80 text-white-override"
+                className="h-9 sm:h-10 px-3 sm:px-4 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium transition-all duration-150 active:scale-95"
                 style={{
                   background: isHomePage ? 'rgba(255,255,255,0.2)' : '#ef4444',
                   color: '#ffffff',
-                  backdropFilter: isHomePage ? 'blur(4px)' : 'none',
+                  backdropFilter: isHomePage ? 'blur(8px)' : 'none',
+                  border: isHomePage ? '1px solid rgba(255,255,255,0.3)' : 'none',
+                  boxShadow: isHomePage ? 'none' : '0 2px 8px rgba(239, 68, 68, 0.3)',
                 }}
               >
-                🚪 Sair
+                <span>🚪</span>
+                <span className="hidden sm:inline">Sair</span>
               </button>
             </div>
           </div>
