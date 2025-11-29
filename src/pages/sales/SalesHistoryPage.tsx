@@ -135,7 +135,7 @@ const SalesHistoryPage: React.FC = () => {
     if (isCorrectRoute && currentPage > 0) {
       loadSales(currentPage)
     }
-  }, [currentPage, context, isCorrectRoute, loadSales])
+  }, [currentPage, context, isCorrectRoute])
 
   // Filtrar por nome do cliente (filtro local na página atual)
   const filteredSales = useMemo(() => {
