@@ -380,7 +380,7 @@ const SalesPage: React.FC = () => {
       showWarning('Cartão não selecionado', 'Informe um cartão válido para realizar a venda.')
       return
     }
-    if (total > selectedCard.balance) {
+    if (discountedTotal > selectedCard.balance) {
       showError('Saldo insuficiente', 'O saldo do cartão é insuficiente para concluir a compra.')
       return
     }
