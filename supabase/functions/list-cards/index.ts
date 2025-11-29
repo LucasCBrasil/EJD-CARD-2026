@@ -44,35 +44,52 @@ Deno.serve(async (req) => {
     const url = new URL(req.url)
     const cardNumber = url.searchParams.get('cardNumber')
     const userId = url.searchParams.get('userId')
+    const userName = url.searchParams.get('userName')
+
+    // Verificar se é role privilegiado (pode ver todos os cartões)
+    const isPrivileged = userRole === 'admin' || userRole === 'lojinha' || userRole === 'lanchonete' || userRole === 'comunicacao'
 
     let query = supabase.from('cards').select('*')
 
-    // Filtros
-    if (cardNumber) {
+    // Filtro por nome (busca parcial, case-insensitive)
+    if (userName) {
+      query = query.ilike('user_name', `%${userName}%`)
+      
+      if (!isPrivileged) {
+        // Usuários normais só podem buscar seus próprios cartões
+        query = query.eq('user_id', authResult.id)
+      }
+      
+      // Limitar resultados para busca por nome (performance)
+      query = query.limit(10)
+    }
+    // Filtro por número do cartão
+    else if (cardNumber) {
       query = query.eq('card_number', cardNumber)
       
-      // Se não for role privilegiado, verificar propriedade após buscar
-      if (userRole !== 'admin' && userRole !== 'lojinha' && userRole !== 'lanchonete' && userRole !== 'comunicacao') {
+      if (!isPrivileged) {
         // Usuários normais só podem ver seus próprios cartões mesmo buscando por número
         query = query.eq('user_id', authResult.id)
       }
     }
-    
-    if (userId) {
+    // Filtro por userId
+    else if (userId) {
       query = query.eq('user_id', userId)
-      if (userRole !== 'admin' && userRole !== 'lojinha' && userRole !== 'lanchonete' && userRole !== 'comunicacao') {
+      if (!isPrivileged) {
         // Usuários normais só veem seus próprios cartões
         query = query.eq('user_id', authResult.id)
       }
-    } else if (!cardNumber) {
-      // Se não passar userId nem cardNumber, usuários normais só veem seus próprios cartões
-      if (userRole !== 'admin' && userRole !== 'lojinha' && userRole !== 'lanchonete' && userRole !== 'comunicacao') {
+    } 
+    // Sem filtro específico
+    else {
+      if (!isPrivileged) {
+        // Usuários normais só veem seus próprios cartões
         query = query.eq('user_id', authResult.id)
       }
       // Se for admin/lojinha/lanchonete/comunicacao, pode ver todos os cartões
     }
 
-    query = query.order('created_at', { ascending: false })
+    query = query.order('user_name', { ascending: true })
 
     const { data: cards, error } = await query
 

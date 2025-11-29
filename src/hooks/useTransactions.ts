@@ -18,9 +18,10 @@ export function useTransactions(cardId?: string) {
       return response.data || []
     },
     enabled: !!cardId || !cardId, // Sempre habilitado
-    staleTime: 1000 * 60 * 2, // 2 minutos
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    staleTime: 1000 * 5, // 5 segundos - dados ficam frescos por pouco tempo
+    refetchOnMount: true, // Busca ao montar o componente
+    refetchOnWindowFocus: true, // Atualiza ao focar na janela
+    refetchInterval: 1000 * 5, // Auto-refresh a cada 5 segundos (polling)
   })
 }
 

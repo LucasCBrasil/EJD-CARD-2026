@@ -58,13 +58,18 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Parâmetros de paginação
+    const limit = url.searchParams.get('limit')
+    const limitNum = limit ? parseInt(limit, 10) : 1000 // Default 1000 para monitoramento
+
     let query = supabase
       .from('transactions')
       .select(`
         *,
-        cards!inner(user_id)
+        cards!inner(user_id, user_name, card_number)
       `)
       .order('created_at', { ascending: false })
+      .limit(limitNum)
 
     if (cardId) {
       query = query.eq('card_id', cardId)
@@ -133,10 +138,23 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Formatar dados para incluir informações do card no nível principal
+    const formattedTransactions = (transactions || []).map((t: any) => ({
+      id: t.id,
+      card_id: t.card_id,
+      amount: t.amount,
+      type: t.type,
+      description: t.description,
+      created_by: t.created_by,
+      created_at: t.created_at,
+      user_name: t.cards?.user_name || null,
+      card_number: t.cards?.card_number || null
+    }))
+
     return new Response(
       JSON.stringify({
         success: true,
-        data: transactions || []
+        data: formattedTransactions
       } as ApiResponse),
       {
         status: 200,

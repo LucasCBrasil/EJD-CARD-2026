@@ -406,6 +406,15 @@ const HomePage: React.FC = () => {
             canAccess: canViewAdmin,
             color: 'from-compass-100 to-compass-200',
             gradient: 'border-compass-300'
+          },
+          {
+            icon: '📡',
+            title: 'Acompanhar',
+            description: 'Pulso do sistema em tempo real',
+            path: '/acompanhar',
+            canAccess: canViewAdmin,
+            color: 'from-cyan-100 to-cyan-200',
+            gradient: 'border-cyan-400'
           }
         ]
       

@@ -180,6 +180,12 @@ export const api = {
       query: { id },
     }),
 
+  searchCardsByName: (userName: string) =>
+    request<{ success: boolean; data: any[] }>('list-cards', {
+      method: 'GET',
+      query: { userName },
+    }),
+
   associateCard: (params: { cardNumber: string; cardCode: string }) =>
     request<{ success: boolean; data: any }>('update-balance', {
       method: 'POST',
@@ -223,7 +229,7 @@ export const api = {
 
   // Transactions
   listTransactions: (cardId?: string) =>
-    request<{ success: boolean; data: any[] }>('list-transactions', {
+    request<{ success: boolean; data: any[]; error?: string }>('list-transactions', {
       method: 'GET',
       query: cardId ? { cardId } : undefined,
     }),

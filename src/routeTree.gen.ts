@@ -16,6 +16,7 @@ import { Route as LayoutPedidosSapatinhoVelozRouteImport } from './routes/_layou
 import { Route as LayoutPedidosLojinhaRouteImport } from './routes/_layout/pedidos-lojinha'
 import { Route as LayoutMycardRouteImport } from './routes/_layout/mycard'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutAcompanharRouteImport } from './routes/_layout/acompanhar'
 import { Route as LayoutSapatinhoVelozIndexRouteImport } from './routes/_layout/sapatinho-veloz/index'
 import { Route as LayoutPixIndexRouteImport } from './routes/_layout/pix/index'
 import { Route as LayoutLojinhaIndexRouteImport } from './routes/_layout/lojinha/index'
@@ -79,6 +80,11 @@ const LayoutMycardRoute = LayoutMycardRouteImport.update({
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutAcompanharRoute = LayoutAcompanharRouteImport.update({
+  id: '/acompanhar',
+  path: '/acompanhar',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutSapatinhoVelozIndexRoute =
@@ -243,6 +249,7 @@ const LayoutLanchoneteProductsIdEditRoute =
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
+  '/acompanhar': typeof LayoutAcompanharRoute
   '/admin': typeof LayoutAdminRoute
   '/mycard': typeof LayoutMycardRoute
   '/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
@@ -280,6 +287,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/acompanhar': typeof LayoutAcompanharRoute
   '/admin': typeof LayoutAdminRoute
   '/mycard': typeof LayoutMycardRoute
   '/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
   '/login': typeof LoginRoute
+  '/_layout/acompanhar': typeof LayoutAcompanharRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/mycard': typeof LayoutMycardRoute
   '/_layout/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
@@ -358,6 +367,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/login'
+    | '/acompanhar'
     | '/admin'
     | '/mycard'
     | '/pedidos-lojinha'
@@ -395,6 +405,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/acompanhar'
     | '/admin'
     | '/mycard'
     | '/pedidos-lojinha'
@@ -433,6 +444,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_layout'
     | '/login'
+    | '/_layout/acompanhar'
     | '/_layout/admin'
     | '/_layout/mycard'
     | '/_layout/pedidos-lojinha'
@@ -523,6 +535,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof LayoutAdminRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/acompanhar': {
+      id: '/_layout/acompanhar'
+      path: '/acompanhar'
+      fullPath: '/acompanhar'
+      preLoaderRoute: typeof LayoutAcompanharRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/sapatinho-veloz/': {
@@ -732,6 +751,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface LayoutRouteChildren {
+  LayoutAcompanharRoute: typeof LayoutAcompanharRoute
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutMycardRoute: typeof LayoutMycardRoute
   LayoutPedidosLojinhaRoute: typeof LayoutPedidosLojinhaRoute
@@ -769,6 +789,7 @@ interface LayoutRouteChildren {
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutAcompanharRoute: LayoutAcompanharRoute,
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutMycardRoute: LayoutMycardRoute,
   LayoutPedidosLojinhaRoute: LayoutPedidosLojinhaRoute,

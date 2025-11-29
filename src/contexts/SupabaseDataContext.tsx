@@ -126,6 +126,7 @@ interface SupabaseDataContextType {
   createCard: (params: { name: string; cardNumber: string; cardCode: string; phoneNumber: string; initialBalance?: number }) => Promise<Card>
   associateCard: (params: { cardNumber: string; cardCode: string }) => Promise<Card>
   getCardByNumber: (cardNumber: string) => Promise<Card | null>
+  searchCardsByName: (userName: string) => Promise<Card[]>
   updateCardBalance: (cardId: string, amount: number, type: 'credit' | 'debit', description?: string) => Promise<void>
   
   // Utilitários
@@ -757,6 +758,39 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     }
   }
 
+  // ✅ Buscar cartões por nome via Edge Function
+  const searchCardsByName = async (userName: string): Promise<Card[]> => {
+    try {
+      if (!userName || userName.trim().length < 2) {
+        return []
+      }
+
+      const { api } = await import('../lib/api-client')
+      const response = await api.searchCardsByName(userName.trim())
+      
+      if (!response.success || !response.data) {
+        return []
+      }
+
+      // Garantir que é um array
+      const cardsData = Array.isArray(response.data) ? response.data : [response.data]
+      
+      return cardsData.map((cardData: any) => ({
+        id: cardData.id,
+        userId: cardData.user_id || '',
+        userName: cardData.user_name || '',
+        cardNumber: cardData.card_number || '',
+        phoneNumber: cardData.phone_number || '',
+        balance: parseFloat(cardData.balance) || 0,
+        createdAt: cardData.created_at || '',
+        updatedAt: cardData.updated_at || ''
+      }))
+    } catch (err) {
+      console.error('Erro ao buscar cartões por nome:', err)
+      return []
+    }
+  }
+
   // ✅ Buscar cupons via Edge Function
   const getCoupons = async (category?: 'lojinha' | 'lanchonete'): Promise<Array<{ name: string; discountAmount?: number }>> => {
     try {
@@ -878,6 +912,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     createCard,
     associateCard,
     getCardByNumber,
+    searchCardsByName,
     updateCardBalance,
     resetData,
     loadSeedData
