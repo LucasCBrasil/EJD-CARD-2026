@@ -112,7 +112,7 @@ const getUserRole = async (userId: string): Promise<UserRole> => {
     .eq('id', userId)
     .single()
 
-  return (appUser?.role as UserRole) || 'servico'
+  return (appUser?.role as UserRole) || 'encontrista'
 }
 
 // Permissões simplificadas - apenas o que precisamos para produtos

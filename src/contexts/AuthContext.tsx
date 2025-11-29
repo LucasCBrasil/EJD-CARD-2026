@@ -9,20 +9,47 @@ interface User {
   role: 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista'
 }
 
+interface Session {
+  access_token: string
+  refresh_token?: string
+  expires_at?: number
+}
+
 interface AuthContextType {
   user: User | null
+  session: Session | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
   register: (email: string, password: string, name: string) => Promise<void>
   logout: () => Promise<void>
+  getAccessToken: () => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Fallback para HMR - evita crash durante hot reload
+const authFallback: AuthContextType = {
+  user: null,
+  session: null,
+  isLoading: true,
+  login: async () => { throw new Error('AuthProvider not mounted') },
+  loginWithGoogle: async () => { throw new Error('AuthProvider not mounted') },
+  register: async () => { throw new Error('AuthProvider not mounted') },
+  logout: async () => { throw new Error('AuthProvider not mounted') },
+  getAccessToken: async () => null,
+}
+
 export const useAuth = () => {
   const context = useContext(AuthContext)
+  
+  // Durante HMR, o contexto pode estar undefined temporariamente
+  // Em vez de crashar, retornamos um fallback que mostra loading
   if (context === undefined) {
+    if (import.meta.env.DEV) {
+      console.warn('[useAuth] Context undefined - likely HMR. Using fallback.')
+      return authFallback
+    }
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
@@ -34,6 +61,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Verificar sessão via Supabase
@@ -41,6 +69,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const init = async () => {
       try {
         const { data } = await auth.getSession()
+        // Atualizar sessão
+        if (data.session) {
+          setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            expires_at: data.session.expires_at,
+          })
+        }
         // Finalizar loading imediatamente
         setIsLoading(false)
         // Não bloquear a UI esperando o carregamento de role
@@ -52,10 +88,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     void init()
 
-    const { data: sub } = auth.onAuthStateChange(async (_event, session) => {
+    const { data: sub } = auth.onAuthStateChange(async (_event, supaSession) => {
       try {
+        // Atualizar sessão
+        if (supaSession) {
+          setSession({
+            access_token: supaSession.access_token,
+            refresh_token: supaSession.refresh_token,
+            expires_at: supaSession.expires_at,
+          })
+        } else {
+          setSession(null)
+        }
         // também não bloquear
-        void handleAuthChange(session?.user?.id || null)
+        void handleAuthChange(supaSession?.user?.id || null)
       } catch (e) {
         console.error('handleAuthChange error (onAuthStateChange):', e)
       }
@@ -80,7 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           id: authUser.user.id,
           email: authUser.user.email || '',
           name: authUser.user.user_metadata?.name || null,
-          role: 'servico',
+          role: 'encontrista',
         }
       }
 
@@ -88,7 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: response.data.id,
         email: response.data.email || authUser.user.email || '',
         name: response.data.name || authUser.user.user_metadata?.name || null,
-        role: (response.data.role as any) || 'servico',
+        role: (response.data.role as any) || 'encontrista',
       }
     } catch (error) {
       console.error('Error loading user profile:', error)
@@ -97,7 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: authUser.user.id,
         email: authUser.user.email || '',
         name: authUser.user.user_metadata?.name || null,
-        role: 'servico',
+        role: 'encontrista',
       }
     }
   }
@@ -130,7 +176,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: authUser.user.id,
         email: authUser.user.email || '',
         name: authUser.user.user_metadata?.name || null,
-        role: 'servico' as const,
+        role: 'encontrista' as const,
       }
       
       // Só atualizar se o usuário mudou
@@ -206,16 +252,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     await auth.signOut()
     setUser(null)
+    setSession(null)
     // O redirecionamento será feito automaticamente pelo __root.tsx
+  }
+
+  // Função para obter token de acesso atualizado
+  const getAccessToken = async (): Promise<string | null> => {
+    try {
+      const { data } = await auth.getSession()
+      return data.session?.access_token || null
+    } catch {
+      return null
+    }
   }
 
   const value: AuthContextType = {
     user,
+    session,
     isLoading,
     login,
     loginWithGoogle,
     register,
     logout,
+    getAccessToken,
   }
 
   return (

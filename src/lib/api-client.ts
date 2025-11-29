@@ -10,7 +10,7 @@ const isDev = import.meta.env.DEV
 // Em desenvolvimento, priorizar URL local; se não houver, usar localhost padrão
 // Em produção, usar URL de produção
 const supabaseUrl = isDev 
-  ? (import.meta.env.VITE_SUPABASE_LOCAL_URL || 'https://exppyrjeqxjglwdcijsk.supabase.co')
+  ? (import.meta.env.VITE_SUPABASE_LOCAL_URL || 'https://auth.ejdcard.com.br')
   : (import.meta as any).env?.VITE_SUPABASE_URL
 
 const API_BASE_URL = supabaseUrl 
@@ -272,6 +272,31 @@ export const api = {
     request<{ success: boolean; data: { userId: string; role: string } }>('manage-users', {
       method: 'PUT',
       body: { userId, role },
+    }),
+
+  // PIX Payment Status
+  getPixPaymentStatus: (paymentId: string) =>
+    request<{ success: boolean; data: { id: string; status: string; amount: number; confirmed_at?: string } }>('get-pix-status', {
+      method: 'GET',
+      query: { paymentId },
+    }),
+
+  // Feature Flags
+  getFeatureFlag: (key: string) =>
+    request<{ success: boolean; data: { key: string; enabled: boolean; description?: string } }>('feature-flags', {
+      method: 'GET',
+      query: { key },
+    }),
+
+  listFeatureFlags: () =>
+    request<{ success: boolean; data: Array<{ key: string; enabled: boolean; description?: string; updated_at?: string }> }>('feature-flags', {
+      method: 'GET',
+    }),
+
+  updateFeatureFlag: (key: string, enabled: boolean) =>
+    request<{ success: boolean; data: { key: string; enabled: boolean } }>('feature-flags', {
+      method: 'PUT',
+      body: { key, enabled },
     }),
 }
 

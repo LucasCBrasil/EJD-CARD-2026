@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { roundMoney, safeSubtractMoney, hasSufficientBalance } from '../_shared/money.ts';
 
 const createSupabaseClient = () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -100,7 +101,7 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .single();
 
-    const userRole = (appUser?.role as string) || 'servico';
+    const userRole = (appUser?.role as string) || 'encontrista';
 
     // Encontrista não pode fazer vendas
     if (userRole === 'encontrista') {
@@ -346,11 +347,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 7. VALIDAR SALDO
-    if (card.balance < finalTotal) {
+    // 7. VALIDAR SALDO (usando operações monetárias seguras)
+    const safeBalance = roundMoney(card.balance)
+    const safeFinalTotal = roundMoney(finalTotal)
+    
+    if (!hasSufficientBalance(safeBalance, safeFinalTotal)) {
       return new Response(JSON.stringify({
         success: false,
-        error: `Saldo insuficiente. Saldo: R$ ${card.balance.toFixed(2)}, Total: R$ ${finalTotal.toFixed(2)}`
+        error: `Saldo insuficiente. Saldo: R$ ${safeBalance.toFixed(2)}, Total: R$ ${safeFinalTotal.toFixed(2)}`
       }), {
         status: 400,
         headers: {
@@ -525,11 +529,12 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 12. ATUALIZAR SALDO
+    // 12. ATUALIZAR SALDO (usando operações monetárias seguras)
+    const newBalance = safeSubtractMoney(safeBalance, safeFinalTotal)
     const { error: balanceError } = await supabase
       .from('cards')
       .update({
-        balance: card.balance - finalTotal
+        balance: roundMoney(newBalance)
       })
       .eq('id', cardId);
 
@@ -549,10 +554,10 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 13. CRIAR TRANSAÇÃO
+    // 13. CRIAR TRANSAÇÃO (valor arredondado)
     const { error: transactionError } = await supabase.from('transactions').insert({
       card_id: cardId,
-      amount: -finalTotal,
+      amount: roundMoney(-safeFinalTotal),
       type: 'debit',
       description: `Venda ${category} - ${items.length} itens`
     });

@@ -2,6 +2,7 @@ import React from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import UserManagement from './UserManagement'
+import FeatureFlagsManagement from './FeatureFlagsManagement'
 
 const AdminPage: React.FC = () => {
   const { user } = useAuth()
@@ -19,7 +20,7 @@ const AdminPage: React.FC = () => {
 
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
-      <h2 className="text-2xl font-bold text-black mb-6">👥 Painel Administrativo</h2>
+      <h2 className="text-2xl font-bold text-black mb-6">⚙️ Painel Administrativo</h2>
       
       <div className="mb-6">
         <p className="text-sm text-gray-600 mb-4">
@@ -27,6 +28,10 @@ const AdminPage: React.FC = () => {
         </p>
       </div>
 
+      {/* Feature Flags */}
+      <FeatureFlagsManagement />
+
+      {/* Gerenciamento de Usuários */}
       <UserManagement />
     </div>
   )

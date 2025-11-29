@@ -17,6 +17,7 @@ import { Route as LayoutPedidosLojinhaRouteImport } from './routes/_layout/pedid
 import { Route as LayoutMycardRouteImport } from './routes/_layout/mycard'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutSapatinhoVelozIndexRouteImport } from './routes/_layout/sapatinho-veloz/index'
+import { Route as LayoutPixIndexRouteImport } from './routes/_layout/pix/index'
 import { Route as LayoutLojinhaIndexRouteImport } from './routes/_layout/lojinha/index'
 import { Route as LayoutLanchoneteIndexRouteImport } from './routes/_layout/lanchonete/index'
 import { Route as LayoutCardsIndexRouteImport } from './routes/_layout/cards/index'
@@ -24,6 +25,7 @@ import { Route as LayoutVendasLojinhaRouteImport } from './routes/_layout/vendas
 import { Route as LayoutVendasLanchoneteRouteImport } from './routes/_layout/vendas/lanchonete'
 import { Route as LayoutSapatinhoVelozSelectRouteImport } from './routes/_layout/sapatinho-veloz/select'
 import { Route as LayoutSapatinhoVelozSalesRouteImport } from './routes/_layout/sapatinho-veloz/sales'
+import { Route as LayoutPixPaymentIdRouteImport } from './routes/_layout/pix/$paymentId'
 import { Route as LayoutLojinhaSelectRouteImport } from './routes/_layout/lojinha/select'
 import { Route as LayoutLanchoneteSelectRouteImport } from './routes/_layout/lanchonete/select'
 import { Route as LayoutHistoricoSapatinhoRouteImport } from './routes/_layout/historico/sapatinho'
@@ -85,6 +87,11 @@ const LayoutSapatinhoVelozIndexRoute =
     path: '/sapatinho-veloz/',
     getParentRoute: () => LayoutRoute,
   } as any)
+const LayoutPixIndexRoute = LayoutPixIndexRouteImport.update({
+  id: '/pix/',
+  path: '/pix/',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutLojinhaIndexRoute = LayoutLojinhaIndexRouteImport.update({
   id: '/lojinha/',
   path: '/lojinha/',
@@ -122,6 +129,11 @@ const LayoutSapatinhoVelozSalesRoute =
     path: '/sapatinho-veloz/sales',
     getParentRoute: () => LayoutRoute,
   } as any)
+const LayoutPixPaymentIdRoute = LayoutPixPaymentIdRouteImport.update({
+  id: '/pix/$paymentId',
+  path: '/pix/$paymentId',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutLojinhaSelectRoute = LayoutLojinhaSelectRouteImport.update({
   id: '/lojinha/select',
   path: '/lojinha/select',
@@ -246,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/historico/sapatinho': typeof LayoutHistoricoSapatinhoRoute
   '/lanchonete/select': typeof LayoutLanchoneteSelectRoute
   '/lojinha/select': typeof LayoutLojinhaSelectRoute
+  '/pix/$paymentId': typeof LayoutPixPaymentIdRoute
   '/sapatinho-veloz/sales': typeof LayoutSapatinhoVelozSalesRoute
   '/sapatinho-veloz/select': typeof LayoutSapatinhoVelozSelectRoute
   '/vendas/lanchonete': typeof LayoutVendasLanchoneteRoute
@@ -253,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/cards': typeof LayoutCardsIndexRoute
   '/lanchonete': typeof LayoutLanchoneteIndexRoute
   '/lojinha': typeof LayoutLojinhaIndexRoute
+  '/pix': typeof LayoutPixIndexRoute
   '/sapatinho-veloz': typeof LayoutSapatinhoVelozIndexRoute
   '/lanchonete/products/create': typeof LayoutLanchoneteProductsCreateRoute
   '/lojinha/products/create': typeof LayoutLojinhaProductsCreateRoute
@@ -281,6 +295,7 @@ export interface FileRoutesByTo {
   '/historico/sapatinho': typeof LayoutHistoricoSapatinhoRoute
   '/lanchonete/select': typeof LayoutLanchoneteSelectRoute
   '/lojinha/select': typeof LayoutLojinhaSelectRoute
+  '/pix/$paymentId': typeof LayoutPixPaymentIdRoute
   '/sapatinho-veloz/sales': typeof LayoutSapatinhoVelozSalesRoute
   '/sapatinho-veloz/select': typeof LayoutSapatinhoVelozSelectRoute
   '/vendas/lanchonete': typeof LayoutVendasLanchoneteRoute
@@ -288,6 +303,7 @@ export interface FileRoutesByTo {
   '/cards': typeof LayoutCardsIndexRoute
   '/lanchonete': typeof LayoutLanchoneteIndexRoute
   '/lojinha': typeof LayoutLojinhaIndexRoute
+  '/pix': typeof LayoutPixIndexRoute
   '/sapatinho-veloz': typeof LayoutSapatinhoVelozIndexRoute
   '/lanchonete/products/create': typeof LayoutLanchoneteProductsCreateRoute
   '/lojinha/products/create': typeof LayoutLojinhaProductsCreateRoute
@@ -318,6 +334,7 @@ export interface FileRoutesById {
   '/_layout/historico/sapatinho': typeof LayoutHistoricoSapatinhoRoute
   '/_layout/lanchonete/select': typeof LayoutLanchoneteSelectRoute
   '/_layout/lojinha/select': typeof LayoutLojinhaSelectRoute
+  '/_layout/pix/$paymentId': typeof LayoutPixPaymentIdRoute
   '/_layout/sapatinho-veloz/sales': typeof LayoutSapatinhoVelozSalesRoute
   '/_layout/sapatinho-veloz/select': typeof LayoutSapatinhoVelozSelectRoute
   '/_layout/vendas/lanchonete': typeof LayoutVendasLanchoneteRoute
@@ -325,6 +342,7 @@ export interface FileRoutesById {
   '/_layout/cards/': typeof LayoutCardsIndexRoute
   '/_layout/lanchonete/': typeof LayoutLanchoneteIndexRoute
   '/_layout/lojinha/': typeof LayoutLojinhaIndexRoute
+  '/_layout/pix/': typeof LayoutPixIndexRoute
   '/_layout/sapatinho-veloz/': typeof LayoutSapatinhoVelozIndexRoute
   '/_layout/lanchonete/products/create': typeof LayoutLanchoneteProductsCreateRoute
   '/_layout/lojinha/products/create': typeof LayoutLojinhaProductsCreateRoute
@@ -355,6 +373,7 @@ export interface FileRouteTypes {
     | '/historico/sapatinho'
     | '/lanchonete/select'
     | '/lojinha/select'
+    | '/pix/$paymentId'
     | '/sapatinho-veloz/sales'
     | '/sapatinho-veloz/select'
     | '/vendas/lanchonete'
@@ -362,6 +381,7 @@ export interface FileRouteTypes {
     | '/cards'
     | '/lanchonete'
     | '/lojinha'
+    | '/pix'
     | '/sapatinho-veloz'
     | '/lanchonete/products/create'
     | '/lojinha/products/create'
@@ -390,6 +410,7 @@ export interface FileRouteTypes {
     | '/historico/sapatinho'
     | '/lanchonete/select'
     | '/lojinha/select'
+    | '/pix/$paymentId'
     | '/sapatinho-veloz/sales'
     | '/sapatinho-veloz/select'
     | '/vendas/lanchonete'
@@ -397,6 +418,7 @@ export interface FileRouteTypes {
     | '/cards'
     | '/lanchonete'
     | '/lojinha'
+    | '/pix'
     | '/sapatinho-veloz'
     | '/lanchonete/products/create'
     | '/lojinha/products/create'
@@ -426,6 +448,7 @@ export interface FileRouteTypes {
     | '/_layout/historico/sapatinho'
     | '/_layout/lanchonete/select'
     | '/_layout/lojinha/select'
+    | '/_layout/pix/$paymentId'
     | '/_layout/sapatinho-veloz/sales'
     | '/_layout/sapatinho-veloz/select'
     | '/_layout/vendas/lanchonete'
@@ -433,6 +456,7 @@ export interface FileRouteTypes {
     | '/_layout/cards/'
     | '/_layout/lanchonete/'
     | '/_layout/lojinha/'
+    | '/_layout/pix/'
     | '/_layout/sapatinho-veloz/'
     | '/_layout/lanchonete/products/create'
     | '/_layout/lojinha/products/create'
@@ -508,6 +532,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSapatinhoVelozIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/pix/': {
+      id: '/_layout/pix/'
+      path: '/pix'
+      fullPath: '/pix'
+      preLoaderRoute: typeof LayoutPixIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/lojinha/': {
       id: '/_layout/lojinha/'
       path: '/lojinha'
@@ -555,6 +586,13 @@ declare module '@tanstack/react-router' {
       path: '/sapatinho-veloz/sales'
       fullPath: '/sapatinho-veloz/sales'
       preLoaderRoute: typeof LayoutSapatinhoVelozSalesRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/pix/$paymentId': {
+      id: '/_layout/pix/$paymentId'
+      path: '/pix/$paymentId'
+      fullPath: '/pix/$paymentId'
+      preLoaderRoute: typeof LayoutPixPaymentIdRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/lojinha/select': {
@@ -709,6 +747,7 @@ interface LayoutRouteChildren {
   LayoutHistoricoSapatinhoRoute: typeof LayoutHistoricoSapatinhoRoute
   LayoutLanchoneteSelectRoute: typeof LayoutLanchoneteSelectRoute
   LayoutLojinhaSelectRoute: typeof LayoutLojinhaSelectRoute
+  LayoutPixPaymentIdRoute: typeof LayoutPixPaymentIdRoute
   LayoutSapatinhoVelozSalesRoute: typeof LayoutSapatinhoVelozSalesRoute
   LayoutSapatinhoVelozSelectRoute: typeof LayoutSapatinhoVelozSelectRoute
   LayoutVendasLanchoneteRoute: typeof LayoutVendasLanchoneteRoute
@@ -716,6 +755,7 @@ interface LayoutRouteChildren {
   LayoutCardsIndexRoute: typeof LayoutCardsIndexRoute
   LayoutLanchoneteIndexRoute: typeof LayoutLanchoneteIndexRoute
   LayoutLojinhaIndexRoute: typeof LayoutLojinhaIndexRoute
+  LayoutPixIndexRoute: typeof LayoutPixIndexRoute
   LayoutSapatinhoVelozIndexRoute: typeof LayoutSapatinhoVelozIndexRoute
   LayoutLanchoneteProductsCreateRoute: typeof LayoutLanchoneteProductsCreateRoute
   LayoutLojinhaProductsCreateRoute: typeof LayoutLojinhaProductsCreateRoute
@@ -744,6 +784,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutHistoricoSapatinhoRoute: LayoutHistoricoSapatinhoRoute,
   LayoutLanchoneteSelectRoute: LayoutLanchoneteSelectRoute,
   LayoutLojinhaSelectRoute: LayoutLojinhaSelectRoute,
+  LayoutPixPaymentIdRoute: LayoutPixPaymentIdRoute,
   LayoutSapatinhoVelozSalesRoute: LayoutSapatinhoVelozSalesRoute,
   LayoutSapatinhoVelozSelectRoute: LayoutSapatinhoVelozSelectRoute,
   LayoutVendasLanchoneteRoute: LayoutVendasLanchoneteRoute,
@@ -751,6 +792,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutCardsIndexRoute: LayoutCardsIndexRoute,
   LayoutLanchoneteIndexRoute: LayoutLanchoneteIndexRoute,
   LayoutLojinhaIndexRoute: LayoutLojinhaIndexRoute,
+  LayoutPixIndexRoute: LayoutPixIndexRoute,
   LayoutSapatinhoVelozIndexRoute: LayoutSapatinhoVelozIndexRoute,
   LayoutLanchoneteProductsCreateRoute: LayoutLanchoneteProductsCreateRoute,
   LayoutLojinhaProductsCreateRoute: LayoutLojinhaProductsCreateRoute,

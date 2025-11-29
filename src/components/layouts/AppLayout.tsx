@@ -176,12 +176,12 @@ const AppLayout = () => {
                   color: '#ffffff',
                 }}
               >
-                {user?.role === 'admin' ? '👑' : 
-                 user?.role === 'lojinha' ? '🏪' :
-                 user?.role === 'lanchonete' ? '🍔' :
-                 user?.role === 'comunicacao' ? '📢' :
-                 user?.role === 'servico' ? '⚙️' :
-                 '👤'}
+                {user?.role === 'admin' ? '👑 Admin' : 
+                 user?.role === 'lojinha' ? '🏪 Lojinha' :
+                 user?.role === 'lanchonete' ? '🍔 Lanchonete' :
+                 user?.role === 'comunicacao' ? '📢 Comunicação' :
+                 user?.role === 'servico' ? '⚙️ Serviço' :
+                 '👤 Encontrista'}
               </span>
             </div>
             

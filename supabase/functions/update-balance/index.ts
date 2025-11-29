@@ -15,6 +15,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { roundMoney, safeSumMoney, safeSubtractMoney, hasSufficientBalance } from '../_shared/money.ts';
 
 Deno.serve(async (req: Request) => {
   const startTime = Date.now()
@@ -86,14 +87,129 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[${new Date().toISOString()}] Usuário autenticado:`, { userId: user.id, email: user.email })
 
-    // Buscar role do usuário
+    const { 
+      action,
+      cardId,
+      amount,
+      type,
+      description,
+      name,
+      cardNumber,
+      cardCode,
+      phoneNumber,
+      initialBalance
+    } = body
+
+    // ==================== ASSOCIAR CARTÃO (qualquer usuário autenticado) ====================
+    // Esta ação deve vir ANTES da verificação de role pois qualquer usuário pode associar
+    if (action === 'associate') {
+      console.log(`[${new Date().toISOString()}] Iniciando associação de cartão:`, {
+        cardNumber,
+        hasCardCode: !!cardCode,
+        userId: user.id
+      })
+
+      // Validações
+      if (!cardNumber || !cardCode) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Dados inválidos: cardNumber e cardCode são obrigatórios'
+        }), {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Buscar cartão por número e código
+      const { data: existingCard, error: findError } = await supabase
+        .from('cards')
+        .select('id, is_associated, card_code, user_name')
+        .eq('card_number', cardNumber)
+        .maybeSingle()
+
+      if (findError || !existingCard) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Cartão não encontrado'
+        }), {
+          status: 404,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (existingCard.card_code !== cardCode) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Código do cartão inválido'
+        }), {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (existingCard.is_associated) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Cartão já associado. Fale com a coordenação do encontro se quiser mudar a conta do cartão associado.'
+        }), {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Obter nome do usuário
+      const { data: authUser } = await supabaseAnon.auth.getUser(token)
+      const userName = authUser?.user?.user_metadata?.name || null
+
+      // Associar cartão ao usuário
+      const { data: updatedCard, error: updateError } = await supabase
+        .from('cards')
+        .update({
+          user_id: user.id,
+          user_name: userName,
+          is_associated: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingCard.id)
+        .eq('is_associated', false)
+        .select('*')
+        .single()
+
+      if (updateError || !updatedCard) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: `Erro ao associar cartão: ${updateError?.message || 'Erro desconhecido'}`
+        }), {
+          status: 500,
+          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
+      const elapsedTime = Date.now() - startTime
+      console.log(`[${new Date().toISOString()}] Cartão associado com sucesso - Tempo: ${elapsedTime}ms:`, {
+        cardId: updatedCard.id,
+        cardNumber: updatedCard.card_number,
+        userId: user.id
+      })
+
+      return new Response(JSON.stringify({
+        success: true,
+        data: updatedCard
+      }), {
+        status: 200,
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+      })
+    }
+
+    // ==================== VERIFICAR PERMISSÕES PARA OUTRAS AÇÕES ====================
+    // Criar cartão e atualizar saldo requerem admin ou comunicacao
     const { data: appUser } = await supabase
       .from('app_users')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    const userRole = (appUser?.role as string) || 'servico'
+    const userRole = (appUser?.role as string) || 'encontrista'
     if (userRole !== 'admin' && userRole !== 'comunicacao') {
       console.error(`[${new Date().toISOString()}] Acesso negado:`, {
         userId: user.id,
@@ -111,19 +227,6 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`[${new Date().toISOString()}] Permissão verificada:`, { userId: user.id, role: userRole })
-
-    const { 
-      action,
-      cardId,
-      amount,
-      type,
-      description,
-      name,
-      cardNumber,
-      cardCode,
-      phoneNumber,
-      initialBalance
-    } = body
 
     // ==================== CRIAR CARTÃO ====================
     const isCreate = action === 'create' || (!cardId && name && cardNumber && phoneNumber)
@@ -253,93 +356,6 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // ==================== ASSOCIAR CARTÃO ====================
-    if (action === 'associate') {
-      // Validações
-      if (!cardNumber || !cardCode) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Dados inválidos: cardNumber e cardCode são obrigatórios'
-        }), {
-          status: 400,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-        })
-      }
-
-      // Buscar cartão por número e código
-      const { data: existingCard, error: findError } = await supabase
-        .from('cards')
-        .select('id, is_associated, card_code, user_name')
-        .eq('card_number', cardNumber)
-        .maybeSingle()
-
-      if (findError || !existingCard) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Cartão não encontrado'
-        }), {
-          status: 404,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (existingCard.card_code !== cardCode) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Código do cartão inválido'
-        }), {
-          status: 400,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (existingCard.is_associated) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Cartão já associado. Fale com a coordenação do encontro se quiser mudar a conta do cartão associado.'
-        }), {
-          status: 400,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-        })
-      }
-
-      // Obter nome do usuário
-      const { data: authUser } = await supabaseAnon.auth.getUser(token)
-      const userName = authUser?.user?.user_metadata?.name || null
-
-      // Associar cartão ao usuário
-      const { data: updatedCard, error: updateError } = await supabase
-        .from('cards')
-        .update({
-          user_id: user.id,
-          user_name: userName,
-          is_associated: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existingCard.id)
-        .eq('is_associated', false)
-        .select('*')
-        .single()
-
-      if (updateError || !updatedCard) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: `Erro ao associar cartão: ${updateError?.message || 'Erro desconhecido'}`
-        }), {
-          status: 500,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-        })
-      }
-
-      return new Response(JSON.stringify({
-        success: true,
-        data: updatedCard
-      }), {
-        status: 200,
-        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-      })
-    }
-
     // ==================== ATUALIZAR SALDO ====================
     console.log(`[${new Date().toISOString()}] Iniciando atualização de saldo:`, {
       cardId,
@@ -408,12 +424,14 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const currentBalance = parseFloat(card.balance.toString())
+    // ⚠️ Operações monetárias seguras (evita erros de precisão float)
+    const currentBalance = roundMoney(card.balance)
+    const safeAmount = roundMoney(amount)
     const newBalance = type === 'credit' 
-      ? currentBalance + amount 
-      : currentBalance - amount
+      ? safeSumMoney(currentBalance, safeAmount) 
+      : safeSubtractMoney(currentBalance, safeAmount)
 
-    if (type === 'debit' && newBalance < 0) {
+    if (type === 'debit' && !hasSufficientBalance(currentBalance, safeAmount)) {
       console.error(`[${new Date().toISOString()}] Saldo insuficiente:`, {
         cardId,
         currentBalance,
@@ -431,17 +449,18 @@ Deno.serve(async (req: Request) => {
     }
 
     // Atualizar saldo e criar transação em paralelo
+    // ⚠️ Valores arredondados para garantir precisão
     const [updateResult, transactionResult] = await Promise.all([
       supabase
         .from('cards')
         .update({
-          balance: newBalance,
+          balance: roundMoney(newBalance),
           updated_at: new Date().toISOString()
         })
         .eq('id', cardId),
       supabase.from('transactions').insert({
         card_id: cardId,
-        amount: type === 'credit' ? amount : -amount,
+        amount: roundMoney(type === 'credit' ? safeAmount : -safeAmount),
         type,
         description: description || `${type === 'credit' ? 'Crédito' : 'Débito'} realizado por admin`,
         created_by: user.id

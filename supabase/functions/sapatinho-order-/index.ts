@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { roundMoney, safeSubtractMoney, hasSufficientBalance } from '../_shared/money.ts';
 
 // ==================== SUPABASE CLIENT ====================
 
@@ -92,7 +93,7 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .single();
 
-    const userRole = (appUser?.role as string) || 'servico';
+    const userRole = (appUser?.role as string) || 'encontrista';
 
     // Encontrista não pode fazer pedidos no Sapatinho
     if (userRole === 'encontrista') {
@@ -250,13 +251,17 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    console.log(`Validação OK. Total calculado: R$ ${calculatedTotal.toFixed(2)}`);
+    // ⚠️ Operações monetárias seguras
+    const safeBalance = roundMoney(card.balance)
+    const safeTotal = roundMoney(calculatedTotal)
+    
+    console.log(`Validação OK. Total calculado: R$ ${safeTotal.toFixed(2)}`);
 
-    // 6. VALIDAR SALDO
-    if (card.balance < calculatedTotal) {
+    // 6. VALIDAR SALDO (usando operações monetárias seguras)
+    if (!hasSufficientBalance(safeBalance, safeTotal)) {
       return new Response(JSON.stringify({
         success: false,
-        error: `Saldo insuficiente. Saldo: R$ ${card.balance.toFixed(2)}, Total: R$ ${calculatedTotal.toFixed(2)}`
+        error: `Saldo insuficiente. Saldo: R$ ${safeBalance.toFixed(2)}, Total: R$ ${safeTotal.toFixed(2)}`
       }), {
         status: 400,
         headers: {
@@ -272,7 +277,7 @@ Deno.serve(async (req: Request) => {
       .insert({
         card_id: card.id,
         seller_id: user.id,
-        total: calculatedTotal,
+        total: roundMoney(safeTotal),
         status: 'completed'
       })
       .select('id')
@@ -535,11 +540,12 @@ Deno.serve(async (req: Request) => {
       console.log('✅ Itens criados:', JSON.stringify(insertedOrderItems, null, 2));
     }
 
-    // 12. ATUALIZAR SALDO DO CARTÃO
+    // 12. ATUALIZAR SALDO DO CARTÃO (usando operações monetárias seguras)
+    const newBalance = safeSubtractMoney(safeBalance, safeTotal)
     const { error: balanceError } = await supabase
       .from('cards')
       .update({
-        balance: card.balance - calculatedTotal
+        balance: roundMoney(newBalance)
       })
       .eq('id', card.id);
 
@@ -570,10 +576,10 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 13. CRIAR TRANSAÇÃO
+    // 13. CRIAR TRANSAÇÃO (valor arredondado)
     const { error: transactionError } = await supabase.from('transactions').insert({
       card_id: card.id,
-      amount: -calculatedTotal,
+      amount: roundMoney(-safeTotal),
       type: 'debit',
       description: `Pedido Sapatinho Veloz - ${items.length} itens`
     });

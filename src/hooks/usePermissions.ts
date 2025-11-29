@@ -4,7 +4,7 @@ import { getUserPermissions, hasPermission, hasAnyPermission, hasAllPermissions,
 export const usePermissions = () => {
   const { user } = useAuth()
   
-  const userRole: UserRole = (user?.role as UserRole) || 'servico'
+  const userRole: UserRole = (user?.role as UserRole) || 'encontrista'
   const permissions = getUserPermissions(userRole)
 
   return {

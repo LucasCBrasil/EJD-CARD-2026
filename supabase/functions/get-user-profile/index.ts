@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
         id: user.id,
         email: email,
         name: name,
-        role: 'servico' as const
+        role: 'encontrista' as const
       }
 
       const { error: insertError } = await supabase

@@ -9,3 +9,16 @@ export { default as ToastContainer } from './ToastContainer'
 export { LoadingSpinner } from './LoadingSpinner'
 export { PageSkeleton } from './PageSkeleton'
 export { GlobalLoading } from './GlobalLoading'
+
+// Masked Inputs
+export { 
+  CurrencyInput, 
+  CpfCnpjInput,
+  formatCurrency,
+  parseCurrency,
+  formatCpfCnpj,
+  extractDigits,
+  isValidCpf,
+  isValidCnpj,
+  isValidCpfCnpj,
+} from './MaskedInputs'
