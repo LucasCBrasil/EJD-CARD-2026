@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useSupabaseData } from '../../contexts/SupabaseDataContext'
+import { useSupabaseData, getCardByUserId } from '../../contexts/SupabaseDataContext'
 import { useProducts } from '../../hooks/useProducts'
 import { SaleItem } from '../../types'
 import { Button, LoadingSpinner } from '../../components/shared'
 import { sapatinhoVelozApi } from '../../api/sapatinho-veloz.api' // ⚠️ Usa apenas create() que já chama Edge Function via api-client
 import { useToastContext } from '../../contexts/ToastContext'
 import OptimizedImage from '../../components/ui/OptimizedImage'
+import { api } from '../../lib/api-client'
 
 const TEAMS = [
   'ADM',
@@ -44,10 +45,10 @@ const SapatinhoVelozPage: React.FC = () => {
 
   useEffect(() => {
     if (user?.id) {
-      const balance = getBalance(user.id)
-      setUserBalance(balance)
+      const card = getCardByUserId(user.id)
+      setUserBalance(card.balance);
     }
-  }, [user?.id, getBalance])
+  }, [user?.id, getCardByUserId])
 
   const handleProductToggle = (productId: string) => {
     setSelectedProducts(prev => {

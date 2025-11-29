@@ -122,7 +122,7 @@ interface SupabaseDataContextType {
   getCoupons: (category?: 'lojinha' | 'lanchonete') => Promise<Array<{ name: string; discountAmount?: number }>>
   
   // Funções de cartão
-  getCardByUserId: (userId: string) => Card | null
+  getCardByUserId: (userId: string) => Promise<Card | null>
   createCard: (params: { name: string; cardNumber: string; cardCode: string; phoneNumber: string; initialBalance?: number }) => Promise<Card>
   associateCard: (params: { cardNumber: string; cardCode: string }) => Promise<Card>
   getCardByNumber: (cardNumber: string) => Promise<Card | null>
@@ -642,11 +642,32 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   // Funções de cartão
   // ⚠️ DEPRECATED: Use useCardByUserId() hook ou api.getCardByUserId() diretamente
   // Mantido apenas para compatibilidade com código legado
-  const getCardByUserId = (userId: string): Card | null => {
-    // data.cards não é mais populado no mount - use hooks ou API diretamente
-    // Retornar null e deixar componentes usarem hooks (useCardByUserId)
-    console.warn('⚠️ SupabaseDataContext.getCardByUserId() está DEPRECATED. Use useCardByUserId() hook ou api.getCardByUserId()')
-    return null
+  const getCardByUserId = async (userId: string): Promise<Card | null> =>  {
+    try {
+      const { api } = await import('../lib/api-client')
+      const response = await api.getCardByUserId(userId)
+      
+      // Verifica se não tem dados ou se retornou array vazio
+      if (!response.success || !response.data || (Array.isArray(response.data) && response.data.length === 0)) {
+        return null
+      }
+
+      const cardData = response.data
+      console.log('card:', cardData);
+      return {
+        id: cardData.id,
+        userId: cardData.user_id || '',
+        userName: cardData.user_name || '',
+        cardNumber: cardData.card_number || '',
+        phoneNumber: cardData.phone_number || '',
+        balance: parseFloat(cardData.balance) || 0,
+        createdAt: cardData.created_at || '',
+        updatedAt: cardData.updated_at || ''
+      }
+    } catch (err) {
+      console.error('Erro ao buscar cartão:', err)
+      return null
+    }
   }
 
   // ✅ Agora usa Edge Function via api-client
