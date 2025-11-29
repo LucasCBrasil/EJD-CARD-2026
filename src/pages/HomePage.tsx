@@ -143,7 +143,7 @@ const HomePage: React.FC = () => {
       color: 'from-ruby-100 to-ruby-200',
       gradient: 'border-ruby-300',
       path: '/sapatinho-veloz',
-      canAccess: hasAssociatedCard && (canSellSapatinho || canPlaceOrderSapatinho || canViewSalesHistorySapatinho)
+      canAccess: canViewAdmin
     },
     {
       id: 'adm',
