@@ -198,22 +198,24 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
     return number.replace(/(\d{4})(?=\d)/g, '$1 ')
   }
 
+  const inputClass = 'w-full px-4 py-3 border-2 border-ferro-200 rounded-xl bg-creme-50 text-ferro-900 focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200'
+
   return (
     <div className="space-y-4">
       <Header 
             title="Adicionar Valor"
-            subtitle="Adicione crédito ao seu cartão mágico"
+            subtitle="Adicione crédito ao cartão do encontrista"
             showLogo={false}
         />
       <div className="w-full relative z-10">
         <div className="mx-auto w-full">
 
           {/* Formulário */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="painel p-5 md:p-8">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Busca Unificada - Nome ou Número */}
               <div className="relative" ref={dropdownRef}>
-                <label htmlFor="searchQuery" className="block text-sm font-semibold text-black mb-2">
+                <label htmlFor="searchQuery" className="block text-sm font-semibold text-ferro-900 mb-2">
                   🔍 Buscar Cartão
                 </label>
                 <div className="relative">
@@ -223,8 +225,8 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
                     value={searchQuery}
                     onChange={handleSearchChange}
                     onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
-                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
-                    placeholder="Nome ou número do cartão (ex: João ou 001)"
+                    className={`${inputClass} pr-11`}
+                    placeholder="Nome ou número (ex: João ou 001)"
                     autoComplete="off"
                   />
                   {isSearching && (
@@ -236,18 +238,18 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
 
                 {/* Dropdown de resultados */}
                 {showDropdown && searchResults.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border-2 border-ferro-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-1 bg-creme-50 border-2 border-ferro-200 rounded-xl shadow-bilhete max-h-60 overflow-y-auto">
                     {searchResults.map((card) => (
                       <button
                         key={card.id}
                         type="button"
                         onClick={() => handleSelectCard(card)}
-                        className="w-full px-4 py-3 text-left hover:bg-ferro-50 transition-colors border-b border-gray-100 last:border-b-0 focus:bg-ferro-100 focus:outline-none"
+                        className="w-full !px-4 !py-3 text-left hover:bg-creme-200 transition-colors border-b border-ferro-100 last:border-b-0 focus:bg-creme-200 focus:outline-none"
                       >
-                        <div className="font-medium text-gray-900">{card.userName || 'Sem nome'}</div>
-                        <div className="text-sm text-gray-500 flex justify-between">
-                          <span>Cartão: <strong>{card.cardNumber}</strong></span>
-                          <span>Saldo: R$ {(card.balance || 0).toFixed(2).replace('.', ',')}</span>
+                        <div className="font-semibold text-ferro-900">{card.userName || 'Sem nome'}</div>
+                        <div className="text-sm text-ferro-600 flex justify-between gap-3">
+                          <span>Cartão <strong className="font-ticket text-ferro-800">{card.cardNumber}</strong></span>
+                          <span>R$ {(card.balance || 0).toFixed(2).replace('.', ',')}</span>
                         </div>
                       </button>
                     ))}
@@ -256,14 +258,14 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
               </div>
 
               {error && (
-                <div className="bg-red-100 border border-red-300 rounded-lg p-4 text-center">
-                  <p className="text-red-800">{error}</p>
+                <div className="bg-vagao-50 border-2 border-vagao-300 rounded-xl p-3 text-center">
+                  <p className="text-vagao-800 font-semibold text-sm">⚠️ {error}</p>
                 </div>
               )}
 
               {/* Valor a ser adicionado */}
               <div>
-                <label htmlFor="amount" className="block text-sm font-semibold text-black mb-2">
+                <label htmlFor="amount" className="block text-sm font-semibold text-ferro-900 mb-2">
                   💰 Valor a Adicionar (R$)
                 </label>
                 <input
@@ -273,22 +275,30 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
                   value={formattedAmount}
                   onChange={handleAmountChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
+                  className={`${inputClass} font-slab text-xl`}
                   placeholder="0,00"
                 />
               </div>
 
               {/* Informações do cartão selecionado */}
               {selectedCard && (
-                <div className="bg-gradient-to-r from-ferro-100 to-ferro-200 rounded-xl p-4">
-                  <h4 className="font-semibold text-black mb-2">📋 Cartão Selecionado</h4>
-                  <p className="text-black"><strong>Nome:</strong> {selectedCard.userName || 'Sem nome'}</p>
-                  <p className="text-black"><strong>Número:</strong> {formatCardNumber(selectedCard.cardNumber || '')}</p>
-                  <p className="text-black"><strong>Saldo Atual:</strong> R$ {(selectedCard.balance || 0).toFixed(2).replace('.', ',')}</p>
+                <div className="bg-creme-200 border border-ferro-200 rounded-xl p-4 space-y-2 animate-fade-in">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="font-display text-sm uppercase tracking-wider text-ferro-700">🎫 Cartão Selecionado</h4>
+                    <span className="font-ticket font-bold text-ferro-900">Nº {formatCardNumber(selectedCard.cardNumber || '')}</span>
+                  </div>
+                  <p className="text-ferro-900 font-semibold">{selectedCard.userName || 'Sem nome'}</p>
+                  <div className="picote-horizontal pt-2 flex justify-between items-baseline">
+                    <span className="text-sm text-ferro-600">Saldo atual</span>
+                    <span className="font-slab text-ferro-900">R$ {(selectedCard.balance || 0).toFixed(2).replace('.', ',')}</span>
+                  </div>
                   {amount && (
-                    <p className="text-black mt-2">
-                      <strong>Novo Saldo:</strong> R$ {((selectedCard.balance || 0) + parseFloat(amount || '0')).toFixed(2).replace('.', ',')}
-                    </p>
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-sm text-ferro-600">Novo saldo</span>
+                      <span className="font-slab text-lg text-green-700">
+                        R$ {((selectedCard.balance || 0) + parseFloat(amount || '0')).toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
                   )}
                 </div>
               )}
@@ -297,12 +307,12 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 !text-black shadow-lg hover:shadow-ferro-200 font-semibold"
+                className="w-full"
                 disabled={isLoading || !selectedCard}
               >
                 {isLoading ? (
                   <>
-                    <span className="animate-spin mr-2">✨</span>
+                    <span className="inline-block animate-spin mr-2">⚙️</span>
                     Adicionando valor...
                   </>
                 ) : (

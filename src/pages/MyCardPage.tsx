@@ -152,9 +152,9 @@ const MyCardPage: React.FC = () => {
             return {
               id: sale.id,
               date: createdAt, // Guardar data completa com horário
-              store: sale.category === 'lojinha' ? 'Lojinha Mágica'
-                : sale.category === 'lanchonete' ? 'Lanchonete do Feiticeiro'
-                : 'Sapatinho velOz',
+              store: sale.category === 'lojinha' ? 'Lojinha'
+                : sale.category === 'lanchonete' ? 'Lanchonete'
+                : 'Sapatinho Veloz',
               product: items.map((item: any) => item.product_name || item.productName || 'Produto').join(', ') || 'Compra',
               amount: parseFloat(sale.total) || 0,
               type: sale.category || 'lojinha'
@@ -179,8 +179,8 @@ const MyCardPage: React.FC = () => {
         setCard(userCard)
 
         const mockPurchases: Purchase[] = [
-          { id: '1', date: '2025-01-15', store: 'Lojinha Mágica', product: 'Varinha Mágica', amount: 25.50, type: 'lojinha' },
-          { id: '2', date: '2025-01-14', store: 'Lanchonete do Feiticeiro', product: 'Hambúrguer Especial', amount: 18.00, type: 'lanchonete' }
+          { id: '1', date: '2026-01-15', store: 'Lojinha', product: 'Caneca Trilhos e Destinos', amount: 25.50, type: 'lojinha' },
+          { id: '2', date: '2026-01-14', store: 'Lanchonete', product: 'Hambúrguer Especial', amount: 18.00, type: 'lanchonete' }
         ]
         setPurchases(mockPurchases)
       }
@@ -208,12 +208,18 @@ const MyCardPage: React.FC = () => {
     return `${dateStr} às ${timeStr}`
   }
 
+  const purchaseIcon = (type: Purchase['type']) =>
+    type === 'lojinha' ? '🏪' : type === 'lanchonete' ? '🍔' : '💌'
+
+  const purchaseAccent = (type: Purchase['type']) =>
+    type === 'lojinha' ? 'bg-vagao-600' : type === 'lanchonete' ? 'bg-latao-500' : 'bg-ferro-500'
+
   // Loading inicial
   if (!card && !localData && !supabaseData) {
     return (
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-        <p className="text-gray-600">Carregando seu cartão...</p>
+      <div className="text-center py-10">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-ferro-200 border-t-ferro-800 mx-auto mb-4"></div>
+        <p className="text-ferro-600">Carregando seu cartão...</p>
       </div>
     )
   }
@@ -222,130 +228,135 @@ const MyCardPage: React.FC = () => {
     <div className="space-y-6">
       {/* Aviso Supabase não configurado */}
       {!isSupabaseConfigured() && (
-        <div className="bg-blue-100 border border-blue-300 rounded-xl p-4 text-center">
-          <p className="text-blue-800 text-sm">
+        <div className="bg-anil-100 border border-anil-300 rounded-xl p-4 text-center">
+          <p className="text-anil-800 text-sm">
             💡 <strong>Modo Local:</strong> Configure as variáveis de ambiente para usar o banco de dados.
           </p>
         </div>
       )}
 
-      {/* Card Info */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-black mb-6 font-display">
-            💳 Meu Cartão
-          </h2>
-          
-          {isLoadingData ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-              <p className="text-gray-600">Carregando informações...</p>
-            </div>
-          ) : !card ? (
-            <div className="text-center py-8">
-              <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-xl font-bold text-black mb-4 font-display">
-                Nenhum cartão associado
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Você ainda não possui um cartão associado à sua conta.
-              </p>
-              <Button
-                onClick={() => navigate({ to: '/cards/associate' })}
-                size="lg"
-                className="bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-white shadow-lg font-semibold"
-              >
-                🔗 Associar Cartão
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Nome */}
-              <div className="bg-gradient-to-r from-ferro-100 to-ferro-200 rounded-xl p-6">
-                <p className="text-black text-sm mb-2">👤 Nome do Portador</p>
-                <p className="text-xl font-bold text-black">{card.name}</p>
-              </div>
+      {/* Cabeçalho */}
+      <div className="text-center">
+        <h2 className="text-2xl md:text-3xl font-semibold text-ferro-900 font-display uppercase tracking-wide">
+          🎫 Meu Cartão
+        </h2>
+        <div className="trilho w-full max-w-xs mx-auto mt-3" />
+      </div>
 
-              {/* Número */}
-              <div className="bg-gradient-to-r from-blue-100 to-blue-200 rounded-xl p-6">
-                <p className="text-black text-sm mb-2">💳 Número do Cartão</p>
-                <p className="text-lg font-mono font-bold text-black">
+      {/* Bilhete do cartão */}
+      {isLoadingData ? (
+        <div className="painel text-center py-10 px-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-4 border-ferro-200 border-t-ferro-800 mx-auto mb-4"></div>
+          <p className="text-ferro-600">Carregando informações...</p>
+        </div>
+      ) : !card ? (
+        <div className="painel text-center py-10 px-6">
+          <div className="text-6xl mb-4">🎫</div>
+          <h3 className="text-xl font-semibold text-ferro-900 mb-2 font-display uppercase tracking-wide">
+            Nenhum cartão associado
+          </h3>
+          <p className="text-ferro-600 mb-6">
+            Você ainda não possui um cartão associado à sua conta.
+          </p>
+          <Button
+            onClick={() => navigate({ to: '/cards/associate' })}
+            size="lg"
+            className="!bg-vagao-600 hover:!bg-vagao-700 !border-vagao-600 !text-creme-50"
+          >
+            🔗 Associar Cartão
+          </Button>
+        </div>
+      ) : (
+        <div className="bilhete overflow-hidden mx-auto max-w-2xl">
+          <div className="flex flex-col md:flex-row">
+            {/* Canhoto */}
+            <div className="bg-caldeira rounded-t-xl md:rounded-tr-none md:rounded-l-xl px-5 py-4 md:w-48 shrink-0 flex md:flex-col items-center md:items-start justify-between gap-2">
+              <div>
+                <p className="font-display text-[11px] tracking-[0.3em] uppercase text-creme-200/70">Encontrão EJD</p>
+                <p className="font-display text-lg font-semibold uppercase tracking-wide text-creme-200 leading-tight">25 Anos</p>
+              </div>
+              <div className="text-right md:text-left">
+                <p className="font-display text-[11px] tracking-[0.3em] uppercase text-creme-200/70">Bilhete Nº</p>
+                <p className="font-ticket text-2xl font-bold text-latao-400 leading-none">
                   {formatCardNumber(card.cardNumber)}
                 </p>
               </div>
+            </div>
 
-              {/* Saldo */}
-              <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-xl p-6">
-                <p className="text-black text-sm mb-2">💰 Saldo Disponível</p>
-                <p className="text-3xl font-bold text-black">
-                  R$ {card.balance.toFixed(2).replace('.', ',')}
-                </p>
+            {/* Corpo do bilhete */}
+            <div className="flex-1 px-5 py-5 border-t-2 md:border-t-0 md:border-l-2 border-dashed border-ferro-800/30">
+              <p className="font-display text-[11px] tracking-[0.3em] uppercase text-ferro-500">Passageiro</p>
+              <p className="text-xl font-semibold text-ferro-900 leading-tight break-words">{card.name}</p>
+
+              <div className="picote-horizontal mt-4 pt-4 flex items-end justify-between gap-3">
+                <div>
+                  <p className="font-display text-[11px] tracking-[0.3em] uppercase text-ferro-500">Saldo Disponível</p>
+                  <p className={`font-slab text-3xl md:text-4xl leading-tight ${card.balance < 0 ? 'text-vagao-600' : 'text-ferro-900'}`}>
+                    R$ {card.balance.toFixed(2).replace('.', ',')}
+                  </p>
+                </div>
+                <span className="carimbo text-green-700 text-xs shrink-0">Embarque ok</span>
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Botão Abastecer PIX - só mostra se a feature flag estiver habilitada */}
       {card && pixEnabled === true && (
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-6">
-          <div className="text-center">
-            <h3 className="text-xl font-semibold text-black mb-4 font-display">
-              💰 Abastecer Cartão
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Adicione créditos ao seu cartão via PIX de forma rápida e segura.
-            </p>
-            <Button
-              onClick={() => navigate({ to: '/pix/$paymentId', params: { paymentId: 'new' } })}
-              size="lg"
-              className="bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-white shadow-lg font-semibold px-8"
-            >
-              💳 Gerar PIX para Abastecimento
-            </Button>
-          </div>
+        <div className="painel p-5 md:p-6 text-center">
+          <h3 className="text-xl font-semibold text-ferro-900 mb-2 font-display uppercase tracking-wide">
+            ⛽ Abastecer Cartão
+          </h3>
+          <p className="text-ferro-600 mb-5">
+            Adicione créditos ao seu cartão via PIX de forma rápida e segura.
+          </p>
+          <Button
+            onClick={() => navigate({ to: '/pix/$paymentId', params: { paymentId: 'new' } })}
+            size="lg"
+            className="w-full sm:w-auto !bg-vagao-600 hover:!bg-vagao-700 !border-vagao-600 !text-creme-50"
+          >
+            💳 Gerar PIX para Abastecimento
+          </Button>
         </div>
       )}
 
       {/* Histórico */}
       {card && (
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
-          <h3 className="text-xl font-semibold text-black mb-6 text-center font-display">
-            📋 Histórico de Compras
+        <div className="painel p-5 md:p-8">
+          <h3 className="text-xl font-semibold text-ferro-900 mb-5 text-center font-display uppercase tracking-wide">
+            📋 Histórico de Viagens
           </h3>
           
           {purchases.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {purchases.map((purchase) => (
                 <div 
                   key={purchase.id}
-                  className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200"
+                  className="flex items-stretch overflow-hidden rounded-xl bg-creme-100 border border-ferro-200"
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-2xl">
-                          {purchase.type === 'lojinha' ? '🏪' : purchase.type === 'lanchonete' ? '🍔' : '👠'}
-                        </span>
-                        <h4 className="font-semibold text-black">{purchase.product}</h4>
+                  <div className={`${purchaseAccent(purchase.type)} w-1.5 shrink-0`} />
+                  <div className="flex flex-1 items-start justify-between gap-3 px-4 py-3 min-w-0">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className="text-2xl leading-none mt-0.5">{purchaseIcon(purchase.type)}</span>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-ferro-900 font-body leading-snug break-words">{purchase.product}</h4>
+                        <p className="text-xs text-ferro-600 mt-0.5">
+                          {purchase.store} • {formatDateTime(purchase.date)}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        {purchase.store} • {formatDateTime(purchase.date)}
-                      </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-black">
-                        R$ {purchase.amount.toFixed(2).replace('.', ',')}
-                      </p>
-                    </div>
+                    <p className="font-slab text-base text-ferro-900 shrink-0 whitespace-nowrap">
+                      R$ {purchase.amount.toFixed(2).replace('.', ',')}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="text-4xl mb-4">🛒</div>
-              <p className="text-gray-600">Nenhuma compra realizada ainda</p>
+              <div className="text-4xl mb-3">🛤️</div>
+              <p className="text-ferro-600">Nenhuma compra realizada ainda</p>
             </div>
           )}
         </div>

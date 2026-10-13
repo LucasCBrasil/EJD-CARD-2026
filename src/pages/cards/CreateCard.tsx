@@ -113,13 +113,18 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
   }
 
 
+  const inputClass = 'w-full px-4 py-3 border-2 border-ferro-200 rounded-xl bg-creme-50 text-ferro-900 focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200'
+  const labelClass = 'block text-sm font-semibold text-ferro-900 mb-1 font-body'
+
   return (
-    <div className="space-y-3">
-      {/* Header compacto */}
+    <div className="space-y-4">
+      {/* Cabeçalho */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-ferro-600 font-display">
-          💳 Cadastrar Cartão
+        <h1 className="text-2xl md:text-3xl font-semibold text-ferro-900 font-display uppercase tracking-wide">
+          🎫 Cadastrar Cartão
         </h1>
+        <p className="text-sm text-ferro-600 mt-1">Emita um novo bilhete para o encontrista</p>
+        <div className="trilho w-full max-w-xs mx-auto mt-3" />
       </div>
 
       <div className="w-full relative z-10">
@@ -127,45 +132,37 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
 
           {/* Estado: Cartão criado com sucesso */}
           {createdCard && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-green-200 p-6 animate-fade-in">
+            <div className="painel p-5 md:p-6 animate-fade-in">
               <div className="text-center">
-                <div className="flex items-center justify-center gap-3 mb-3">
-                  <span className="text-3xl">✅</span>
-                  <div className="text-left">
-                    <p className="font-bold text-green-800 text-lg font-display">
-                      Cartão Criado!
-                    </p>
-                    <p className="text-green-600 text-sm">
-                      Pronto para uso
-                    </p>
-                  </div>
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <span className="carimbo text-green-700 text-sm">✓ Cartão emitido</span>
                 </div>
 
-                <div className="bg-gradient-to-r from-ferro-100 to-ferro-200 rounded-xl p-4 mb-4 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-black/70 text-sm">Número</span>
-                    <span className="font-bold text-black text-lg font-mono">
-                      #{createdCard.cardNumber}
+                <div className="bilhete overflow-hidden mb-5 text-left">
+                  <div className="bg-caldeira rounded-t-xl px-4 py-2 flex items-center justify-between">
+                    <span className="font-display text-xs tracking-[0.25em] uppercase text-creme-200">Bilhete</span>
+                    <span className="font-ticket text-lg font-bold text-latao-400">
+                      Nº {createdCard.cardNumber}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-black/70 text-sm">Portador</span>
-                    <span className="font-semibold text-black">
-                      {createdCard.userName}
-                    </span>
-                  </div>
-                  <div className="border-t border-ferro-300 pt-2 mt-2">
-                    <p className="text-black/70 text-xs mb-1">Saldo Inicial</p>
-                    <p className="text-3xl font-bold text-black">
-                      R$ {createdCard.balance.toFixed(2).replace('.', ',')}
-                    </p>
+                  <div className="px-5 py-4 space-y-3">
+                    <div>
+                      <p className="font-display text-[11px] tracking-[0.25em] uppercase text-ferro-500">Passageiro</p>
+                      <p className="font-semibold text-ferro-900 text-lg leading-tight">{createdCard.userName}</p>
+                    </div>
+                    <div className="picote-horizontal pt-3">
+                      <p className="font-display text-[11px] tracking-[0.25em] uppercase text-ferro-500">Saldo Inicial</p>
+                      <p className="font-slab text-3xl text-ferro-900">
+                        R$ {createdCard.balance.toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 <Button
                   onClick={handleNewCard}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-black shadow-lg hover:shadow-ferro-200 font-semibold"
+                  className="w-full"
                 >
                   ➕ Cadastrar Novo Cartão
                 </Button>
@@ -175,11 +172,11 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
 
           {/* Estado: Formulário (inicial ou após clicar em "novo cartão") */}
           {!createdCard && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-6">
+            <div className="painel p-5 md:p-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Nome do Portador */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-semibold text-black mb-1 font-body">
+                  <label htmlFor="name" className={labelClass}>
                     👤 Nome do Portador
                   </label>
                   <input
@@ -188,7 +185,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
+                    className={inputClass}
                     placeholder="Digite o nome completo"
                     autoFocus
                   />
@@ -196,8 +193,8 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
 
                 {/* Número do Cartão */}
                 <div>
-                  <label htmlFor="cardNumber" className="block text-sm font-semibold text-black mb-1 font-body">
-                    💳 Número do Cartão
+                  <label htmlFor="cardNumber" className={labelClass}>
+                    🎫 Número do Cartão
                   </label>
                   <input
                     type="text"
@@ -206,7 +203,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
                     required
-                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
+                    className={`${inputClass} font-ticket tracking-widest`}
                     placeholder="001"
                     maxLength={3}
                   />
@@ -214,7 +211,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
 
                 {/* Código do Cartão */}
                 <div>
-                  <label htmlFor="cardCode" className="block text-sm font-semibold text-black mb-1 font-body">
+                  <label htmlFor="cardCode" className={labelClass}>
                     🔑 Código do Cartão
                   </label>
                   <input
@@ -223,14 +220,14 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     value={cardCode}
                     onChange={(e) => setCardCode(e.target.value.replace(/\s+/g, ''))}
                     required
-                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
+                    className={`${inputClass} font-ticket`}
                     placeholder="Digite o código do cartão"
                   />
                 </div>
 
                 {/* Telefone */}
                 <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-semibold text-black mb-1 font-body">
+                  <label htmlFor="phoneNumber" className={labelClass}>
                     📱 Telefone
                   </label>
                   <input
@@ -240,14 +237,14 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     value={formattedPhone}
                     onChange={handlePhoneChange}
                     required
-                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
+                    className={inputClass}
                     placeholder="(11) 99999-9999"
                   />
                 </div>
 
                 {/* Saldo Inicial */}
                 <div>
-                  <label htmlFor="initialBalance" className="block text-sm font-semibold text-black mb-1 font-body">
+                  <label htmlFor="initialBalance" className={labelClass}>
                     💰 Saldo Inicial (R$)
                   </label>
                   <input
@@ -256,7 +253,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     id="initialBalance"
                     value={formattedBalance}
                     onChange={handleBalanceChange}
-                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
+                    className={inputClass}
                     placeholder="0,00"
                   />
                 </div>
@@ -266,12 +263,12 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                   const error = createCardMutation.error as any
                   const errorMessage = error?.message || error?.error || error?.toString() || 'Ocorreu um erro ao tentar criar o cartão. Por favor, tente novamente.'
                   return (
-                    <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                    <div className="bg-vagao-50 border-2 border-vagao-300 rounded-xl p-3">
                       <div className="flex items-start">
-                        <span className="text-red-500 text-lg mr-2">⚠️</span>
+                        <span className="text-vagao-600 text-lg mr-2">⚠️</span>
                         <div className="flex-1">
-                          <p className="text-red-800 font-semibold text-sm mb-1">Erro ao criar cartão</p>
-                          <p className="text-red-700 text-xs whitespace-pre-wrap">
+                          <p className="text-vagao-800 font-semibold text-sm mb-1">Erro ao criar cartão</p>
+                          <p className="text-vagao-700 text-xs whitespace-pre-wrap">
                             {errorMessage}
                           </p>
                         </div>
@@ -284,17 +281,17 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-black shadow-lg hover:shadow-ferro-200 font-semibold"
+                  className="w-full !bg-vagao-600 hover:!bg-vagao-700 !border-vagao-600 !text-creme-50"
                   disabled={createCardMutation.isPending}
                 >
                   {createCardMutation.isPending ? (
                     <>
-                      <span className="animate-spin mr-2">✨</span>
-                      Criando cartão...
+                      <span className="inline-block animate-spin mr-2">⚙️</span>
+                      Emitindo cartão...
                     </>
                   ) : (
                     <>
-                      💳 Criar Cartão
+                      🎫 Criar Cartão
                     </>
                   )}
                 </Button>

@@ -56,18 +56,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (requiredPermission && !hasPermission(requiredPermission)) {
     if (showAccessDenied) {
       return (
-        <div className="min-h-screen flex items-center justify-center" style={{
-          background: 'linear-gradient(135deg, #f0fdf4 0%, #fef3c7 25%, #faf5ff 50%, #f0f9ff 75%, #fdf2f8 100%)',
-        }}>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-red-200 p-8 text-center max-w-md">
-            <div className="text-6xl mb-4">🚫</div>
-            <h2 className="text-2xl font-bold text-red-600 mb-4">Acesso Negado</h2>
-            <p className="text-gray-600 mb-6">
+        <div className="min-h-screen flex items-center justify-center px-4">
+          <div className="painel p-8 text-center max-w-md w-full text-ferro-900">
+            <div className="text-6xl mb-4">🚧</div>
+            <h2 className="text-2xl font-display font-semibold uppercase tracking-wide text-vagao-600 mb-4">Acesso Negado</h2>
+            <p className="text-ferro-700 mb-6">
               Você não tem permissão para acessar esta área.
             </p>
             <button 
               onClick={() => window.history.back()}
-              className="bg-red-500 hover:bg-red-600 text-black px-6 py-2 rounded-lg"
+              className="bg-ferro-800 hover:bg-ferro-700 text-creme-200 font-display uppercase tracking-wide px-6 py-2 rounded-xl"
             >
               Voltar
             </button>
@@ -88,18 +86,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (!hasRequiredRole) {
       if (showAccessDenied) {
         return (
-          <div className="min-h-screen flex items-center justify-center" style={{
-            background: 'linear-gradient(135deg, #f0fdf4 0%, #fef3c7 25%, #faf5ff 50%, #f0f9ff 75%, #fdf2f8 100%)',
-          }}>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-red-200 p-8 text-center max-w-md">
-              <div className="text-6xl mb-4">👑</div>
-              <h2 className="text-2xl font-bold text-red-600 mb-4">Acesso Restrito</h2>
-              <p className="text-gray-600 mb-6">
+          <div className="min-h-screen flex items-center justify-center px-4">
+            <div className="painel p-8 text-center max-w-md w-full text-ferro-900">
+              <div className="text-6xl mb-4">🎫</div>
+              <h2 className="text-2xl font-display font-semibold uppercase tracking-wide text-vagao-600 mb-4">Acesso Restrito</h2>
+              <p className="text-ferro-700 mb-6">
                 Esta área é restrita para {requiredRole}s.
               </p>
               <button 
                 onClick={() => window.history.back()}
-                className="bg-red-500 hover:bg-red-600 text-black px-6 py-2 rounded-lg"
+                className="bg-ferro-800 hover:bg-ferro-700 text-creme-200 font-display uppercase tracking-wide px-6 py-2 rounded-xl"
               >
                 Voltar
               </button>

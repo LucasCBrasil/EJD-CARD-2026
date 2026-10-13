@@ -162,7 +162,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
 
   return (
     <div className="relative">
-      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold pointer-events-none">
+      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ferro-500 font-display font-semibold pointer-events-none">
         R$
       </span>
       <input
@@ -176,10 +176,10 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
         onBlur={handleBlur}
         disabled={disabled}
         placeholder={placeholder}
-        className={`w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl 
+        className={`w-full !pl-12 pr-4 py-3 border-2 border-ferro-200 rounded-xl bg-creme-50 text-ferro-900
           focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 
-          transition-colors text-xl font-bold
-          disabled:bg-gray-100 disabled:cursor-not-allowed
+          transition-colors font-slab
+          disabled:bg-creme-200 disabled:text-ferro-500 disabled:cursor-not-allowed
           ${className}`}
       />
     </div>
@@ -274,10 +274,10 @@ export const CpfCnpjInput: React.FC<CpfCnpjInputProps> = ({
       onChange={handleChange}
       disabled={disabled}
       placeholder={dynamicPlaceholder}
-      className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl 
+      className={`w-full px-4 py-3 border-2 border-ferro-200 rounded-xl bg-creme-50 text-ferro-900
         focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 
-        transition-colors
-        disabled:bg-gray-100 disabled:cursor-not-allowed
+        transition-colors font-ticket tracking-wide
+        disabled:bg-creme-200 disabled:text-ferro-500 disabled:cursor-not-allowed
         ${className}`}
     />
   )

@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { useProducts } from '../../hooks/useProducts'
 import { SaleItem } from '../../types'
-import { Button, LoadingSpinner } from '../../components/shared'
+import { Button, TrainLoader } from '../../components/shared'
 import { sapatinhoVelozApi } from '../../api/sapatinho-veloz.api' // ⚠️ Usa apenas create() que já chama Edge Function via api-client
 import { useToastContext } from '../../contexts/ToastContext'
 import OptimizedImage from '../../components/ui/OptimizedImage'
@@ -203,7 +203,7 @@ const SapatinhoVelozPage: React.FC = () => {
       // Aguardar um pouco para garantir que o banco processou tudo
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      showSuccess('Sucesso!', 'Pedido Sapatinho velOz criado com sucesso! Sua encomenda chegará ao destinatário até o final do Encontrão.')
+      showSuccess('Sucesso!', 'Pedido Sapatinho Veloz criado com sucesso! Sua encomenda chegará ao destinatário até o final do Encontrão.')
 
       // Limpar formulário
       setSenderTeam('')
@@ -228,13 +228,17 @@ const SapatinhoVelozPage: React.FC = () => {
     }
   }
 
+  const fieldClass = "w-full px-4 py-3 text-base border-2 border-ferro-200 rounded-xl bg-creme-50 text-ferro-900 focus:ring-2 focus:ring-latao-400 focus:border-ferro-500"
+
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border-2 border-yellow-300 p-4 sm:p-6 md:p-10">
+    <div className="painel p-4 sm:p-6 md:p-10 text-ferro-900">
       <div className="mb-6 md:mb-8">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-3 md:mb-4">👠 Sapatinho velOz</h2>
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 sm:p-4 md:p-5 mb-4 md:mb-5 rounded-r-lg">
-          <p className="text-sm sm:text-base font-bold text-gray-900 mb-2 md:mb-3">⚠️ Regras importantes:</p>
-          <ul className="text-sm sm:text-base text-gray-800 space-y-1 sm:space-y-2 ml-4 sm:ml-5 list-disc leading-relaxed">
+        <p className="text-xs font-display uppercase tracking-[0.2em] text-vagao-600 mb-1">Correio do Encontrão</p>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-semibold uppercase tracking-wide text-ferro-900 mb-3 md:mb-4">💌 Sapatinho Veloz</h2>
+        <div className="trilho w-full mb-5" />
+        <div className="bg-latao-50 border border-latao-300 border-l-4 border-l-latao-500 p-3 sm:p-4 md:p-5 mb-4 md:mb-5 rounded-xl">
+          <p className="text-sm sm:text-base font-display uppercase tracking-wide font-semibold text-ferro-900 mb-2 md:mb-3">⚠️ Regras de embarque</p>
+          <ul className="text-sm sm:text-base text-ferro-700 space-y-1 sm:space-y-2 ml-4 sm:ml-5 list-disc leading-relaxed">
             <li>Só é permitida a venda para o destinatário que não seja você mesmo</li>
             <li>Você pode enviar quantos itens quiser</li>
             <li>A encomenda será entregue na Sala de Apoio do destinatário</li>
@@ -242,26 +246,25 @@ const SapatinhoVelozPage: React.FC = () => {
           </ul>
         </div>
         {userBalance > 0 && (
-          <div className="bg-ferro-100 border-2 border-ferro-400 rounded-lg p-3 sm:p-4 mb-4 md:mb-5">
-            <p className="text-base sm:text-lg font-bold text-ferro-900">
-              💳 Saldo disponível: R$ {userBalance.toFixed(2)}
-            </p>
+          <div className="bg-creme-200 border border-ferro-200 rounded-xl p-3 sm:p-4 mb-4 md:mb-5 flex items-center justify-between gap-3">
+            <span className="text-sm font-display uppercase tracking-wide text-ferro-700">💳 Saldo disponível</span>
+            <span className="text-lg sm:text-xl font-slab text-ferro-900">R$ {userBalance.toFixed(2)}</span>
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
         {/* Equipe do Remetente */}
         <div>
-          <label htmlFor="senderTeam" className="block text-base font-semibold text-gray-900 mb-3">
-            Qual a SUA equipe? <span className="text-red-600 font-bold">*</span>
+          <label htmlFor="senderTeam" className="block text-base font-semibold text-ferro-900 mb-2">
+            Qual a SUA equipe? <span className="text-vagao-600 font-bold">*</span>
           </label>
           <select
             id="senderTeam"
             value={senderTeam}
             onChange={(e) => setSenderTeam(e.target.value)}
             required
-            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-ferro-500 focus:border-ferro-500 bg-white text-gray-900"
+            className={fieldClass}
           >
             <option value="">Selecione sua equipe</option>
             {TEAMS.map(team => (
@@ -269,7 +272,7 @@ const SapatinhoVelozPage: React.FC = () => {
             ))}
           </select>
           {isAnonymous && (
-            <p className="mt-2 text-sm text-purple-700 font-medium italic">
+            <p className="mt-2 text-sm text-anil-700 font-medium italic">
               ⚠️ Sua equipe não será exibida no pedido (envio anônimo)
             </p>
           )}
@@ -277,8 +280,8 @@ const SapatinhoVelozPage: React.FC = () => {
 
         {/* Nome do Destinatário */}
         <div>
-          <label htmlFor="recipientName" className="block text-base font-semibold text-gray-900 mb-3">
-            Qual nome do destinatário? <span className="text-red-600 font-bold">*</span>
+          <label htmlFor="recipientName" className="block text-base font-semibold text-ferro-900 mb-2">
+            Qual nome do destinatário? <span className="text-vagao-600 font-bold">*</span>
           </label>
           <input
             type="text"
@@ -286,22 +289,22 @@ const SapatinhoVelozPage: React.FC = () => {
             value={recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
             required
-            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-ferro-500 focus:border-ferro-500 bg-white text-gray-900"
+            className={fieldClass}
             placeholder="Nome do destinatário"
           />
         </div>
 
         {/* Endereço/Equipe do Destinatário */}
         <div>
-          <label htmlFor="recipientAddress" className="block text-base font-semibold text-gray-900 mb-3">
-            Qual endereço do destinatário? <span className="text-red-600 font-bold">*</span>
+          <label htmlFor="recipientAddress" className="block text-base font-semibold text-ferro-900 mb-2">
+            Qual endereço do destinatário? <span className="text-vagao-600 font-bold">*</span>
           </label>
           <select
             id="recipientAddress"
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
             required
-            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-ferro-500 focus:border-ferro-500 bg-white text-gray-900"
+            className={fieldClass}
           >
             <option value="">Selecione a equipe do destinatário</option>
             {TEAMS.map(team => (
@@ -312,19 +315,21 @@ const SapatinhoVelozPage: React.FC = () => {
 
         {/* Produtos */}
         <div>
-          <label className="block text-base font-semibold text-gray-900 mb-3">
-            O que você quer enviar? <span className="text-red-600 font-bold">*</span>
+          <label className="block text-base font-semibold text-ferro-900 mb-2">
+            O que você quer enviar? <span className="text-vagao-600 font-bold">*</span>
           </label>
           {isLoadingProducts ? (
-            <p className="text-gray-500">Carregando produtos...</p>
+            <p className="text-ferro-500">Carregando produtos...</p>
           ) : products.length === 0 ? (
-            <p className="text-gray-500">Nenhum produto disponível</p>
+            <p className="text-ferro-500">Nenhum produto disponível</p>
           ) : (
-            <div className="space-y-3 sm:space-y-4 max-h-96 overflow-y-auto border-2 border-gray-300 rounded-lg p-3 sm:p-4 md:p-5 bg-white">
-              {products.map(product => (
-                <div key={product.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-ferro-300 transition-colors gap-3 sm:gap-0">
-                  <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-ferro-200 bg-white flex-shrink-0">
+            <div className="space-y-3 max-h-96 overflow-y-auto border border-ferro-200 rounded-xl p-2 sm:p-4 bg-creme-100">
+              {products.map(product => {
+                const isSelected = !!selectedProducts[product.id]
+                return (
+                <div key={product.id} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-creme-50 rounded-xl border-2 transition-colors gap-3 sm:gap-0 ${isSelected ? 'border-ferro-800' : 'border-ferro-200 hover:border-ferro-400'}`}>
+                  <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-ferro-200 bg-creme-200 flex-shrink-0">
                       <OptimizedImage
                         src={product.image_url || (product as any).image || null}
                         alt={product.name}
@@ -335,24 +340,24 @@ const SapatinhoVelozPage: React.FC = () => {
                     <input
                       type="checkbox"
                       id={`product-${product.id}`}
-                      checked={!!selectedProducts[product.id]}
+                      checked={isSelected}
                       onChange={() => handleProductToggle(product.id)}
-                      className="w-5 h-5 sm:w-6 sm:h-6 text-ferro-600 border-2 border-gray-400 rounded focus:ring-ferro-500 cursor-pointer flex-shrink-0 mt-1"
+                      className="w-5 h-5 sm:w-6 sm:h-6 !p-0 accent-ferro-800 border-2 border-ferro-300 rounded cursor-pointer flex-shrink-0 mt-1"
                     />
-                    <label htmlFor={`product-${product.id}`} className="flex-1 cursor-pointer min-w-0">
-                      <div className="text-base sm:text-lg font-bold text-gray-900 break-words">{product.name}</div>
+                    <label htmlFor={`product-${product.id}`} className="flex-1 cursor-pointer min-w-0 !mb-0">
+                      <div className="text-base sm:text-lg font-bold text-ferro-900 break-words leading-tight">{product.name}</div>
                       {product.description && (
-                        <div className="text-sm sm:text-base text-gray-700 mt-1 break-words">{product.description}</div>
+                        <div className="text-sm text-ferro-600 font-normal mt-1 break-words">{product.description}</div>
                       )}
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="text-xl sm:text-2xl font-bold text-ferro-700">R$ {product.price.toFixed(2)}</div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
+                        <div className="text-lg sm:text-xl font-slab text-vagao-600">R$ {product.price.toFixed(2)}</div>
                         {product.stock !== null && product.stock !== undefined && (
                           <div className={`text-sm font-semibold ${
                             product.stock === 0 
-                              ? 'text-red-600' 
+                              ? 'text-vagao-600' 
                               : product.stock <= 5 
-                                ? 'text-yellow-600' 
-                                : 'text-ferro-600'
+                                ? 'text-latao-700' 
+                                : 'text-ferro-500'
                           }`}>
                             📦 {product.stock === 0 ? 'Indisponível' : `${product.stock} em estoque`}
                           </div>
@@ -360,62 +365,65 @@ const SapatinhoVelozPage: React.FC = () => {
                       </div>
                     </label>
                   </div>
-                  {selectedProducts[product.id] && (
-                    <div className="flex items-center justify-end sm:justify-start space-x-1.5 sm:space-x-3 flex-shrink-0">
-                      <Button
+                  {isSelected && (
+                    <div className="flex items-center justify-end gap-2 flex-shrink-0">
+                      <button
                         type="button"
+                        aria-label="Diminuir quantidade"
                         onClick={() => handleQuantityChange(product.id, (selectedProducts[product.id] || 1) - 1)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-1.5 sm:px-4 py-1 sm:py-2 text-xs sm:text-lg font-bold rounded-md sm:rounded-lg min-w-[32px] sm:min-w-0 h-8 sm:h-auto flex items-center justify-center"
+                        className="!p-0 w-10 h-10 rounded-lg bg-creme-200 hover:bg-creme-300 text-ferro-800 border-2 border-ferro-200 text-xl font-bold flex items-center justify-center"
                       >
-                        ➖
-                      </Button>
-                      <span className="w-7 sm:w-12 text-center font-bold text-sm sm:text-xl text-gray-900 flex items-center justify-center">{selectedProducts[product.id]}</span>
-                      <Button
+                        −
+                      </button>
+                      <span className="w-10 text-center font-slab text-lg text-ferro-900">{selectedProducts[product.id]}</span>
+                      <button
                         type="button"
+                        aria-label="Aumentar quantidade"
                         onClick={() => handleQuantityChange(product.id, (selectedProducts[product.id] || 1) + 1)}
-                        className="bg-green-500 hover:bg-green-600 text-white px-1.5 sm:px-4 py-1 sm:py-2 text-xs sm:text-lg font-bold rounded-md sm:rounded-lg min-w-[32px] sm:min-w-0 h-8 sm:h-auto flex items-center justify-center"
+                        className="!p-0 w-10 h-10 rounded-lg bg-ferro-800 hover:bg-ferro-700 text-creme-200 text-xl font-bold flex items-center justify-center"
                       >
-                        ➕
-                      </Button>
+                        +
+                      </button>
                     </div>
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
 
         {/* Mensagem */}
         <div>
-          <label htmlFor="message" className="block text-base font-semibold text-gray-900 mb-3">
-            Se desejar, escreva uma mensagem especial.
+          <label htmlFor="message" className="block text-base font-semibold text-ferro-900 mb-2">
+            ✉️ Se desejar, escreva uma mensagem especial.
           </label>
           <textarea
             id="message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
-            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-ferro-500 focus:border-ferro-500 bg-white text-gray-900"
+            className={`${fieldClass} bg-creme-50 leading-relaxed`}
             placeholder="Escreva uma mensagem especial para o destinatário..."
           />
         </div>
 
         {/* Envio Anônimo */}
-        <div>
-          <label className="flex items-center space-x-3 cursor-pointer">
+        <div className="bg-creme-100 border border-ferro-200 rounded-xl p-3 sm:p-4">
+          <label className="flex items-center gap-3 cursor-pointer !mb-0">
             <input
               type="checkbox"
               id="isAnonymous"
               checked={isAnonymous}
               onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="w-6 h-6 text-ferro-600 border-2 border-gray-400 rounded focus:ring-ferro-500 cursor-pointer"
+              className="w-6 h-6 !p-0 accent-ferro-800 cursor-pointer"
             />
-            <span className="text-base font-semibold text-gray-900">
+            <span className="text-base font-semibold text-ferro-900">
               Envio anônimo?
             </span>
           </label>
           {isAnonymous && (
-            <p className="mt-2 text-sm text-gray-600 ml-9">
+            <p className="mt-2 text-sm text-ferro-600 ml-9">
               Seu nome e equipe não serão exibidos no pedido
             </p>
           )}
@@ -423,64 +431,40 @@ const SapatinhoVelozPage: React.FC = () => {
 
         {/* Total */}
         {Object.keys(selectedProducts).length > 0 && (
-          <div className="bg-ferro-100 border-2 border-ferro-400 rounded-lg p-4 sm:p-5">
-            <div className="flex justify-between items-center mb-2 sm:mb-3">
-              <span className="text-lg sm:text-xl font-bold text-gray-900">Total:</span>
-              <span className="text-2xl sm:text-3xl font-bold text-ferro-700">
+          <div className="bilhete p-4 sm:p-5">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-lg font-display uppercase tracking-wide text-ferro-800">Total</span>
+              <span className="text-2xl sm:text-3xl font-slab text-vagao-600">
                 R$ {getTotal().toFixed(2)}
               </span>
             </div>
             {userBalance > 0 && (
-              <div className="text-sm sm:text-base text-gray-800 font-medium">
-                Saldo após compra: R$ {(userBalance - getTotal()).toFixed(2)}
+              <div className="picote-horizontal pt-2 text-sm sm:text-base text-ferro-700 font-medium flex justify-between">
+                <span>Saldo após compra</span>
+                <span className="font-slab text-ferro-900">R$ {(userBalance - getTotal()).toFixed(2)}</span>
               </div>
             )}
           </div>
         )}
 
         {/* Botão de Enviar */}
-        <div className="flex space-x-4 mt-6 sm:mt-8">
+        <div className="mt-6 sm:mt-8">
           <Button
             type="submit"
             disabled={isProcessing || userBalance < getTotal() || Object.keys(selectedProducts).length === 0}
-            className="w-full sm:w-auto bg-ferro-500 hover:bg-ferro-600 text-white px-6 sm:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className="w-full sm:w-auto !bg-vagao-600 hover:!bg-vagao-700 !text-creme-50 !border-vagao-600 px-6 sm:px-10 py-3 sm:py-4 text-base sm:text-lg uppercase disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
-            {isProcessing ? '⏳ Processando...' : '✅ Finalizar Pedido'}
+            {isProcessing ? '⏳ Processando...' : '💌 Despachar Pedido'}
           </Button>
         </div>
       </form>
 
       {/* Modal de Loading - Bloqueia a tela durante o processamento */}
       {isProcessing && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-md">
-          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 border-4 border-yellow-300/50">
-            <div className="text-center">
-              <div className="mb-6 flex justify-center">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-yellow-200/50 animate-ping"></div>
-                  <div className="relative">
-                    <LoadingSpinner size="lg" />
-                  </div>
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3 font-display">
-                👠 Processando pedido...
-              </h3>
-              <p className="text-gray-700 text-base font-body">
-                Por favor, aguarde enquanto finalizamos seu pedido do Sapatinho velOz. 
-                <br />
-                <span className="text-sm text-gray-600 mt-2 block">
-                  Isso pode levar alguns minutos. Não feche esta página!
-                </span>
-              </p>
-              <div className="mt-4 flex justify-center space-x-1">
-                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <TrainLoader
+          title="Despachando pedido..."
+          message="Aguarde enquanto finalizamos seu pedido do Sapatinho Veloz. Isso pode levar alguns minutos. Não feche esta página!"
+        />
       )}
     </div>
   )

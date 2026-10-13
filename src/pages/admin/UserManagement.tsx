@@ -1,27 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Select,
-  MenuItem,
-  TextField,
-  InputAdornment,
-  Chip,
-  CircularProgress,
-  Alert,
-  Pagination,
-  FormControl,
-  InputLabel,
-  Box,
-  Typography,
-  Skeleton,
-  SelectChangeEvent,
-} from '@mui/material'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToastContext } from '../../contexts/ToastContext'
@@ -173,177 +150,170 @@ const UserManagement: React.FC = () => {
 
   if (!canManageUsers) {
     return (
-      <Alert severity="error" sx={{ mt: 2 }}>
+      <div role="alert" className="mt-4 rounded-xl border border-vagao-200 bg-vagao-50 px-4 py-3 text-sm text-vagao-700">
         Você não tem permissão para gerenciar usuários.
-      </Alert>
+      </div>
     )
   }
 
   return (
-    <div className="border-t border-gray-200 pt-6 mt-6">
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1f2937' }}>
-        👥 Gerenciar Usuários
-      </Typography>
+    <section className="border-t-2 border-dashed border-ferro-200 pt-6 mt-6">
+      <h3 className="text-lg font-display font-semibold uppercase tracking-wide text-ferro-800 mb-1">
+        Gerenciar Usuários
+      </h3>
       
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <p className="text-sm text-ferro-500 mb-4">
         {total} usuários cadastrados no sistema
-      </Typography>
+      </p>
 
       {/* Filtros */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-        <TextField
-          size="small"
-          placeholder="Buscar por nome ou email..."
-          value={searchQuery}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-          sx={{ minWidth: 250, flex: 1 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">🔍</InputAdornment>
-            ),
-          }}
-        />
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1 min-w-0">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ferro-400">🔍</span>
+          <input
+            type="search"
+            placeholder="Buscar por nome ou email..."
+            aria-label="Buscar por nome ou email"
+            value={searchQuery}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+            className="w-full !pl-10 !py-2.5"
+          />
+        </div>
         
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Filtrar Role</InputLabel>
-          <Select
-            value={roleFilter}
-            label="Filtrar Role"
-            onChange={(e: SelectChangeEvent<string>) => {
-              setRoleFilter(e.target.value)
-              setPage(1)
-            }}
-          >
-            <MenuItem value="">Todos</MenuItem>
-            {allRoles.map(role => (
-              <MenuItem key={role} value={role}>
-                {roleConfig[role].emoji} {roleConfig[role].label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+        <select
+          aria-label="Filtrar por role"
+          value={roleFilter}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+            setRoleFilter(e.target.value)
+            setPage(1)
+          }}
+          className="sm:w-52 !py-2.5 text-ferro-900"
+        >
+          <option value="">Todos os roles</option>
+          {allRoles.map(role => (
+            <option key={role} value={role}>
+              {roleConfig[role].emoji} {roleConfig[role].label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <div role="alert" className="mb-3 rounded-xl border border-vagao-200 bg-vagao-50 px-4 py-3 text-sm text-vagao-700">
           {error}
-        </Alert>
+        </div>
       )}
 
       {/* Tabela */}
-      <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#f3f4f6' }}>
-              <TableCell sx={{ fontWeight: 'bold' }}>Nome</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', width: 180 }}>Role</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', width: 120 }}>Cadastro</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              // Skeleton loading
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton variant="text" /></TableCell>
-                  <TableCell><Skeleton variant="text" /></TableCell>
-                  <TableCell><Skeleton variant="rounded" width={120} height={32} /></TableCell>
-                  <TableCell><Skeleton variant="text" width={80} /></TableCell>
-                </TableRow>
-              ))
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                  <Typography color="text.secondary">
+      <div className="mb-3 rounded-xl border border-ferro-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="bg-ferro-800 text-creme-200 font-display uppercase tracking-wider text-xs">
+                <th className="px-3 py-2.5 text-left font-semibold">Nome</th>
+                <th className="px-3 py-2.5 text-left font-semibold">Email</th>
+                <th className="px-3 py-2.5 text-left font-semibold w-[180px]">Role</th>
+                <th className="px-3 py-2.5 text-left font-semibold w-[110px]">Cadastro</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ferro-200">
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className={i % 2 === 0 ? 'bg-creme-50' : 'bg-creme-100'}>
+                    <td className="px-3 py-3"><div className="h-4 w-28 rounded bg-creme-300 animate-pulse" /></td>
+                    <td className="px-3 py-3"><div className="h-4 w-40 rounded bg-creme-300 animate-pulse" /></td>
+                    <td className="px-3 py-3"><div className="h-8 w-32 rounded-lg bg-creme-300 animate-pulse" /></td>
+                    <td className="px-3 py-3"><div className="h-4 w-20 rounded bg-creme-300 animate-pulse" /></td>
+                  </tr>
+                ))
+              ) : users.length === 0 ? (
+                <tr className="bg-creme-50">
+                  <td colSpan={4} className="px-3 py-8 text-center text-ferro-500">
                     Nenhum usuário encontrado
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((user) => {
-                const isCurrentUser = user.id === currentUser?.id
-                const isUpdating = updatingUserId === user.id
-                
-                return (
-                  <TableRow 
-                    key={user.id}
-                    sx={{ 
-                      '&:hover': { backgroundColor: '#f9fafb' },
-                      opacity: isCurrentUser ? 0.7 : 1,
-                    }}
-                  >
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <span>{user.name || '—'}</span>
-                        {isCurrentUser && (
-                          <Chip label="Você" size="small" color="primary" variant="outlined" />
+                  </td>
+                </tr>
+              ) : (
+                users.map((user, index) => {
+                  const isCurrentUser = user.id === currentUser?.id
+                  const isUpdating = updatingUserId === user.id
+                  
+                  return (
+                    <tr
+                      key={user.id}
+                      className={`${index % 2 === 0 ? 'bg-creme-50' : 'bg-creme-100'} hover:bg-creme-200 transition-colors ${isCurrentUser ? 'opacity-80' : ''}`}
+                    >
+                      <td className="px-3 py-2.5 text-ferro-900">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{user.name || '—'}</span>
+                          {isCurrentUser && (
+                            <span className="carimbo text-[10px] !rotate-0 text-anil-700">Você</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 text-ferro-500 break-all">
+                        {user.email || '—'}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {isUpdating ? (
+                          <div className="w-6 h-6 border-[3px] border-ferro-200 border-t-ferro-700 rounded-full animate-spin" />
+                        ) : isCurrentUser ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-ferro-800 text-creme-200 px-3 py-1 text-xs font-display uppercase tracking-wide">
+                            {roleConfig[user.role].emoji} {roleConfig[user.role].label}
+                          </span>
+                        ) : (
+                          <select
+                            aria-label={`Role de ${user.name || user.email || 'usuário'}`}
+                            value={user.role}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateUserRole(user.id, e.target.value as UserRole)}
+                            className="w-full min-w-[140px] !px-2 !py-1.5 !rounded-lg text-ferro-900"
+                          >
+                            {allRoles.map(role => (
+                              <option key={role} value={role}>
+                                {roleConfig[role].emoji} {roleConfig[role].label}
+                              </option>
+                            ))}
+                          </select>
                         )}
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                      {user.email || '—'}
-                    </TableCell>
-                    <TableCell>
-                      {isUpdating ? (
-                        <CircularProgress size={24} />
-                      ) : isCurrentUser ? (
-                        <Chip
-                          label={`${roleConfig[user.role].emoji} ${roleConfig[user.role].label}`}
-                          color={roleConfig[user.role].color}
-                          size="small"
-                        />
-                      ) : (
-                        <Select
-                          size="small"
-                          value={user.role}
-                          onChange={(e: SelectChangeEvent<string>) => updateUserRole(user.id, e.target.value as UserRole)}
-                          sx={{ 
-                            minWidth: 140,
-                            '& .MuiSelect-select': { 
-                              py: 0.5,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.5,
-                            }
-                          }}
-                        >
-                          {allRoles.map(role => (
-                            <MenuItem key={role} value={role}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <span>{roleConfig[role].emoji}</span>
-                                <span>{roleConfig[role].label}</span>
-                              </Box>
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ color: '#9ca3af', fontSize: '0.75rem' }}>
-                      {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-ferro-400 whitespace-nowrap">
+                        {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Paginação */}
       {totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-          <Pagination 
-            count={totalPages} 
-            page={page} 
-            onChange={(_: React.ChangeEvent<unknown>, newPage: number) => setPage(newPage)}
-            color="primary"
-            showFirstButton
-            showLastButton
-          />
-        </Box>
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <button
+            type="button"
+            data-btn-type="pagination"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="!px-3 !py-1.5 rounded-lg text-sm font-display uppercase tracking-wide disabled:opacity-40"
+          >
+            ‹ Anterior
+          </button>
+          <span className="font-ticket text-sm text-ferro-700 px-2">
+            {page} / {totalPages}
+          </span>
+          <button
+            type="button"
+            data-btn-type="pagination"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="!px-3 !py-1.5 rounded-lg text-sm font-display uppercase tracking-wide disabled:opacity-40"
+          >
+            Próxima ›
+          </button>
+        </div>
       )}
-    </div>
+    </section>
   )
 }
 

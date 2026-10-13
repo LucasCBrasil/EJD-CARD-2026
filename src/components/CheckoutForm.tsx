@@ -96,52 +96,54 @@ export function CheckoutForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white shadow-xl rounded-xl border border-gray-100 p-8">
-        <h1 className="text-2xl font-semibold text-ferro-700 mb-6">Checkout EJD Card</h1>
+    <div className="min-h-screen text-ferro-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl painel p-5 md:p-8">
+        <span className="carimbo text-vagao-600 text-xs">🎫 Bilheteria</span>
+        <h1 className="mt-3 text-2xl md:text-3xl font-display font-semibold uppercase tracking-wide text-ferro-900">Checkout EJD Card</h1>
+        <div className="trilho w-full mt-3 mb-6" />
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-semibold text-ferro-800">
               Nome completo
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="mt-1 w-full rounded-lg border px-3 py-2"
+                className="mt-1 w-full"
               />
             </label>
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-semibold text-ferro-800">
               Email
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-lg border px-3 py-2"
+                className="mt-1 w-full"
               />
             </label>
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-semibold text-ferro-800">
               CPF/CNPJ
               <input
                 inputMode="numeric"
                 value={cpfCnpj}
                 onChange={(e) => setCpfCnpj(e.target.value)}
                 required
-                className="mt-1 w-full rounded-lg border px-3 py-2"
+                className="mt-1 w-full font-ticket"
               />
             </label>
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-semibold text-ferro-800">
               Telefone
               <input
                 inputMode="numeric"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="mt-1 w-full rounded-lg border px-3 py-2"
+                className="mt-1 w-full font-ticket"
               />
             </label>
           </div>
 
-          <label className="text-sm font-medium text-gray-700 block">
+          <label className="text-sm font-semibold text-ferro-800 block">
             Valor (R$)
             <input
               type="number"
@@ -151,20 +153,20 @@ export function CheckoutForm() {
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value))}
               required
-              className="mt-1 w-full rounded-lg border px-3 py-2"
+              className="mt-1 w-full font-slab"
             />
           </label>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(['PIX', 'BOLETO', 'CREDIT_CARD'] as BillingType[]).map((type) => (
               <button
                 key={type}
                 type="button"
                 onClick={() => setBillingType(type)}
-                className={`px-4 py-2 rounded-lg border ${
+                className={`px-4 py-2 rounded-lg font-display text-sm tracking-wide border-2 transition-colors ${
                   billingType === type
-                    ? 'border-ferro-500 bg-ferro-50 text-ferro-700'
-                    : 'border-gray-200 bg-white text-gray-700'
+                    ? 'border-ferro-800 bg-ferro-800 text-creme-200'
+                    : 'border-ferro-200 bg-creme-200 text-ferro-800 hover:bg-creme-300'
                 }`}
               >
                 {type}
@@ -175,43 +177,45 @@ export function CheckoutForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-ferro-600 text-white font-semibold hover:bg-ferro-700 disabled:opacity-60 transition"
+            className="w-full py-3 rounded-xl bg-vagao-600 hover:bg-vagao-700 text-creme-50 font-display font-semibold tracking-wide uppercase disabled:opacity-60 transition-colors"
           >
             {loading ? 'Processando...' : 'Gerar pagamento'}
           </button>
         </form>
 
         {error && (
-          <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
+          <div className="mt-4 text-sm text-vagao-700 bg-vagao-50 border border-vagao-200 p-3 rounded-xl">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mt-4 bg-ferro-50 border border-ferro-100 p-4 rounded-lg space-y-2 text-sm">
-            <div className="font-semibold text-ferro-700">Pagamento criado!</div>
-            <div>Status: {success.status}</div>
+          <div className="mt-4 bg-creme-100 border border-ferro-200 p-4 rounded-xl space-y-2 text-sm text-ferro-800">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-display font-semibold uppercase tracking-wide text-ferro-900">Pagamento criado!</span>
+              <span className="carimbo text-green-700 text-[11px]">{success.status}</span>
+            </div>
             {success.charges.bankSlipUrl && (
-              <a className="text-ferro-700 underline" href={success.charges.bankSlipUrl} target="_blank" rel="noreferrer">
+              <a className="block text-anil-700 underline" href={success.charges.bankSlipUrl} target="_blank" rel="noreferrer">
                 Ver boleto
               </a>
             )}
             {success.charges.invoiceUrl && (
-              <a className="text-ferro-700 underline" href={success.charges.invoiceUrl} target="_blank" rel="noreferrer">
+              <a className="block text-anil-700 underline" href={success.charges.invoiceUrl} target="_blank" rel="noreferrer">
                 Link de pagamento
               </a>
             )}
             {success.charges.pixCopyPasteKey && (
               <div className="mt-2">
-                <div className="font-medium">PIX copia e cola:</div>
-                <div className="font-mono break-all">{success.charges.pixCopyPasteKey}</div>
+                <div className="font-semibold">PIX copia e cola:</div>
+                <div className="font-ticket break-all bg-creme-200 border border-ferro-200 rounded-lg p-2 mt-1">{success.charges.pixCopyPasteKey}</div>
               </div>
             )}
             {success.charges.pixQrCodeImage && (
               <img
                 src={success.charges.pixQrCodeImage}
                 alt="QR Code PIX"
-                className="mt-2 w-48 h-48 object-contain bg-white p-2 rounded-lg"
+                className="mt-2 w-48 h-48 object-contain bg-creme-50 border border-ferro-200 p-2 rounded-lg"
               />
             )}
           </div>

@@ -78,32 +78,32 @@ const DebitCardsPage: React.FC = () => {
 
   if (!canManageUsers) {
     return (
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-red-200 p-8 text-center">
-        <div className="text-6xl mb-4">🚫</div>
-        <h2 className="text-2xl font-bold text-red-600 mb-4">Acesso Negado</h2>
-        <p className="text-gray-600">Você não tem permissão para acessar esta área.</p>
+      <div className="painel border-2 !border-vagao-600/40 p-6 sm:p-8 text-center">
+        <div className="text-5xl mb-4">🚫</div>
+        <h2 className="text-2xl font-display font-semibold uppercase text-vagao-600 mb-3">Acesso Negado</h2>
+        <p className="text-ferro-700">Você não tem permissão para acessar esta área.</p>
       </div>
     )
   }
 
   if (isLoading) {
     return (
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8 text-center">
+      <div className="painel p-8 text-center">
         <LoadingSpinner size="lg" />
-        <p className="mt-4 text-gray-600">Carregando cartões...</p>
+        <p className="mt-4 text-ferro-500">Carregando cartões...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-red-200 p-8 text-center">
-        <div className="text-6xl mb-4">❌</div>
-        <h2 className="text-2xl font-bold text-red-600 mb-4">Erro ao Carregar</h2>
-        <p className="text-gray-600 mb-4">{(error as Error).message}</p>
+      <div className="painel border-2 !border-vagao-600/40 p-6 sm:p-8 text-center">
+        <div className="text-5xl mb-4">⚠️</div>
+        <h2 className="text-2xl font-display font-semibold uppercase text-vagao-600 mb-3">Erro ao Carregar</h2>
+        <p className="text-ferro-700 mb-5 break-words">{(error as Error).message}</p>
         <button
           onClick={() => refetch()}
-          className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors font-medium"
+          className="!px-5 !py-2.5 bg-vagao-600 hover:bg-vagao-700 text-creme-50 rounded-xl font-display uppercase tracking-wide transition-colors"
         >
           Tentar Novamente
         </button>
@@ -112,150 +112,156 @@ const DebitCardsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Cabeçalho */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-red-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
+      <div className="painel text-ferro-900 p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-start gap-3 min-w-0">
             <BackButton onClick={() => navigate({ to: '/admin' })} />
-            <div>
-              <h1 className="text-2xl font-bold text-black flex items-center gap-2">
-                💳 Cartões em Débito
+            <div className="min-w-0">
+              <h1 className="text-2xl font-display font-semibold uppercase text-ferro-900 leading-tight">
+                Cartões em Débito
               </h1>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-ferro-500">
                 Cartões com saldo negativo que precisam ser regularizados
               </p>
             </div>
           </div>
           <button
             onClick={() => refetch()}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium flex items-center gap-2"
+            aria-label="Atualizar"
+            className="!px-3 !py-2 shrink-0 bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-200 rounded-xl transition-colors text-sm font-display uppercase tracking-wide flex items-center gap-2"
           >
-            🔄 Atualizar
+            <span aria-hidden>↻</span>
+            <span className="hidden sm:inline">Atualizar</span>
           </button>
         </div>
 
         {/* Cards de estatísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
-            <div className="text-3xl font-bold text-red-600">{stats.totalCartoes}</div>
-            <div className="text-sm text-red-700">Cartões em Débito</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-creme-100 border border-ferro-200 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-3xl font-slab text-vagao-600 tabular-nums">{stats.totalCartoes}</div>
+            <div className="text-xs font-display uppercase tracking-wider text-ferro-500 mt-1">Cartões em Débito</div>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{formatMoney(stats.totalDebito)}</div>
-            <div className="text-sm text-red-700">Total a Receber</div>
+          <div className="bg-creme-100 border border-ferro-200 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-lg sm:text-xl font-slab text-vagao-600 tabular-nums break-words">{formatMoney(stats.totalDebito)}</div>
+            <div className="text-xs font-display uppercase tracking-wider text-ferro-500 mt-1">Total a Receber</div>
           </div>
-          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600">{formatMoney(stats.maiorDebito)}</div>
-            <div className="text-sm text-orange-700">Maior Débito</div>
+          <div className="bg-creme-100 border border-ferro-200 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-lg sm:text-xl font-slab text-latao-700 tabular-nums break-words">{formatMoney(stats.maiorDebito)}</div>
+            <div className="text-xs font-display uppercase tracking-wider text-ferro-500 mt-1">Maior Débito</div>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{formatMoney(stats.mediaDebito)}</div>
-            <div className="text-sm text-yellow-700">Média por Cartão</div>
+          <div className="bg-creme-100 border border-ferro-200 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-lg sm:text-xl font-slab text-ferro-700 tabular-nums break-words">{formatMoney(stats.mediaDebito)}</div>
+            <div className="text-xs font-display uppercase tracking-wider text-ferro-500 mt-1">Média por Cartão</div>
           </div>
         </div>
       </div>
 
       {/* Lista de cartões */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+      <div className="painel overflow-hidden">
         {debitCards.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="text-6xl mb-4">🎉</div>
-            <h3 className="text-xl font-bold text-green-600 mb-2">Nenhum cartão em débito!</h3>
-            <p className="text-gray-600">Todos os cartões estão com saldo positivo ou zerado.</p>
+          <div className="p-10 text-center">
+            <div className="text-5xl mb-4">🎉</div>
+            <h3 className="text-xl font-display font-semibold uppercase text-green-700 mb-2">Nenhum cartão em débito!</h3>
+            <p className="text-ferro-500">Todos os cartões estão com saldo positivo ou zerado.</p>
           </div>
         ) : (
           <>
-            {/* Cabeçalho da tabela */}
-            <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 grid grid-cols-12 gap-4 text-sm font-semibold text-gray-600">
-              <button
-                onClick={() => toggleSort('number')}
-                className="col-span-2 flex items-center gap-1 hover:text-gray-900 transition-colors"
-              >
-                Cartão
-                {sortBy === 'number' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </button>
-              <button
-                onClick={() => toggleSort('name')}
-                className="col-span-5 flex items-center gap-1 hover:text-gray-900 transition-colors text-left"
-              >
-                Nome
-                {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </button>
-              <button
-                onClick={() => toggleSort('balance')}
-                className="col-span-3 flex items-center gap-1 hover:text-gray-900 transition-colors justify-end"
-              >
-                Débito
-                {sortBy === 'balance' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </button>
-              <div className="col-span-2 text-right">Ação</div>
-            </div>
-
-            {/* Lista de cartões */}
-            <div className="divide-y divide-gray-100">
-              {sortedCards.map((card, index) => {
-                const balance = parseFloat(card.balance?.toString() || '0')
-                const absBalance = Math.abs(balance)
-                
-                return (
-                  <div
-                    key={card.id}
-                    className={`px-4 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50 transition-colors ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
-                    }`}
+            <div className="overflow-x-auto">
+              <div className="min-w-[560px]">
+                {/* Cabeçalho da tabela */}
+                <div className="bg-ferro-800 text-creme-200 px-4 py-2.5 grid grid-cols-12 gap-3 text-xs font-display uppercase tracking-wider">
+                  <button
+                    onClick={() => toggleSort('number')}
+                    className="!p-0 col-span-2 flex items-center gap-1 text-xs font-display uppercase tracking-wider text-creme-200 hover:text-latao-300 transition-colors"
                   >
-                    {/* Número do cartão */}
-                    <div className="col-span-2">
-                      <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 rounded-lg font-mono font-bold text-sm">
-                        #{card.card_number}
-                      </span>
-                    </div>
+                    Cartão
+                    {sortBy === 'number' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </button>
+                  <button
+                    onClick={() => toggleSort('name')}
+                    className="!p-0 col-span-5 flex items-center gap-1 text-xs font-display uppercase tracking-wider text-creme-200 hover:text-latao-300 transition-colors text-left"
+                  >
+                    Nome
+                    {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </button>
+                  <button
+                    onClick={() => toggleSort('balance')}
+                    className="!p-0 col-span-3 flex items-center gap-1 text-xs font-display uppercase tracking-wider text-creme-200 hover:text-latao-300 transition-colors justify-end"
+                  >
+                    Débito
+                    {sortBy === 'balance' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </button>
+                  <div className="col-span-2 text-right">Ação</div>
+                </div>
 
-                    {/* Nome */}
-                    <div className="col-span-5">
-                      <div className="font-medium text-gray-900">{card.user_name || 'Sem nome'}</div>
-                      <div className="text-xs text-gray-500 flex items-center gap-2">
-                        {card.is_associated ? (
-                          <span className="text-green-600">✓ Associado</span>
-                        ) : (
-                          <span className="text-gray-400">○ Não associado</span>
-                        )}
-                        {card.phone_number && (
-                          <span>• {card.phone_number}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Débito */}
-                    <div className="col-span-3 text-right">
-                      <span className="text-lg font-bold text-red-600">
-                        -{formatMoney(absBalance)}
-                      </span>
-                    </div>
-
-                    {/* Ações */}
-                    <div className="col-span-2 text-right">
-                      <Link
-                        to="/cards/add"
-                        search={{ cardNumber: card.card_number }}
-                        className="inline-flex items-center px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors"
+                {/* Lista de cartões */}
+                <div className="divide-y divide-ferro-200">
+                  {sortedCards.map((card, index) => {
+                    const balance = parseFloat(card.balance?.toString() || '0')
+                    const absBalance = Math.abs(balance)
+                    
+                    return (
+                      <div
+                        key={card.id}
+                        className={`px-4 py-3 grid grid-cols-12 gap-3 items-center hover:bg-creme-200 transition-colors ${
+                          index % 2 === 0 ? 'bg-creme-50' : 'bg-creme-100'
+                        }`}
                       >
-                        💰 Creditar
-                      </Link>
-                    </div>
-                  </div>
-                )
-              })}
+                        {/* Número do cartão */}
+                        <div className="col-span-2">
+                          <span className="inline-flex items-center px-2 py-1 bg-creme-200 border border-ferro-200 text-ferro-800 rounded-md font-ticket font-bold text-sm">
+                            #{card.card_number}
+                          </span>
+                        </div>
+
+                        {/* Nome */}
+                        <div className="col-span-5 min-w-0">
+                          <div className="font-medium text-ferro-900 truncate">{card.user_name || 'Sem nome'}</div>
+                          <div className="text-xs text-ferro-500 flex flex-wrap items-center gap-x-2">
+                            {card.is_associated ? (
+                              <span className="text-green-700">✓ Associado</span>
+                            ) : (
+                              <span className="text-fumaca-500">○ Não associado</span>
+                            )}
+                            {card.phone_number && (
+                              <span>• {card.phone_number}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Débito */}
+                        <div className="col-span-3 text-right">
+                          <span className="font-slab text-vagao-600 tabular-nums whitespace-nowrap">
+                            -{formatMoney(absBalance)}
+                          </span>
+                        </div>
+
+                        {/* Ações */}
+                        <div className="col-span-2 text-right">
+                          <Link
+                            to="/cards/add"
+                            search={{ cardNumber: card.card_number }}
+                            className="inline-flex items-center px-3 py-1.5 bg-ferro-800 hover:bg-ferro-700 text-creme-200 rounded-lg text-xs font-display uppercase tracking-wide transition-colors whitespace-nowrap"
+                          >
+                            Creditar
+                          </Link>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Rodapé */}
-            <div className="bg-gray-50 border-t border-gray-200 px-4 py-3 text-sm text-gray-600">
-              <div className="flex justify-between items-center">
+            <div className="bg-creme-200 border-t border-ferro-200 px-4 py-3 text-sm text-ferro-700">
+              <div className="flex flex-wrap justify-between items-center gap-2">
                 <span>
                   Mostrando {sortedCards.length} cartão{sortedCards.length !== 1 ? 's' : ''} em débito
                 </span>
-                <span className="font-semibold text-red-600">
+                <span className="font-slab text-vagao-600">
                   Total: {formatMoney(stats.totalDebito)}
                 </span>
               </div>
@@ -265,11 +271,11 @@ const DebitCardsPage: React.FC = () => {
       </div>
 
       {/* Informação adicional */}
-      <div className="bg-blue-50/80 backdrop-blur-sm rounded-xl border border-blue-200 p-4">
-        <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+      <div className="rounded-xl border border-anil-200 bg-anil-100/60 p-4">
+        <h3 className="font-display font-semibold uppercase tracking-wide text-anil-800 mb-2 flex items-center gap-2">
           ℹ️ Sobre os cartões em débito
         </h3>
-        <ul className="text-sm text-blue-700 space-y-1">
+        <ul className="text-sm text-anil-800 space-y-1">
           <li>• Estes cartões receberam R$100 de crédito emprestado no início do encontro</li>
           <li>• O saldo negativo representa o valor gasto que precisa ser quitado</li>
           <li>• Para regularizar, a pessoa deve adicionar crédito via PIX ou com a coordenação</li>

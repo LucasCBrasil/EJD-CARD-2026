@@ -52,7 +52,7 @@ const Header: React.FC<HeaderProps> = ({
       )}
 
       {title && (
-        <h1 className="text-4xl md:text-5xl font-semibold text-ferro-800 mb-4 font-display uppercase mt-6">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-semibold text-ferro-800 mb-4 font-display uppercase mt-6">
           {title}
         </h1>
       )}

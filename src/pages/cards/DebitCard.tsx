@@ -128,23 +128,26 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
     return number.replace(/(\d{4})(?=\d)/g, '$1 ')
   }
 
+  const inputClass = 'w-full px-4 py-3 border-2 border-ferro-200 rounded-xl bg-creme-50 text-ferro-900 focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200'
+  const insufficient = !!selectedCard && parseFloat(amount || '0') > (selectedCard.balance || 0)
+
   return (
     <div className="space-y-4">
       <Header 
             title="Débito em Cartão"
-            subtitle="Debite um valor de um cartão mágico"
+            subtitle="Debite um valor do cartão do encontrista"
             showLogo={false}
         />
     <div className="w-full relative z-10">
         <div className="mx-auto w-full">
 
           {/* Formulário */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="painel p-5 md:p-8">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Número do Cartão */}
               <div>
-                <label htmlFor="cardNumber" className="block text-sm font-semibold text-black mb-2">
-                  💳 Número do Cartão
+                <label htmlFor="cardNumber" className="block text-sm font-semibold text-ferro-900 mb-2">
+                  🎫 Número do Cartão
                 </label>
                 <input
                   type="text"
@@ -153,21 +156,21 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                   value={cardNumber}
                   onChange={handleCardNumberChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
+                  className={`${inputClass} font-ticket tracking-widest`}
                   placeholder="001"
                   maxLength={3}
                 />
               </div>
 
               {error && (
-                <div className="bg-red-100 border border-red-300 rounded-lg p-4 text-center">
-                  <p className="text-red-800">{error}</p>
+                <div className="bg-vagao-50 border-2 border-vagao-300 rounded-xl p-3 text-center">
+                  <p className="text-vagao-800 font-semibold text-sm">⚠️ {error}</p>
                 </div>
               )}
 
               {/* Valor do débito */}
               <div>
-                <label htmlFor="amount" className="block text-sm font-semibold text-black mb-2">
+                <label htmlFor="amount" className="block text-sm font-semibold text-ferro-900 mb-2">
                   💸 Valor do Débito (R$)
                 </label>
                 <input
@@ -177,14 +180,14 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                   value={formattedAmount}
                   onChange={handleAmountChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
+                  className={`${inputClass} font-slab text-xl`}
                   placeholder="0,00"
                 />
               </div>
 
               {/* Descrição */}
               <div>
-                <label htmlFor="description" className="block text-sm font-semibold text-black mb-2">
+                <label htmlFor="description" className="block text-sm font-semibold text-ferro-900 mb-2">
                   📝 Descrição (Opcional)
                 </label>
                 <input
@@ -192,32 +195,41 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
+                  className={inputClass}
                   placeholder="Ex: Compra no supermercado"
                 />
               </div>
 
               {/* Informações do cartão selecionado */}
               {selectedCard && (
-                <div className="bg-gradient-to-r from-ferro-100 to-ferro-200 rounded-xl p-4">
-                  <h4 className="font-semibold text-black mb-2">📋 Cartão Selecionado</h4>
-                  <p className="text-black"><strong>Nome:</strong> {selectedCard.userName || 'Sem nome'}</p>
-                  <p className="text-black"><strong>Número:</strong> {formatCardNumber(selectedCard.cardNumber || '')}</p>
-                  <p className="text-black"><strong>Saldo Atual:</strong> R$ {(selectedCard.balance || 0).toFixed(2).replace('.', ',')}</p>
+                <div className="bg-creme-200 border border-ferro-200 rounded-xl p-4 space-y-2 animate-fade-in">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="font-display text-sm uppercase tracking-wider text-ferro-700">🎫 Cartão Selecionado</h4>
+                    <span className="font-ticket font-bold text-ferro-900">Nº {formatCardNumber(selectedCard.cardNumber || '')}</span>
+                  </div>
+                  <p className="text-ferro-900 font-semibold">{selectedCard.userName || 'Sem nome'}</p>
+                  <div className="picote-horizontal pt-2 flex justify-between items-baseline">
+                    <span className="text-sm text-ferro-600">Saldo atual</span>
+                    <span className="font-slab text-ferro-900">R$ {(selectedCard.balance || 0).toFixed(2).replace('.', ',')}</span>
+                  </div>
                   {amount && (
-                    <div className="mt-2">
-                      <p className="text-black">
-                        <strong>Valor do Débito:</strong> R$ {parseFloat(amount || '0').toFixed(2).replace('.', ',')}
-                      </p>
-                      <p className={`font-semibold ${parseFloat(amount || '0') > (selectedCard.balance || 0) ? 'text-red-600' : 'text-black'}`}>
-                        <strong>Novo Saldo:</strong> R$ {((selectedCard.balance || 0) - parseFloat(amount || '0')).toFixed(2).replace('.', ',')}
-                      </p>
-                      {parseFloat(amount || '0') > (selectedCard.balance || 0) && (
-                        <p className="text-red-600 text-sm mt-1">
-                          ⚠️ Saldo insuficiente!
+                    <>
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-sm text-ferro-600">Valor do débito</span>
+                        <span className="font-slab text-vagao-600">− R$ {parseFloat(amount || '0').toFixed(2).replace('.', ',')}</span>
+                      </div>
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-sm text-ferro-600">Novo saldo</span>
+                        <span className={`font-slab text-lg ${insufficient ? 'text-vagao-600' : 'text-ferro-900'}`}>
+                          R$ {((selectedCard.balance || 0) - parseFloat(amount || '0')).toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+                      {insufficient && (
+                        <p className="carimbo text-vagao-600 text-xs mt-1">
+                          ⚠️ Saldo insuficiente
                         </p>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               )}
@@ -226,12 +238,12 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 !text-black shadow-lg hover:shadow-red-200 font-semibold"
+                className="w-full !bg-vagao-600 hover:!bg-vagao-700 !border-vagao-600 !text-creme-50"
                 disabled={isLoading || !selectedCard || (amount ? parseFloat(amount) > selectedCard.balance : false)}
               >
                 {isLoading ? (
                   <>
-                    <span className="animate-spin mr-2">✨</span>
+                    <span className="inline-block animate-spin mr-2">⚙️</span>
                     Processando débito...
                   </>
                 ) : (

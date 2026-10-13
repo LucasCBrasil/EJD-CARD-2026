@@ -1,15 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import {
-  Box,
-  Typography,
-  Switch,
-  Paper,
-  Alert,
-  Skeleton,
-  IconButton,
-  Tooltip,
-  Chip,
-} from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -121,108 +110,105 @@ const FeatureFlagsManagement: React.FC = () => {
   }, [])
 
   return (
-    <Box sx={{ borderTop: '1px solid #e5e7eb', pt: 3, mt: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
-          🚩 Feature Flags
-        </Typography>
-        <Tooltip title="Atualizar">
-          <IconButton onClick={loadFlags} disabled={isLoading} size="small">
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
+    <section className="border-t-2 border-dashed border-ferro-200 pt-6 mt-6">
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <h3 className="text-lg font-display font-semibold uppercase tracking-wide text-ferro-800">
+          Feature Flags
+        </h3>
+        <button
+          type="button"
+          onClick={loadFlags}
+          disabled={isLoading}
+          title="Atualizar"
+          aria-label="Atualizar"
+          className="!p-0 w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-200 disabled:opacity-50 transition-colors"
+        >
+          <RefreshIcon fontSize="small" className={isLoading ? 'animate-spin' : ''} />
+        </button>
+      </div>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <p className="text-sm text-ferro-500 mb-4">
         Controle quais funcionalidades estão disponíveis no sistema.
-      </Typography>
+      </p>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <div role="alert" className="mb-3 rounded-xl border border-vagao-200 bg-vagao-50 px-4 py-3 text-sm text-vagao-700">
           {error}
-        </Alert>
+        </div>
       )}
 
       {isLoading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div className="flex flex-col gap-3">
           {[1, 2].map(i => (
-            <Skeleton key={i} variant="rounded" height={80} />
+            <div key={i} className="h-20 rounded-xl bg-creme-200 border border-ferro-200 animate-pulse" />
           ))}
-        </Box>
+        </div>
       ) : flags.length === 0 ? (
-        <Alert severity="info">Nenhuma feature flag configurada.</Alert>
+        <div className="rounded-xl border border-anil-200 bg-anil-100/60 px-4 py-3 text-sm text-anil-800">
+          Nenhuma feature flag configurada.
+        </div>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div className="flex flex-col gap-3">
           {flags.map(flag => {
             const config = flagConfig[flag.key] || { icon: '🏳️', label: flag.key, color: 'info' as const }
             const isUpdating = updatingFlag === flag.key
 
             return (
-              <Paper
+              <div
                 key={flag.key}
-                elevation={1}
-                sx={{
-                  p: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderLeft: 4,
-                  borderColor: flag.enabled ? 'success.main' : 'grey.300',
-                  transition: 'all 0.2s',
-                  '&:hover': { boxShadow: 3 },
-                }}
+                className={`flex items-center justify-between gap-3 rounded-xl bg-creme-100 border border-ferro-200 border-l-4 p-3 sm:p-4 transition-all hover:shadow-bilhete ${
+                  flag.enabled ? '!border-l-green-600' : '!border-l-fumaca-400'
+                }`}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography variant="h5" sx={{ lineHeight: 1 }}>
-                    {config.icon}
-                  </Typography>
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      {config.label}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {flag.description || `Chave: ${flag.key}`}
-                    </Typography>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-2xl leading-none shrink-0">{config.icon}</span>
+                  <div className="min-w-0">
+                    <div className="font-display font-semibold text-ferro-900 leading-tight">{config.label}</div>
+                    <div className="text-sm text-ferro-500 break-words">{flag.description || `Chave: ${flag.key}`}</div>
                     {flag.updated_at && (
-                      <Typography variant="caption" color="text.disabled">
+                      <div className="text-xs text-ferro-400">
                         Atualizado: {new Date(flag.updated_at).toLocaleString('pt-BR')}
-                      </Typography>
+                      </div>
                     )}
-                  </Box>
-                </Box>
+                  </div>
+                </div>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Chip
-                    label={flag.enabled ? 'Ativo' : 'Inativo'}
-                    color={flag.enabled ? 'success' : 'default'}
-                    size="small"
-                    variant={flag.enabled ? 'filled' : 'outlined'}
-                  />
-                  <Switch
-                    checked={flag.enabled}
-                    onChange={() => toggleFlag(flag)}
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
+                  <span
+                    className={`carimbo text-[11px] !rotate-0 ${
+                      flag.enabled ? 'text-green-700' : 'text-fumaca-500'
+                    }`}
+                  >
+                    {flag.enabled ? 'Ativo' : 'Inativo'}
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={flag.enabled}
+                    aria-label={config.label}
+                    onClick={() => toggleFlag(flag)}
                     disabled={isUpdating}
-                    color="success"
-                    sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#10b981',
-                      },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#10b981',
-                      },
-                    }}
-                  />
-                </Box>
-              </Paper>
+                    className={`!p-0 relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border-2 transition-colors disabled:opacity-50 ${
+                      flag.enabled ? 'bg-green-600 border-green-700' : 'bg-fumaca-200 border-fumaca-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 rounded-full bg-creme-50 shadow transition-transform ${
+                        flag.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
             )
           })}
-        </Box>
+        </div>
       )}
 
-      <Alert severity="warning" sx={{ mt: 3 }}>
+      <div className="mt-4 rounded-xl border border-latao-300 bg-latao-50 px-4 py-3 text-sm text-latao-900">
         <strong>⚠️ Atenção:</strong> Alterações nas feature flags têm efeito imediato para todos os usuários.
-      </Alert>
-    </Box>
+      </div>
+    </section>
   )
 }
 

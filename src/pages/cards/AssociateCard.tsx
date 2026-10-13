@@ -39,55 +39,60 @@ const AssociateCard: React.FC = () => {
     }
   }
 
+  const inputClass = 'w-full px-4 py-3 border-2 border-ferro-200 rounded-xl bg-creme-50 text-ferro-900 focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200'
+
   return (
-    <div className="max-w-md mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-6">
-      <h2 className="text-2xl font-bold text-black mb-4 text-center">🔗 Associar Cartão</h2>
-      <p className="text-gray-600 text-sm mb-6 text-center">Digite o número e o código do cartão para vinculá-lo à sua conta.</p>
+    <div className="max-w-md mx-auto painel p-5 md:p-6">
+      <div className="text-center mb-5">
+        <h2 className="text-2xl font-semibold text-ferro-900 font-display uppercase tracking-wide">🔗 Associar Cartão</h2>
+        <p className="text-ferro-600 text-sm mt-1">Digite o número e o código do cartão para vinculá-lo à sua conta.</p>
+        <div className="trilho w-full max-w-[200px] mx-auto mt-3" />
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-black mb-2">Número do Cartão</label>
+          <label className="block text-sm font-semibold text-ferro-900 mb-2">🎫 Número do Cartão</label>
           <input
             inputMode="numeric"
             value={cardNumber}
             onChange={(e) => setCardNumber(e.target.value.replace(/\s+/g, ''))}
             placeholder="Ex: 063 ou 63"
-            className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 bg-white/90"
+            className={`${inputClass} font-ticket tracking-widest`}
             required
           />
           {showNumberNormalization && (
             <p className="text-xs text-ferro-600 mt-1">
-              ✓ Será buscado como: <span className="font-mono font-bold">{normalizedCardNumber}</span>
+              ✓ Será buscado como: <span className="font-ticket font-bold text-ferro-900">{normalizedCardNumber}</span>
             </p>
           )}
         </div>
         <div>
-          <label className="block text-sm font-semibold text-black mb-2">Código do Cartão</label>
+          <label className="block text-sm font-semibold text-ferro-900 mb-2">🔑 Código do Cartão</label>
           <input
             value={cardCode}
             onChange={(e) => setCardCode(e.target.value.replace(/\s+/g, ''))}
             placeholder="Digite o código (maiúsculo ou minúsculo)"
-            className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 bg-white/90 font-mono"
+            className={`${inputClass} font-ticket`}
             required
           />
           {cardCode && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-ferro-500 mt-1">
               Aceita maiúsculas e minúsculas
             </p>
           )}
         </div>
         {error && (
-          <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+          <div className="bg-vagao-50 border-2 border-vagao-300 rounded-xl p-4">
             <div className="flex items-start">
-              <span className="text-red-500 text-xl mr-2">⚠️</span>
+              <span className="text-vagao-600 text-xl mr-2">⚠️</span>
               <div className="flex-1">
-                <p className="text-red-800 font-semibold mb-1">Erro ao associar cartão</p>
-                <p className="text-red-700 text-sm whitespace-pre-wrap">{error}</p>
+                <p className="text-vagao-800 font-semibold mb-1">Erro ao associar cartão</p>
+                <p className="text-vagao-700 text-sm whitespace-pre-wrap">{error}</p>
               </div>
             </div>
           </div>
         )}
-        <Button type="submit" className="w-full bg-ferro-500 hover:bg-ferro-600 text-black" disabled={isLoading}>
-          {isLoading ? 'Associando...' : 'Associar Cartão'}
+        <Button type="submit" size="lg" className="w-full !bg-vagao-600 hover:!bg-vagao-700 !border-vagao-600 !text-creme-50" disabled={isLoading}>
+          {isLoading ? 'Associando...' : '🔗 Associar Cartão'}
         </Button>
       </form>
     </div>
@@ -95,4 +100,3 @@ const AssociateCard: React.FC = () => {
 }
 
 export default AssociateCard
-

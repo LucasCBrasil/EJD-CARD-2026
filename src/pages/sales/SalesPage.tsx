@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useLocation } from '@tanstack/react-router'
-import { Button, ConfirmationModal, LoadingSpinner } from '../../components/shared'
+import { ConfirmationModal, TrainLoader } from '../../components/shared'
 import { productService, Product } from '../../services/productService'
 import type { SaleItem } from '../../types'
 import { useToastContext } from '../../contexts/ToastContext'
@@ -33,10 +33,6 @@ const SalesPage: React.FC = () => {
   const [couponError, setCouponError] = useState<string | null>(null)
   const [couponDiscountAmount, setCouponDiscountAmount] = useState<number>(0)
   const itemsPerPage = 6
-
-  // Cores por contexto
-  const accentColor = context === 'lojinha' ? 'blue' : 'orange'
-  const borderColor = context === 'lojinha' ? 'border-blue-300' : 'border-orange-300'
 
   useEffect(() => {
     loadProducts()
@@ -392,51 +388,57 @@ const SalesPage: React.FC = () => {
   const formatPrice = (price: number): string => price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   const config = context === 'lojinha' ? {
-    title: '🛍️ Vendas - Lojinha',
+    title: 'Vendas · Lojinha',
+    stamp: '🎫 Bilheteria',
     subtitle: 'Adicione itens ao carrinho e finalize a venda',
-    icon: '🏪'
+    icon: '🛍️'
   } : {
-    title: '🍔 Vendas - Lanchonete',
+    title: 'Vendas · Lanchonete',
+    stamp: '☕ Vagão-restaurante',
     subtitle: 'Adicione itens ao carrinho e finalize o pedido',
     icon: '🍔'
   }
 
+  const smallBtn = 'p-0 flex items-center justify-center rounded-lg font-bold transition-colors'
+
   return (
-    <div className={`bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 ${borderColor} p-6 md:p-8`}>
+    <div className="painel p-4 md:p-8">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">{config.title}</h2>
-        <p className="text-base text-gray-600">{config.subtitle}</p>
+        <span className="carimbo text-vagao-600 text-xs">{config.stamp}</span>
+        <h2 className="mt-3 text-2xl md:text-3xl font-display font-semibold uppercase tracking-wide text-ferro-900">
+          {config.title}
+        </h2>
+        <p className="text-base text-ferro-700">{config.subtitle}</p>
+        <div className="trilho w-full mt-4" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Lista de Produtos */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-5">
           {/* Campo de busca */}
           <input
             type="text"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="🔍 Buscar produto..."
-            className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg
-                      focus:border-gray-500 focus:outline-none transition-colors
-                      text-gray-900"
+            className="w-full"
           />
 
           {/* Grid de Produtos */}
           {paginatedProducts.length === 0 ? (
-            <div className="bg-gray-50 rounded-lg border-2 border-gray-200 p-8 text-center">
-              <div className="text-6xl mb-4">📭</div>
-              <p className="text-gray-500">
+            <div className="bg-creme-100 rounded-xl border border-ferro-200 p-8 text-center">
+              <div className="text-5xl mb-3">🚉</div>
+              <p className="text-ferro-600">
                 {searchFilter ? 'Nenhum produto encontrado.' : 'Nenhum produto disponível.'}
               </p>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 {paginatedProducts.map(p => (
-                  <div key={p.id} className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="h-36 bg-gray-100 flex items-center justify-center">
+                  <div key={p.id} className="flex flex-col bg-creme-50 rounded-xl border-2 border-ferro-800 overflow-hidden shadow-sm hover:shadow-bilhete transition-shadow">
+                    <div className="h-28 sm:h-36 bg-creme-200 flex items-center justify-center">
                       <OptimizedImage
                         src={p.image_url || ''}
                         alt={p.name}
@@ -444,18 +446,14 @@ const SalesPage: React.FC = () => {
                         context={context}
                       />
                     </div>
-                    <div className="p-3">
-                      <h4 className="font-bold text-gray-900 text-sm mb-1 truncate">{p.name}</h4>
-                      <p className="text-lg font-bold text-ferro-600 mb-3">R$ {formatPrice(p.price)}</p>
-                      <button 
-                        onClick={() => handleAddToCart(p)} 
-                        className={`w-full ${
-                          context === 'lojinha' 
-                            ? 'bg-blue-500 hover:bg-blue-600' 
-                            : 'bg-orange-500 hover:bg-orange-600'
-                        } text-white font-semibold py-2 px-4 rounded-lg transition-colors`}
+                    <div className="picote-horizontal flex flex-col flex-1 p-3">
+                      <h4 className="font-display font-medium text-ferro-900 text-sm leading-tight mb-1 line-clamp-2">{p.name}</h4>
+                      <p className="font-slab text-lg text-vagao-600 mb-3 mt-auto">R$ {formatPrice(p.price)}</p>
+                      <button
+                        onClick={() => handleAddToCart(p)}
+                        className="w-full bg-ferro-800 hover:bg-ferro-700 text-creme-200 font-display font-semibold tracking-wide text-sm py-2 px-2 rounded-lg transition-colors active:scale-[0.98]"
                       >
-                        ➕ Adicionar
+                        + Adicionar
                       </button>
                     </div>
                   </div>
@@ -464,15 +462,11 @@ const SalesPage: React.FC = () => {
 
               {/* Paginação */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 pt-4">
+                <div className="flex justify-center items-center gap-2 pt-2">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className={`px-4 py-2 ${
-                      context === 'lojinha' 
-                        ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
-                        : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
-                    } text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors`}
+                    className="px-3 py-2 bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-200 font-display text-sm rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     ← Anterior
                   </button>
@@ -485,12 +479,10 @@ const SalesPage: React.FC = () => {
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-bold transition-colors ${
+                          className={`${smallBtn} w-10 h-10 font-display ${
                             isActive
-                              ? context === 'lojinha'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-orange-500 text-white'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              ? 'bg-ferro-800 text-creme-200'
+                              : 'bg-creme-200 text-ferro-800 border border-ferro-200 hover:bg-creme-300'
                           }`}
                         >
                           {page}
@@ -502,11 +494,7 @@ const SalesPage: React.FC = () => {
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className={`px-4 py-2 ${
-                      context === 'lojinha' 
-                        ? 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300' 
-                        : 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300'
-                    } text-white font-semibold rounded-lg disabled:cursor-not-allowed transition-colors`}
+                    className="px-3 py-2 bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-200 font-display text-sm rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Próximo →
                   </button>
@@ -514,7 +502,7 @@ const SalesPage: React.FC = () => {
               )}
 
               {/* Info de Paginação */}
-              <div className="text-center text-sm text-gray-600">
+              <div className="text-center text-sm text-ferro-500">
                 Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredProducts.length)} de {filteredProducts.length} produtos
               </div>
             </>
@@ -523,41 +511,43 @@ const SalesPage: React.FC = () => {
 
         {/* Carrinho */}
         <div className="lg:col-span-1">
-          <div className="bg-gray-50 rounded-lg border-2 border-gray-300 p-3 sticky top-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
-              🛒 Carrinho
-            </h3>
+          <div className="bg-creme-100 rounded-xl border-2 border-ferro-800 shadow-bilhete p-4 sticky top-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-display font-semibold uppercase tracking-wide text-ferro-900">
+                🛒 Carrinho
+              </h3>
+              <span className="font-ticket text-xs text-ferro-500">PASSAGEM</span>
+            </div>
 
             {/* Campo de cartão */}
             <div className="mb-3 space-y-2">
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Número do Cartão</label>
+              <label className="block text-sm font-semibold text-ferro-700 mb-1">Número do Cartão</label>
               <input
                 type="text"
                 inputMode="numeric"
                 value={cardNumber}
                 onChange={handleCardNumberChange}
-                className="w-full px-2.5 py-1.5 border-2 border-gray-300 rounded-md
-                          focus:border-gray-500 focus:outline-none bg-white text-gray-900 text-sm"
+                className="w-full font-ticket tracking-widest"
                 placeholder="001"
                 maxLength={16}
               />
-              
+
               {selectedCard ? (
-                <div className="bg-ferro-50 rounded-md p-2 border border-ferro-200">
-                  <p className="text-xs text-gray-900">
-                    <strong>Nome:</strong> {selectedCard.userName}
+                <div className="bg-creme-200 rounded-lg p-3 border border-ferro-200 space-y-0.5">
+                  <p className="text-sm text-ferro-900">
+                    <span className="text-ferro-500">Nome:</span> <strong>{selectedCard.userName}</strong>
                   </p>
-                  <p className="text-xs text-gray-900">
-                    <strong>Saldo:</strong> R$ {selectedCard.balance.toFixed(2)}
+                  <p className="text-sm text-ferro-900">
+                    <span className="text-ferro-500">Saldo:</span> <span className="font-slab">R$ {selectedCard.balance.toFixed(2)}</span>
                   </p>
-                  <p className={`text-xs font-semibold ${
-                    discountedTotal > selectedCard.balance ? 'text-red-600' : 'text-ferro-600'
+                  <p className={`text-sm font-semibold ${
+                    discountedTotal > selectedCard.balance ? 'text-vagao-600' : 'text-green-700'
                   }`}>
-                    <strong>Após:</strong> R$ {(selectedCard.balance - discountedTotal).toFixed(2)}
+                    <span className="text-ferro-500 font-normal">Após:</span> <span className="font-slab">R$ {(selectedCard.balance - discountedTotal).toFixed(2)}</span>
                   </p>
                 </div>
               ) : (
-                <p className="text-xs text-gray-500">
+                <p className={`text-sm ${error ? 'text-vagao-600' : 'text-ferro-500'}`}>
                   {error || 'Informe um cartão'}
                 </p>
               )}
@@ -565,19 +555,19 @@ const SalesPage: React.FC = () => {
 
             {/* Itens do carrinho */}
             {Object.keys(cartItems).length === 0 ? (
-              <div className="text-center py-6">
-                <div className="text-3xl mb-1">🛒</div>
-                <p className="text-gray-500 text-xs">Carrinho vazio</p>
+              <div className="picote-horizontal text-center pt-5 pb-2">
+                <div className="text-3xl mb-1">🧳</div>
+                <p className="text-ferro-500 text-sm">Carrinho vazio</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {/* Lista de itens */}
-                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                <div className="picote-horizontal pt-3 space-y-2 max-h-64 overflow-y-auto">
                   {Object.entries(cartItems).map(([productId, qty]) => {
                     const p = products.find(pr => pr.id === productId)!
                     return (
-                      <div key={productId} className="bg-white p-1.5 rounded border border-gray-200">
-                        <div className="flex items-center gap-1.5">
+                      <div key={productId} className="bg-creme-50 p-2 rounded-lg border border-ferro-200">
+                        <div className="flex items-center gap-2">
                           <OptimizedImage
                             src={p.image_url || ''}
                             alt={p.name}
@@ -585,27 +575,29 @@ const SalesPage: React.FC = () => {
                             context={context}
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-gray-900 truncate leading-tight">{p.name}</p>
-                            <p className="text-xs text-gray-600">R$ {formatPrice(p.price)}</p>
+                            <p className="text-sm font-semibold text-ferro-900 truncate leading-tight">{p.name}</p>
+                            <p className="text-xs text-ferro-500">R$ {formatPrice(p.price)}</p>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between mt-1.5">
-                          <div className="flex items-center gap-1">
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => handleDecrease(productId)}
-                              className="w-5 h-5 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xs"
+                              className={`${smallBtn} w-8 h-8 bg-creme-200 hover:bg-creme-300 border border-ferro-200 text-ferro-800 text-base`}
+                              aria-label="Diminuir"
                             >
-                              -
+                              −
                             </button>
-                            <span className="w-5 text-center text-xs font-semibold">{qty}</span>
+                            <span className="w-6 text-center text-sm font-semibold text-ferro-900">{qty}</span>
                             <button
                               onClick={() => handleIncrease(productId)}
-                              className="w-5 h-5 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xs"
+                              className={`${smallBtn} w-8 h-8 bg-creme-200 hover:bg-creme-300 border border-ferro-200 text-ferro-800 text-base`}
+                              aria-label="Aumentar"
                             >
                               +
                             </button>
                           </div>
-                          <div className="text-xs font-bold text-gray-900">
+                          <div className="font-slab text-sm text-ferro-900">
                             R$ {formatPrice(p.price * qty)}
                           </div>
                         </div>
@@ -615,9 +607,9 @@ const SalesPage: React.FC = () => {
                 </div>
 
                 {/* Cupom */}
-                <div className="pt-2 border-t border-gray-300">
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Cupom</label>
-                  <div className="flex gap-1.5">
+                <div className="pt-2 border-t border-ferro-200">
+                  <label className="block text-sm font-semibold text-ferro-700 mb-1">Cupom</label>
+                  <div className="flex gap-2">
                     <select
                       value={couponCode}
                       onChange={e => {
@@ -634,13 +626,13 @@ const SalesPage: React.FC = () => {
                         }
                       }}
                       disabled={isCouponApplied || (context === 'lojinha' && total < 150)}
-                      className="flex-1 min-w-0 px-2 py-1.5 border-2 border-gray-300 rounded text-xs bg-white disabled:bg-gray-100 truncate"
+                      className="flex-1 min-w-0 px-2 py-2 disabled:opacity-60 truncate"
                       style={{ maxWidth: '100%' }}
                     >
                       <option value="">Selecione</option>
                       {coupons && Array.isArray(coupons) && coupons.map((coupon, idx) => {
-                        const displayName = coupon.name && coupon.name.length > 20 
-                          ? `${coupon.name.substring(0, 17)}...` 
+                        const displayName = coupon.name && coupon.name.length > 20
+                          ? `${coupon.name.substring(0, 17)}...`
                           : coupon.name
                         return (
                           <option key={idx} value={coupon.name} title={coupon.name}>
@@ -662,36 +654,36 @@ const SalesPage: React.FC = () => {
                         }
                       }}
                       disabled={isCouponApplied || (context === 'lojinha' && total < 150) || !couponCode}
-                      className="px-2.5 py-1.5 bg-ferro-500 hover:bg-ferro-600 disabled:bg-gray-300 text-white font-semibold rounded text-xs flex-shrink-0"
+                      className="px-3 py-2 bg-latao-400 hover:bg-latao-300 text-ferro-900 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed font-display font-semibold rounded-lg text-sm flex-shrink-0"
                     >
                       Aplicar
                     </button>
                   </div>
-                  {context === 'lojinha' && total < 150 && <p className="text-xs text-amber-600 mt-1">Mínimo: R$150</p>}
+                  {context === 'lojinha' && total < 150 && <p className="text-xs text-latao-700 mt-1">Mínimo: R$150</p>}
                   {isCouponApplied && (
-                    <p className="text-xs text-ferro-700 font-semibold mt-1">
-                      ✅ -R$ {couponDiscountAmount.toFixed(2)}
+                    <p className="text-xs text-green-700 font-semibold mt-1">
+                      ✓ -R$ {couponDiscountAmount.toFixed(2)}
                     </p>
                   )}
                 </div>
 
                 {/* Total */}
-                <div className="pt-2 border-t border-gray-300 space-y-0.5">
+                <div className="picote-horizontal pt-3 space-y-0.5">
                   {isCouponApplied && (
                     <>
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-sm text-ferro-700">
                         <span>Subtotal</span>
                         <span>R$ {formatPrice(total)}</span>
                       </div>
-                      <div className="flex justify-between text-xs text-ferro-600">
+                      <div className="flex justify-between text-sm text-green-700">
                         <span>Desconto</span>
                         <span>- R$ {formatPrice(couponDiscountAmount)}</span>
                       </div>
                     </>
                   )}
                   <div className="flex justify-between items-center pt-1.5">
-                    <span className="font-bold text-gray-900 text-sm">Total</span>
-                    <span className="text-lg font-bold text-ferro-600">
+                    <span className="font-display font-semibold uppercase tracking-wide text-ferro-900">Total</span>
+                    <span className="font-slab text-2xl text-ferro-900">
                       R$ {formatPrice(discountedTotal)}
                     </span>
                   </div>
@@ -699,20 +691,16 @@ const SalesPage: React.FC = () => {
 
                 {/* Botões */}
                 <div className="flex gap-2 pt-2">
-                  <button 
-                    onClick={handleClearCart} 
-                    className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg text-sm"
+                  <button
+                    onClick={handleClearCart}
+                    className="flex-1 bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-200 font-display font-semibold py-2.5 px-2 rounded-lg text-sm"
                   >
                     Limpar
                   </button>
                   <button
                     onClick={handleOpenConfirmation}
                     disabled={isSaving}
-                    className={`flex-1 ${
-                      context === 'lojinha' 
-                        ? 'bg-blue-500 hover:bg-blue-600' 
-                        : 'bg-orange-500 hover:bg-orange-600'
-                    } text-white font-semibold py-2 rounded-lg disabled:bg-gray-400 text-sm`}
+                    className="flex-1 bg-vagao-600 hover:bg-vagao-700 text-creme-50 font-display font-semibold tracking-wide py-2.5 px-2 rounded-lg disabled:opacity-50 text-sm shadow-sm"
                   >
                     {isSaving ? 'Salvando...' : 'Finalizar'}
                   </button>
@@ -731,7 +719,7 @@ const SalesPage: React.FC = () => {
         title={context === 'lojinha' ? 'Confirmar Venda' : 'Confirmar Pedido'}
         icon={config.icon}
         card={selectedCard}
-        transactionType="debit" 
+        transactionType="debit"
         amount={discountedTotal.toFixed(2)}
         formattedAmount={discountedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         description={`${Object.entries(cartItems).map(([id, q]) => {
@@ -743,31 +731,10 @@ const SalesPage: React.FC = () => {
 
       {/* Modal de Loading - Bloqueia a tela durante o processamento */}
       {isLoading && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-md">
-          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 border-4 border-yellow-300/50">
-            <div className="text-center">
-              <div className="mb-6 flex justify-center">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-yellow-200/50 animate-ping"></div>
-                  <div className="relative">
-                    <LoadingSpinner size="lg" />
-                  </div>
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3 font-display">
-                {context === 'lojinha' ? '🛍️ Processando venda...' : '🍔 Processando pedido...'}
-              </h3>
-              <p className="text-gray-700 text-base font-body">
-                Por favor, aguarde enquanto finalizamos sua {context === 'lojinha' ? 'venda' : 'pedido'}
-              </p>
-              <div className="mt-4 flex justify-center space-x-1">
-                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <TrainLoader
+          title={context === 'lojinha' ? 'Processando venda...' : 'Processando pedido...'}
+          message={`Por favor, aguarde enquanto finalizamos ${context === 'lojinha' ? 'a venda' : 'o pedido'}`}
+        />
       )}
     </div>
   )
