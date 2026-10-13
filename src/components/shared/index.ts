@@ -9,6 +9,8 @@ export { default as ToastContainer } from './ToastContainer'
 export { LoadingSpinner } from './LoadingSpinner'
 export { PageSkeleton } from './PageSkeleton'
 export { GlobalLoading } from './GlobalLoading'
+export { TrainLoader } from './TrainLoader'
+export { TrilhosBackground } from './TrilhosBackground'
 
 // Masked Inputs
 export { 

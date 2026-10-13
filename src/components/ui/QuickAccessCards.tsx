@@ -42,8 +42,8 @@ const QuickAccessCards: React.FC = () => {
       title: '💳 Comunicação',
       description: 'Gerenciar cartões',
       path: '/cards',
-      color: 'from-emerald-50 to-emerald-100 border-emerald-200',
-      buttonColor: 'bg-emerald-500 hover:bg-emerald-600'
+      color: 'from-ferro-50 to-ferro-100 border-ferro-200',
+      buttonColor: 'bg-ferro-500 hover:bg-ferro-600'
     })
   }
 
@@ -143,10 +143,10 @@ const QuickAccessCards: React.FC = () => {
             >
               <div className="text-center p-4">
                 <div className="text-3xl mb-2">{card.title.split(' ')[0]}</div>
-                <h3 className="text-sm font-semibold text-black mb-1 font-cardinal">
+                <h3 className="text-sm font-semibold text-black mb-1 font-display">
                   {card.title.substring(card.title.indexOf(' ') + 1)}
                 </h3>
-                <p className="text-xs text-gray-600 font-farmhand">
+                <p className="text-xs text-gray-600 font-body">
                   {card.description}
                 </p>
               </div>

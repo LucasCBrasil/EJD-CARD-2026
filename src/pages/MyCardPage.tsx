@@ -232,7 +232,7 @@ const MyCardPage: React.FC = () => {
       {/* Card Info */}
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-black mb-6 font-cardinal">
+          <h2 className="text-2xl font-bold text-black mb-6 font-display">
             💳 Meu Cartão
           </h2>
           
@@ -244,7 +244,7 @@ const MyCardPage: React.FC = () => {
           ) : !card ? (
             <div className="text-center py-8">
               <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-xl font-bold text-black mb-4 font-cardinal">
+              <h3 className="text-xl font-bold text-black mb-4 font-display">
                 Nenhum cartão associado
               </h3>
               <p className="text-gray-600 mb-6">
@@ -253,7 +253,7 @@ const MyCardPage: React.FC = () => {
               <Button
                 onClick={() => navigate({ to: '/cards/associate' })}
                 size="lg"
-                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg font-semibold"
+                className="bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-white shadow-lg font-semibold"
               >
                 🔗 Associar Cartão
               </Button>
@@ -261,7 +261,7 @@ const MyCardPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Nome */}
-              <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-6">
+              <div className="bg-gradient-to-r from-ferro-100 to-ferro-200 rounded-xl p-6">
                 <p className="text-black text-sm mb-2">👤 Nome do Portador</p>
                 <p className="text-xl font-bold text-black">{card.name}</p>
               </div>
@@ -290,7 +290,7 @@ const MyCardPage: React.FC = () => {
       {card && pixEnabled === true && (
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-6">
           <div className="text-center">
-            <h3 className="text-xl font-semibold text-black mb-4 font-cardinal">
+            <h3 className="text-xl font-semibold text-black mb-4 font-display">
               💰 Abastecer Cartão
             </h3>
             <p className="text-gray-600 mb-6">
@@ -299,7 +299,7 @@ const MyCardPage: React.FC = () => {
             <Button
               onClick={() => navigate({ to: '/pix/$paymentId', params: { paymentId: 'new' } })}
               size="lg"
-              className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg font-semibold px-8"
+              className="bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-white shadow-lg font-semibold px-8"
             >
               💳 Gerar PIX para Abastecimento
             </Button>
@@ -310,7 +310,7 @@ const MyCardPage: React.FC = () => {
       {/* Histórico */}
       {card && (
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
-          <h3 className="text-xl font-semibold text-black mb-6 text-center font-cardinal">
+          <h3 className="text-xl font-semibold text-black mb-6 text-center font-display">
             📋 Histórico de Compras
           </h3>
           

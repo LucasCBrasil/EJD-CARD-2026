@@ -119,7 +119,7 @@ const [isConfirming, setIsConfirming] = useState(false)
             </span>
             <Button
             onClick={() => handleOpenConfirmation(order)}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-1 py-2.5"
+            className="bg-ferro-500 hover:bg-ferro-600 text-white text-xs px-1 py-2.5"
             >
             ✅ Confirmar Entrega
             </Button>

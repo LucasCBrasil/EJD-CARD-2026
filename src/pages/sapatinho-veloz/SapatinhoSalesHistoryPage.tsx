@@ -190,7 +190,7 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
                   )}
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-emerald-700">
+                  <div className="text-3xl font-bold text-ferro-700">
                     R$ {order.total.toFixed(2)}
                   </div>
                 </div>

@@ -19,12 +19,12 @@ const Button: React.FC<ButtonProps> = ({
   type = 'button',
   disabled = false
 }) => {
-  const baseClasses = 'font-farmhand font-semibold rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2'
+  const baseClasses = 'font-display font-semibold tracking-wide rounded-xl transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-latao-400 focus-visible:ring-offset-2 focus-visible:ring-offset-creme-100'
   
   const variantClasses = {
-    primary: 'bg-blue-500 hover:bg-blue-600 text-black focus:ring-blue-500',
-    secondary: 'bg-gray-500 hover:bg-gray-600 text-black focus:ring-gray-500',
-    outline: 'border-2 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-black focus:ring-blue-500'
+    primary: 'bg-ferro-800 hover:bg-ferro-700 text-creme-200 border-2 border-ferro-800',
+    secondary: 'bg-creme-200 hover:bg-creme-300 text-ferro-800 border-2 border-ferro-200',
+    outline: 'bg-creme-50/80 border-2 border-ferro-800 text-ferro-800 hover:bg-ferro-800 hover:text-creme-200'
   }
   
   const sizeClasses = {

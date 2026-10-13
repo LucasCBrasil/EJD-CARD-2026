@@ -98,7 +98,7 @@ export function CheckoutForm() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-white shadow-xl rounded-xl border border-gray-100 p-8">
-        <h1 className="text-2xl font-semibold text-emerald-700 mb-6">Checkout EJD Card</h1>
+        <h1 className="text-2xl font-semibold text-ferro-700 mb-6">Checkout EJD Card</h1>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -163,7 +163,7 @@ export function CheckoutForm() {
                 onClick={() => setBillingType(type)}
                 className={`px-4 py-2 rounded-lg border ${
                   billingType === type
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    ? 'border-ferro-500 bg-ferro-50 text-ferro-700'
                     : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
@@ -175,7 +175,7 @@ export function CheckoutForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition"
+            className="w-full py-3 rounded-lg bg-ferro-600 text-white font-semibold hover:bg-ferro-700 disabled:opacity-60 transition"
           >
             {loading ? 'Processando...' : 'Gerar pagamento'}
           </button>
@@ -188,16 +188,16 @@ export function CheckoutForm() {
         )}
 
         {success && (
-          <div className="mt-4 bg-emerald-50 border border-emerald-100 p-4 rounded-lg space-y-2 text-sm">
-            <div className="font-semibold text-emerald-700">Pagamento criado!</div>
+          <div className="mt-4 bg-ferro-50 border border-ferro-100 p-4 rounded-lg space-y-2 text-sm">
+            <div className="font-semibold text-ferro-700">Pagamento criado!</div>
             <div>Status: {success.status}</div>
             {success.charges.bankSlipUrl && (
-              <a className="text-emerald-700 underline" href={success.charges.bankSlipUrl} target="_blank" rel="noreferrer">
+              <a className="text-ferro-700 underline" href={success.charges.bankSlipUrl} target="_blank" rel="noreferrer">
                 Ver boleto
               </a>
             )}
             {success.charges.invoiceUrl && (
-              <a className="text-emerald-700 underline" href={success.charges.invoiceUrl} target="_blank" rel="noreferrer">
+              <a className="text-ferro-700 underline" href={success.charges.invoiceUrl} target="_blank" rel="noreferrer">
                 Link de pagamento
               </a>
             )}

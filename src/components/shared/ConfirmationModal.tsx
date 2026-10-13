@@ -99,10 +99,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       return 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
     }
     else if (computedVariant === 'delivery-confirmation') {
-      return 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white'
+      return 'bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-white'
     }
     if (transactionType === 'credit' || computedVariant === 'card-transaction') {
-      return 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white'
+      return 'bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-white'
     }
     return 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
   }
@@ -126,11 +126,11 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       >
         <div className="text-center mb-6">
           <div className="text-6xl mb-4">{icon}</div>
-          <h3 className="text-2xl font-bold text-black mb-4 font-cardinal">
+          <h3 className="text-2xl font-bold text-black mb-4 font-display">
             {title}
           </h3>
           {message && (
-            <p className="text-gray-700 mb-4 font-farmhand">
+            <p className="text-gray-700 mb-4 font-body">
               {message}
             </p>
           )}
@@ -147,15 +147,15 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 backgroundColor: '#d1fae5'
               }}
             >
-              <h4 className="font-semibold text-black mb-3 font-farmhand">📋 Dados do Cartão</h4>
+              <h4 className="font-semibold text-black mb-3 font-body">📋 Dados do Cartão</h4>
               <div className="space-y-2">
-                <p className="text-black font-farmhand">
+                <p className="text-black font-body">
                   <strong>Nome:</strong> {card.userName || card.user_name}
                 </p>
-                <p className="text-black font-farmhand">
+                <p className="text-black font-body">
                   <strong>Número:</strong> {formatCardNumber(card.cardNumber || card.card_number || '')}
                 </p>
-                <p className="text-black font-farmhand">
+                <p className="text-black font-body">
                   <strong>Saldo Atual:</strong> R$ {card.balance.toFixed(2).replace('.', ',')}
                 </p>
               </div>
@@ -169,17 +169,17 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 backgroundColor: '#fef3c7'
               }}
             >
-              <h4 className="font-semibold text-black mb-3 font-farmhand">💳 Resumo da Transação</h4>
+              <h4 className="font-semibold text-black mb-3 font-body">💳 Resumo da Transação</h4>
               <div className="space-y-2">
-                <p className="text-black font-farmhand">
+                <p className="text-black font-body">
                   <strong>{getTransactionLabel()}:</strong> R$ {formattedAmount}
                 </p>
                 {description && (
-                  <p className="text-black font-farmhand">
+                  <p className="text-black font-body">
                     <strong>Descrição:</strong> {description}
                   </p>
                 )}
-                <p className="text-black font-farmhand">
+                <p className="text-black font-body">
                   <strong>Novo Saldo:</strong> R$ {getNewBalance().toFixed(2).replace('.', ',')}
                 </p>
               </div>
@@ -199,11 +199,11 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 className="w-16 h-16 object-cover rounded-lg"
               />
               <div className="flex-1">
-                <h4 className="font-bold text-gray-800 font-cardinal">{product.name}</h4>
-                <p className="text-sm text-gray-600 font-farmhand">
+                <h4 className="font-bold text-gray-800 font-display">{product.name}</h4>
+                <p className="text-sm text-gray-600 font-body">
                   R$ {formatPrice(product.price)}
                 </p>
-                <p className="text-sm text-gray-600 font-farmhand">
+                <p className="text-sm text-gray-600 font-body">
                   Quantidade: {product.stock}
                 </p>
               </div>

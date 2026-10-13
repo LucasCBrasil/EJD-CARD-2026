@@ -51,11 +51,11 @@ const AssociateCard: React.FC = () => {
             value={cardNumber}
             onChange={(e) => setCardNumber(e.target.value.replace(/\s+/g, ''))}
             placeholder="Ex: 063 ou 63"
-            className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 bg-white/90"
+            className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 bg-white/90"
             required
           />
           {showNumberNormalization && (
-            <p className="text-xs text-emerald-600 mt-1">
+            <p className="text-xs text-ferro-600 mt-1">
               ✓ Será buscado como: <span className="font-mono font-bold">{normalizedCardNumber}</span>
             </p>
           )}
@@ -66,7 +66,7 @@ const AssociateCard: React.FC = () => {
             value={cardCode}
             onChange={(e) => setCardCode(e.target.value.replace(/\s+/g, ''))}
             placeholder="Digite o código (maiúsculo ou minúsculo)"
-            className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 bg-white/90 font-mono"
+            className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 bg-white/90 font-mono"
             required
           />
           {cardCode && (
@@ -86,7 +86,7 @@ const AssociateCard: React.FC = () => {
             </div>
           </div>
         )}
-        <Button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-black" disabled={isLoading}>
+        <Button type="submit" className="w-full bg-ferro-500 hover:bg-ferro-600 text-black" disabled={isLoading}>
           {isLoading ? 'Associando...' : 'Associar Cartão'}
         </Button>
       </form>

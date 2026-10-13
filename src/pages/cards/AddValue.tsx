@@ -223,26 +223,26 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
                     value={searchQuery}
                     onChange={handleSearchChange}
                     onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                     placeholder="Nome ou número do cartão (ex: João ou 001)"
                     autoComplete="off"
                   />
                   {isSearching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="animate-spin h-5 w-5 border-2 border-emerald-500 border-t-transparent rounded-full"></div>
+                      <div className="animate-spin h-5 w-5 border-2 border-ferro-500 border-t-transparent rounded-full"></div>
                     </div>
                   )}
                 </div>
 
                 {/* Dropdown de resultados */}
                 {showDropdown && searchResults.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border-2 border-emerald-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-1 bg-white border-2 border-ferro-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {searchResults.map((card) => (
                       <button
                         key={card.id}
                         type="button"
                         onClick={() => handleSelectCard(card)}
-                        className="w-full px-4 py-3 text-left hover:bg-emerald-50 transition-colors border-b border-gray-100 last:border-b-0 focus:bg-emerald-100 focus:outline-none"
+                        className="w-full px-4 py-3 text-left hover:bg-ferro-50 transition-colors border-b border-gray-100 last:border-b-0 focus:bg-ferro-100 focus:outline-none"
                       >
                         <div className="font-medium text-gray-900">{card.userName || 'Sem nome'}</div>
                         <div className="text-sm text-gray-500 flex justify-between">
@@ -273,14 +273,14 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
                   value={formattedAmount}
                   onChange={handleAmountChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                   placeholder="0,00"
                 />
               </div>
 
               {/* Informações do cartão selecionado */}
               {selectedCard && (
-                <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-4">
+                <div className="bg-gradient-to-r from-ferro-100 to-ferro-200 rounded-xl p-4">
                   <h4 className="font-semibold text-black mb-2">📋 Cartão Selecionado</h4>
                   <p className="text-black"><strong>Nome:</strong> {selectedCard.userName || 'Sem nome'}</p>
                   <p className="text-black"><strong>Número:</strong> {formatCardNumber(selectedCard.cardNumber || '')}</p>
@@ -297,7 +297,7 @@ const AddValue: React.FC<AddValueProps> = ({ onBack: _onBack }) => {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 !text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                className="w-full bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 !text-black shadow-lg hover:shadow-ferro-200 font-semibold"
                 disabled={isLoading || !selectedCard}
               >
                 {isLoading ? (

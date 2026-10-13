@@ -38,19 +38,19 @@ export function ErrorPage(props?: ErrorPageProps) {
         >
           <div className="absolute inset-0 bg-white/40 backdrop-blur-sm"></div>
         </div>
-        <div className="relative z-10 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-golden-200 p-8 md:p-12 max-w-lg mx-4 text-center">
+        <div className="relative z-10 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-latao-200 p-8 md:p-12 max-w-lg mx-4 text-center">
           <div className="text-6xl mb-6 animate-bounce">⚠️</div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 font-cardinal">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 font-display">
             Ops! Algo deu errado
           </h1>
-          <p className="text-lg text-gray-700 mb-8 font-farmhand">
+          <p className="text-lg text-gray-700 mb-8 font-body">
             Ocorreu um erro inesperado. Por favor, tente novamente.
           </p>
           <Button
             onClick={() => navigate({ to: '/' })}
             variant="primary"
             size="lg"
-            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-emerald-200 font-semibold"
+            className="bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-white shadow-lg hover:shadow-ferro-200 font-semibold"
           >
             🏠 Voltar para Home
           </Button>
@@ -111,14 +111,14 @@ export function ErrorPage(props?: ErrorPageProps) {
       </div>
 
       {/* Conteúdo do erro */}
-      <div className="relative z-10 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-golden-200 p-8 md:p-12 max-w-lg mx-4 text-center">
+      <div className="relative z-10 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-latao-200 p-8 md:p-12 max-w-lg mx-4 text-center">
         <div className="text-6xl mb-6 animate-bounce">{icon}</div>
         
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 font-cardinal">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 font-display">
           {title}
         </h1>
         
-        <p className="text-lg text-gray-700 mb-8 font-farmhand">
+        <p className="text-lg text-gray-700 mb-8 font-body">
           {message}
         </p>
 
@@ -149,7 +149,7 @@ export function ErrorPage(props?: ErrorPageProps) {
             }}
             variant="primary"
             size="lg"
-            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-emerald-200 font-semibold"
+            className="bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-white shadow-lg hover:shadow-ferro-200 font-semibold"
           >
             🏠 Voltar para Home
           </Button>
@@ -175,7 +175,7 @@ export function ErrorPage(props?: ErrorPageProps) {
                   window.location.href = '/login'
                 }
               }}
-              className="text-emerald-600 hover:text-emerald-800 font-semibold underline text-sm"
+              className="text-ferro-600 hover:text-ferro-800 font-semibold underline text-sm"
             >
               Ir para página de login →
             </button>

@@ -254,15 +254,15 @@ const ListProductsPage = () => {
       {products.length === 0 ? (
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-12 text-center">
           <div className="text-6xl mb-4">📦</div>
-          <h3 className="text-2xl font-bold text-gray-600 mb-4 font-cardinal">
+          <h3 className="text-2xl font-bold text-gray-600 mb-4 font-display">
             {currentConfig.emptyMessage}
           </h3>
-          <p className="text-gray-500 mb-6 font-farmhand">
+          <p className="text-gray-500 mb-6 font-body">
             Comece cadastrando seu primeiro {itemSingular}!
           </p>
           <button
             onClick={() => navigate({ to: `${basePath}/products/create` as any, search: {} as any })}
-            className="px-8 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black hover:shadow-xl"
+            className="px-8 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-black hover:shadow-xl"
           >
             ➕ Cadastrar {itemSingularTitle}
           </button>
@@ -287,21 +287,21 @@ const ListProductsPage = () => {
                   />
                   {/* Informações do Produto */}
                   <div className="p-4">
-                    <h3 className="text-lg font-bold text-emerald-600 mb-2 font-cardinal truncate" title={product.name}>
+                    <h3 className="text-lg font-bold text-ferro-600 mb-2 font-display truncate" title={product.name}>
                       {product.name}
                     </h3>
                     
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 font-farmhand">💰 Preço:</span>
-                        <span className="text-lg font-bold text-sky-900 font-cardinal">
+                        <span className="text-sm text-gray-600 font-body">💰 Preço:</span>
+                        <span className="text-lg font-bold text-anil-900 font-display">
                           R$ {formatPrice(product.price)}
                         </span>
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 font-farmhand">📦 Quantidade:</span>
-                        <span className={`font-bold font-cardinal ${product.stock > 10 ? 'text-emerald-600' : product.stock > 5 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        <span className="text-sm text-gray-600 font-body">📦 Quantidade:</span>
+                        <span className={`font-bold font-display ${product.stock > 10 ? 'text-ferro-600' : product.stock > 5 ? 'text-yellow-600' : 'text-red-600'}`}>
                           {product.stock}
                         </span>
                       </div>
@@ -362,8 +362,8 @@ const ListProductsPage = () => {
                     data-active={currentPage === page ? "true" : "false"}
                     className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
                       currentPage === page 
-                        ? 'bg-sky-200 hover:bg-sky-300 shadow-lg' 
-                        : 'bg-white hover:bg-emerald-100 shadow'
+                        ? 'bg-anil-200 hover:bg-anil-300 shadow-lg' 
+                        : 'bg-white hover:bg-ferro-100 shadow'
                     }`}
                     style={{ 
                       minWidth: '40px'
@@ -399,7 +399,7 @@ const ListProductsPage = () => {
           )}
 
           {/* Informações de Paginação */}
-          <div className="text-center text-gray-600 font-farmhand">
+          <div className="text-center text-gray-600 font-body">
             Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, products.length)} de {products.length} {context === 'lojinha' ? 'produtos' : 'itens'}
           </div>
         </>

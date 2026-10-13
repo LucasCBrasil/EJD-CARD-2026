@@ -242,8 +242,8 @@ const SapatinhoVelozPage: React.FC = () => {
           </ul>
         </div>
         {userBalance > 0 && (
-          <div className="bg-emerald-100 border-2 border-emerald-400 rounded-lg p-3 sm:p-4 mb-4 md:mb-5">
-            <p className="text-base sm:text-lg font-bold text-emerald-900">
+          <div className="bg-ferro-100 border-2 border-ferro-400 rounded-lg p-3 sm:p-4 mb-4 md:mb-5">
+            <p className="text-base sm:text-lg font-bold text-ferro-900">
               💳 Saldo disponível: R$ {userBalance.toFixed(2)}
             </p>
           </div>
@@ -261,7 +261,7 @@ const SapatinhoVelozPage: React.FC = () => {
             value={senderTeam}
             onChange={(e) => setSenderTeam(e.target.value)}
             required
-            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900"
+            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-ferro-500 focus:border-ferro-500 bg-white text-gray-900"
           >
             <option value="">Selecione sua equipe</option>
             {TEAMS.map(team => (
@@ -286,7 +286,7 @@ const SapatinhoVelozPage: React.FC = () => {
             value={recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
             required
-            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900"
+            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-ferro-500 focus:border-ferro-500 bg-white text-gray-900"
             placeholder="Nome do destinatário"
           />
         </div>
@@ -301,7 +301,7 @@ const SapatinhoVelozPage: React.FC = () => {
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
             required
-            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900"
+            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-ferro-500 focus:border-ferro-500 bg-white text-gray-900"
           >
             <option value="">Selecione a equipe do destinatário</option>
             {TEAMS.map(team => (
@@ -322,9 +322,9 @@ const SapatinhoVelozPage: React.FC = () => {
           ) : (
             <div className="space-y-3 sm:space-y-4 max-h-96 overflow-y-auto border-2 border-gray-300 rounded-lg p-3 sm:p-4 md:p-5 bg-white">
               {products.map(product => (
-                <div key={product.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-emerald-300 transition-colors gap-3 sm:gap-0">
+                <div key={product.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-ferro-300 transition-colors gap-3 sm:gap-0">
                   <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-emerald-200 bg-white flex-shrink-0">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-ferro-200 bg-white flex-shrink-0">
                       <OptimizedImage
                         src={product.image_url || (product as any).image || null}
                         alt={product.name}
@@ -337,7 +337,7 @@ const SapatinhoVelozPage: React.FC = () => {
                       id={`product-${product.id}`}
                       checked={!!selectedProducts[product.id]}
                       onChange={() => handleProductToggle(product.id)}
-                      className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 border-2 border-gray-400 rounded focus:ring-emerald-500 cursor-pointer flex-shrink-0 mt-1"
+                      className="w-5 h-5 sm:w-6 sm:h-6 text-ferro-600 border-2 border-gray-400 rounded focus:ring-ferro-500 cursor-pointer flex-shrink-0 mt-1"
                     />
                     <label htmlFor={`product-${product.id}`} className="flex-1 cursor-pointer min-w-0">
                       <div className="text-base sm:text-lg font-bold text-gray-900 break-words">{product.name}</div>
@@ -345,14 +345,14 @@ const SapatinhoVelozPage: React.FC = () => {
                         <div className="text-sm sm:text-base text-gray-700 mt-1 break-words">{product.description}</div>
                       )}
                       <div className="flex items-center gap-3 mt-2">
-                        <div className="text-xl sm:text-2xl font-bold text-emerald-700">R$ {product.price.toFixed(2)}</div>
+                        <div className="text-xl sm:text-2xl font-bold text-ferro-700">R$ {product.price.toFixed(2)}</div>
                         {product.stock !== null && product.stock !== undefined && (
                           <div className={`text-sm font-semibold ${
                             product.stock === 0 
                               ? 'text-red-600' 
                               : product.stock <= 5 
                                 ? 'text-yellow-600' 
-                                : 'text-emerald-600'
+                                : 'text-ferro-600'
                           }`}>
                             📦 {product.stock === 0 ? 'Indisponível' : `${product.stock} em estoque`}
                           </div>
@@ -395,7 +395,7 @@ const SapatinhoVelozPage: React.FC = () => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
-            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900"
+            className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-ferro-500 focus:border-ferro-500 bg-white text-gray-900"
             placeholder="Escreva uma mensagem especial para o destinatário..."
           />
         </div>
@@ -408,7 +408,7 @@ const SapatinhoVelozPage: React.FC = () => {
               id="isAnonymous"
               checked={isAnonymous}
               onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="w-6 h-6 text-emerald-600 border-2 border-gray-400 rounded focus:ring-emerald-500 cursor-pointer"
+              className="w-6 h-6 text-ferro-600 border-2 border-gray-400 rounded focus:ring-ferro-500 cursor-pointer"
             />
             <span className="text-base font-semibold text-gray-900">
               Envio anônimo?
@@ -423,10 +423,10 @@ const SapatinhoVelozPage: React.FC = () => {
 
         {/* Total */}
         {Object.keys(selectedProducts).length > 0 && (
-          <div className="bg-emerald-100 border-2 border-emerald-400 rounded-lg p-4 sm:p-5">
+          <div className="bg-ferro-100 border-2 border-ferro-400 rounded-lg p-4 sm:p-5">
             <div className="flex justify-between items-center mb-2 sm:mb-3">
               <span className="text-lg sm:text-xl font-bold text-gray-900">Total:</span>
-              <span className="text-2xl sm:text-3xl font-bold text-emerald-700">
+              <span className="text-2xl sm:text-3xl font-bold text-ferro-700">
                 R$ {getTotal().toFixed(2)}
               </span>
             </div>
@@ -443,7 +443,7 @@ const SapatinhoVelozPage: React.FC = () => {
           <Button
             type="submit"
             disabled={isProcessing || userBalance < getTotal() || Object.keys(selectedProducts).length === 0}
-            className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-6 sm:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className="w-full sm:w-auto bg-ferro-500 hover:bg-ferro-600 text-white px-6 sm:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
             {isProcessing ? '⏳ Processando...' : '✅ Finalizar Pedido'}
           </Button>
@@ -463,10 +463,10 @@ const SapatinhoVelozPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3 font-cardinal">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3 font-display">
                 👠 Processando pedido...
               </h3>
-              <p className="text-gray-700 text-base font-farmhand">
+              <p className="text-gray-700 text-base font-body">
                 Por favor, aguarde enquanto finalizamos seu pedido do Sapatinho velOz. 
                 <br />
                 <span className="text-sm text-gray-600 mt-2 block">

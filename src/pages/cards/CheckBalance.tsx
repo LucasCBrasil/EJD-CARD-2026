@@ -57,7 +57,7 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
     <div className="space-y-3">
       {/* Header compacto */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-emerald-600 font-cardinal">
+        <h1 className="text-2xl font-bold text-ferro-600 font-display">
           💳 Conferir Saldo
         </h1>
       </div>
@@ -72,10 +72,10 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
                 <div className="flex items-center justify-center gap-3 mb-3">
                   <span className="text-2xl">✅</span>
                   <div className="text-left">
-                    <p className="font-bold text-black font-cardinal">
+                    <p className="font-bold text-black font-display">
                       Cartão #{formatCardNumber(selectedCard.cardNumber || '')}
                     </p>
-                    <p className="text-lg text-black font-farmhand">
+                    <p className="text-lg text-black font-body">
                       {selectedCard.userName || 'Sem nome'}
                     </p>
                   </div>
@@ -91,7 +91,7 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
                 <Button
                   onClick={handleNewSearch}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                  className="w-full bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-black shadow-lg hover:shadow-ferro-200 font-semibold"
                 >
                   🔍 Nova Consulta
                 </Button>
@@ -118,7 +118,7 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
                 <Button
                   onClick={handleNewSearch}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                  className="w-full bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-black shadow-lg hover:shadow-ferro-200 font-semibold"
                 >
                   🔍 Tentar Novamente
                 </Button>
@@ -140,7 +140,7 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
                     id="cardNumber"
                     value={searchNumber}
                     onChange={(e) => handleInputChange(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                    className="w-full px-4 py-4 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 text-center text-3xl font-mono"
+                    className="w-full px-4 py-4 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90 text-center text-3xl font-mono"
                     placeholder="001"
                     autoFocus
                   />
@@ -149,7 +149,7 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
                 <Button
                   onClick={handleSearch}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                  className="w-full bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-black shadow-lg hover:shadow-ferro-200 font-semibold"
                   disabled={isLoading || !searchNumber}
                 >
                   {isLoading ? '🔍 Buscando...' : '🔍 Consultar'}

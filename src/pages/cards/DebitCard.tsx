@@ -153,7 +153,7 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                   value={cardNumber}
                   onChange={handleCardNumberChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                   placeholder="001"
                   maxLength={3}
                 />
@@ -177,7 +177,7 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                   value={formattedAmount}
                   onChange={handleAmountChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                   placeholder="0,00"
                 />
               </div>
@@ -192,14 +192,14 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                   placeholder="Ex: Compra no supermercado"
                 />
               </div>
 
               {/* Informações do cartão selecionado */}
               {selectedCard && (
-                <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-4">
+                <div className="bg-gradient-to-r from-ferro-100 to-ferro-200 rounded-xl p-4">
                   <h4 className="font-semibold text-black mb-2">📋 Cartão Selecionado</h4>
                   <p className="text-black"><strong>Nome:</strong> {selectedCard.userName || 'Sem nome'}</p>
                   <p className="text-black"><strong>Número:</strong> {formatCardNumber(selectedCard.cardNumber || '')}</p>

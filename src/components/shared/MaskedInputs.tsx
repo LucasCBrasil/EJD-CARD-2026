@@ -177,7 +177,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
         disabled={disabled}
         placeholder={placeholder}
         className={`w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl 
-          focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 
+          focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 
           transition-colors text-xl font-bold
           disabled:bg-gray-100 disabled:cursor-not-allowed
           ${className}`}
@@ -275,7 +275,7 @@ export const CpfCnpjInput: React.FC<CpfCnpjInputProps> = ({
       disabled={disabled}
       placeholder={dynamicPlaceholder}
       className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl 
-        focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 
+        focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 
         transition-colors
         disabled:bg-gray-100 disabled:cursor-not-allowed
         ${className}`}

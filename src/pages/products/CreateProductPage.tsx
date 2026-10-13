@@ -262,7 +262,7 @@ const CreateProductPage = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Nome do Produto */}
           <div>
-            <label htmlFor="name" className="block text-sm font-semibold text-black mb-2 font-cardinal">
+            <label htmlFor="name" className="block text-sm font-semibold text-black mb-2 font-display">
               🏷️ {currentConfig.nameLabel}
             </label>
             <input
@@ -271,7 +271,7 @@ const CreateProductPage = () => {
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               required
-              className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 font-farmhand"
+              className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90 font-body"
               placeholder={currentConfig.namePlaceholder}
             />
           </div>
@@ -280,12 +280,12 @@ const CreateProductPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Coluna da esquerda: Upload de Imagem */}
             <div>
-              <label htmlFor="image" className="block text-sm font-semibold text-black mb-2 font-cardinal">
+              <label htmlFor="image" className="block text-sm font-semibold text-black mb-2 font-display">
                 📸 Imagem do Produto <span className="text-gray-500 font-normal text-xs">(opcional)</span>
               </label>
               
               {!imagePreview ? (
-                <div className="border-2 border-dashed border-emerald-300 rounded-lg p-4 text-center hover:border-emerald-500 transition-colors duration-200" style={{ height: '155px' }}>
+                <div className="border-2 border-dashed border-ferro-300 rounded-lg p-4 text-center hover:border-ferro-500 transition-colors duration-200" style={{ height: '155px' }}>
                   <input
                     type="file"
                     id="image"
@@ -298,16 +298,16 @@ const CreateProductPage = () => {
                     className="cursor-pointer flex flex-col items-center justify-center h-full"
                   >
                     <div className="text-4xl mb-2">📷</div>
-                    <p className="text-black font-semibold mb-1 font-cardinal text-sm">
+                    <p className="text-black font-semibold mb-1 font-display text-sm">
                       Clique para selecionar
                     </p>
-                    <p className="text-xs text-gray-600 font-farmhand">
+                    <p className="text-xs text-gray-600 font-body">
                       PNG, JPG ou WEBP
                     </p>
                   </label>
                 </div>
               ) : (
-                <div className="relative rounded-lg border-2 border-emerald-200 overflow-hidden" style={{ height: '155px' }}>
+                <div className="relative rounded-lg border-2 border-ferro-200 overflow-hidden" style={{ height: '155px' }}>
                   <img 
                     src={imagePreview} 
                     alt="Preview" 
@@ -332,7 +332,7 @@ const CreateProductPage = () => {
                     </span>
                   </button>
                   <div className="absolute bottom-0 left-0 right-0 bg-white/90 px-2 py-1">
-                    <p className="text-xs text-gray-600 font-farmhand truncate">
+                    <p className="text-xs text-gray-600 font-body truncate">
                       {getSelectedImageName()}
                     </p>
                   </div>
@@ -342,7 +342,7 @@ const CreateProductPage = () => {
             {/* Coluna da direita: Valor e Quantidade */}
             <div className="space-y-6">
               <div>
-                <label htmlFor="price" className="block text-sm font-semibold text-black mb-2 font-cardinal">
+                <label htmlFor="price" className="block text-sm font-semibold text-black mb-2 font-display">
                   💰 Valor (R$)
                 </label>
                 <input
@@ -352,13 +352,13 @@ const CreateProductPage = () => {
                   value={formData.price}
                   onChange={handlePriceChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 font-farmhand"
+                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90 font-body"
                   placeholder="0,00"
                 />
               </div>
 
               <div>
-                <label htmlFor="quantity" className="block text-sm font-semibold text-black mb-2 font-cardinal">
+                <label htmlFor="quantity" className="block text-sm font-semibold text-black mb-2 font-display">
                   📦 Quantidade
                 </label>
                 <input
@@ -369,7 +369,7 @@ const CreateProductPage = () => {
                   onChange={(e) => handleInputChange('stock', e.target.value)}
                   min="1"
                   required
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 font-farmhand [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90 font-body [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   placeholder="0"
                 />
               </div>
@@ -383,7 +383,7 @@ const CreateProductPage = () => {
               onClick={handleCancel}
               variant="outline"
               size="lg"
-              className="!text-black flex-1 bg-gradient-to-r from-ruby-600 to-ruby-700 hover:from-ruby-700 hover:to-ruby-800 font-cardinal"
+              className="!text-black flex-1 bg-gradient-to-r from-vagao-600 to-vagao-700 hover:from-vagao-700 hover:to-vagao-800 font-display"
               disabled={isLoading}
             >
               ❌ Cancelar
@@ -391,7 +391,7 @@ const CreateProductPage = () => {
             <Button
               type="submit"
               size="lg"
-              className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg hover:shadow-emerald-200 font-semibold font-cardinal"
+              className="flex-1 bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 shadow-lg hover:shadow-ferro-200 font-semibold font-display"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -411,7 +411,7 @@ const CreateProductPage = () => {
 
       {/* Dicas */}
       <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4">
-        <p className="text-black text-sm font-farmhand">
+        <p className="text-black text-sm font-body">
           💡 <strong>Dica:</strong> A imagem é opcional - se você não adicionar uma, será usada uma imagem padrão. 
           O valor será formatado automaticamente conforme você digita.
         </p>

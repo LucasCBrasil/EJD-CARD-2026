@@ -36,8 +36,8 @@ const LojinhaPage = () => {
       title: 'Cadastrar Produto',
       description: 'Adicionar novo produto ao estoque',
       path: '/lojinha/products/create',
-      color: 'from-emerald-100 to-emerald-200',
-      gradient: 'border-emerald-300',
+      color: 'from-ferro-100 to-ferro-200',
+      gradient: 'border-ferro-300',
       canAccess: canManageProductsLojinha
     },
     {
@@ -45,8 +45,8 @@ const LojinhaPage = () => {
       title: 'Listar Produtos',
       description: 'Gerenciar produtos cadastrados',
       path: '/lojinha/products',
-      color: 'from-compass-100 to-compass-200',
-      gradient: 'border-compass-300',
+      color: 'from-latao-100 to-latao-200',
+      gradient: 'border-latao-300',
       canAccess: canManageProductsLojinha
     },
     {
@@ -54,8 +54,8 @@ const LojinhaPage = () => {
       title: 'Pedidos Abertos',
       description: 'Ver pedidos pendentes de entrega',
       path: '/pedidos-lojinha',
-      color: 'from-wizard-100 to-wizard-200',
-      gradient: 'border-wizard-300',
+      color: 'from-anil-100 to-anil-200',
+      gradient: 'border-anil-300',
       canAccess: canViewOpenOrders
     },
     {
@@ -63,8 +63,8 @@ const LojinhaPage = () => {
       title: 'Cadastrar Item Sapatinho velOz',
       description: 'Adicionar novo item do sapatinho veloz',
       path: '/sapatinho-veloz/products/create',
-      color: 'from-ruby-100 to-ruby-200',
-      gradient: 'border-ruby-300',
+      color: 'from-vagao-100 to-vagao-200',
+      gradient: 'border-vagao-300',
       canAccess: userRole === 'admin' || userRole === 'lojinha'
     },
     {
@@ -72,8 +72,8 @@ const LojinhaPage = () => {
       title: 'Listar Itens Sapatinho velOz',
       description: 'Gerenciar itens do sapatinho veloz',
       path: '/sapatinho-veloz/products',
-      color: 'from-ruby-100 to-ruby-200',
-      gradient: 'border-ruby-300',
+      color: 'from-vagao-100 to-vagao-200',
+      gradient: 'border-vagao-300',
       canAccess: userRole === 'admin' || userRole === 'lojinha'
     }
   ]
@@ -83,10 +83,10 @@ const LojinhaPage = () => {
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-black mb-3 font-cardinal drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
+        <h2 className="text-3xl md:text-4xl font-bold text-black mb-3 font-display drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
           🏪 Lojinha Mágica
         </h2>
-        <p className="text-lg text-gray-700 font-farmhand drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+        <p className="text-lg text-gray-700 font-body drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
           Vendas, produtos, histórico e pedidos da lojinha
         </p>
         {/* Linha decorativa */}

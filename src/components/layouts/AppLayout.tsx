@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
-import { Header, Button } from '../shared'
+import { Header, Button, TrilhosBackground } from '../shared'
 import { GlobalLoading } from '../shared/GlobalLoading'
 import { TabNavigation } from '../ui'
 import { useAuth } from '../../contexts/AuthContext'
@@ -108,7 +108,7 @@ const AppLayout = () => {
       ? 'Lojinha'
       : context === 'lanchonete'
         ? 'Lanchonete'
-        : 'Sapatinho velOz'
+        : 'Sapatinho Veloz'
     
     if (isInProductsSubpage) {
       return `← Voltar para Gerenciar Produtos`
@@ -137,272 +137,154 @@ const AppLayout = () => {
     }
   }
 
+  const roleLabel = (short: boolean) => {
+    switch (user?.role) {
+      case 'admin': return short ? '👑 Admin' : '👑 Administrador'
+      case 'lojinha': return short ? '🏪 Lojinha' : '🏪 Equipe Lojinha'
+      case 'lanchonete': return short ? '🍔 Lanchonete' : '🍔 Equipe Lanchonete'
+      case 'comunicacao': return '📢 Comunicação'
+      case 'servico': return '⚙️ Serviço'
+      default: return '🎫 Encontrista'
+    }
+  }
+
+  const roleEmoji = roleLabel(true).split(' ')[0]
+
   return (
     <>
       {/* Loading global - aparece quando há loaders pendentes */}
       <GlobalLoading />
-      
-      <div className={`min-h-screen w-full relative ${isHomePage ? 'overflow-visible' : 'overflow-auto'}`} style={{ minHeight: '100vh', backgroundColor: isHomePage ? 'transparent' : undefined }}>
-      {/* Imagem de fundo - Estrada Dourada e Cidade Esmeralda - TODAS as páginas (exceto HomePage que gerencia seu próprio fundo) */}
-      {!isHomePage && (
-        <div 
-          className="fixed inset-0"
-          style={{
-            backgroundImage: 'url(/background-emerald-city.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed',
-            opacity: 0.6,
-            zIndex: -1,
-            pointerEvents: 'none',
-            width: '100%',
-            height: '100%',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0
-          }}
-        >
-          {/* Overlay sutil para melhorar legibilidade - apenas em páginas internas */}
-          <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] pointer-events-none"></div>
-        </div>
-      )}
-      
-      <div className={`w-full min-h-screen ${isHomePage ? 'px-0 py-0' : 'px-4 py-8'} relative`} style={{ zIndex: 1 }}>
+
+      <TrilhosBackground />
+
+      <div className={`min-h-screen w-full relative ${isHomePage ? 'overflow-visible' : 'overflow-auto'}`}>
+      <div className={`w-full min-h-screen ${isHomePage ? 'px-0 py-0' : 'px-4 py-6'} relative`} style={{ zIndex: 1 }}>
         <div className={`${isHomePage ? 'w-full' : 'max-w-4xl mx-auto w-full'}`}>
-          {/* Topbar minimalista */}
-          <div 
-            className={`flex justify-between items-center py-2 px-2 sm:px-3 mb-4 ${isHomePage ? 'relative' : ''}`}
-            style={{ 
-              zIndex: isHomePage ? 50 : 1,
-            }}
+          {/* Barra superior */}
+          <div
+            className={`flex justify-between items-center py-2 mb-2 ${isHomePage ? 'relative px-3 sm:px-6 pt-4 max-w-7xl mx-auto' : 'px-1'}`}
+            style={{ zIndex: isHomePage ? 50 : 1 }}
           >
             {/* Info do usuário - clicável */}
             <div className="relative flex-1 min-w-0" ref={userMenuRef}>
-              <button 
+              <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl cursor-pointer active:scale-95 transition-all duration-150"
-                style={{ 
-                  background: isHomePage ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.95)',
-                  backdropFilter: 'blur(8px)',
-                  boxShadow: isHomePage ? 'none' : '0 2px 8px rgba(0,0,0,0.1)',
-                  border: isHomePage ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.08)',
-                }}
+                className="!px-2 sm:!px-3 !py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-full cursor-pointer active:scale-95 bg-creme-50/95 border border-ferro-200 shadow-sm hover:border-ferro-400"
               >
-                {/* Avatar com inicial */}
-                <div 
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0"
-                  style={{ 
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  }}
-                >
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center bg-ferro-800 text-creme-200 font-display font-semibold text-sm flex-shrink-0">
                   {(user?.name || user?.email || '?')[0].toUpperCase()}
                 </div>
-                
-                {/* Nome truncado */}
-                <span 
-                  className="font-semibold truncate max-w-[80px] sm:max-w-[120px] text-xs sm:text-sm"
-                  style={{ 
-                    color: isHomePage ? '#ffffff' : '#1f2937',
-                    textShadow: isHomePage ? '0 1px 3px rgba(0,0,0,0.5)' : 'none',
-                  }}
-                >
+
+                <span className="font-semibold truncate max-w-[90px] sm:max-w-[140px] text-sm text-ferro-900">
                   {user?.name || user?.email?.split('@')[0] || 'Usuário'}
                 </span>
-                
-                {/* Badge de role - compacto em mobile */}
-                <span 
-                  className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{
-                    background: isHomePage ? 'rgba(16,185,129,0.4)' : '#dcfce7',
-                    color: isHomePage ? '#ffffff' : '#166534',
-                  }}
-                >
-                  {user?.role === 'admin' ? '👑 Admin' : 
-                   user?.role === 'lojinha' ? '🏪 Lojinha' :
-                   user?.role === 'lanchonete' ? '🍔 Lanchonete' :
-                   user?.role === 'comunicacao' ? '📢 Comunicação' :
-                   user?.role === 'servico' ? '⚙️ Serviço' :
-                   '👤 Encontrista'}
+
+                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-creme-200 text-ferro-800 border border-ferro-200">
+                  {roleLabel(true)}
                 </span>
-                
-                {/* Apenas emoji em mobile */}
-                <span 
-                  className="sm:hidden text-sm"
-                  style={{
-                    filter: isHomePage ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' : 'none',
-                  }}
-                >
-                  {user?.role === 'admin' ? '👑' : 
-                   user?.role === 'lojinha' ? '🏪' :
-                   user?.role === 'lanchonete' ? '🍔' :
-                   user?.role === 'comunicacao' ? '📢' :
-                   user?.role === 'servico' ? '⚙️' :
-                   '👤'}
-                </span>
-                
-                {/* Seta */}
-                <svg 
-                  className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-200 flex-shrink-0 ${showUserMenu ? 'rotate-180' : ''}`}
-                  style={{ color: isHomePage ? '#ffffff' : '#6b7280' }}
-                  fill="none" 
-                  viewBox="0 0 24 24" 
+
+                <span className="sm:hidden text-sm">{roleEmoji}</span>
+
+                <svg
+                  className={`w-4 h-4 text-ferro-500 transition-transform duration-200 flex-shrink-0 ${showUserMenu ? 'rotate-180' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
+
               {/* Dropdown com e-mail */}
               {showUserMenu && (
-                <div 
-                  className="absolute left-0 right-auto sm:right-auto top-full mt-2 rounded-xl shadow-2xl py-3 px-4 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[280px] max-w-[320px] z-50 user-dropdown-menu"
-                  style={{ 
-                    animation: 'fadeIn 0.2s ease-out',
-                    maxWidth: 'calc(100vw - 1rem)',
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #e5e7eb',
-                  }}
+                <div
+                  className="absolute left-0 top-full mt-2 rounded-2xl shadow-bilhete py-4 px-4 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[290px] max-w-[320px] z-50 user-dropdown-menu border-2 border-ferro-800"
+                  style={{ animation: 'fadeIn 0.2s ease-out', maxWidth: 'calc(100vw - 1rem)' }}
                 >
-                  {/* Header do dropdown */}
-                  <div 
-                    className="flex items-center gap-3 pb-3"
-                    style={{ borderBottom: '1px solid #e5e7eb' }}
-                  >
-                    <div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
-                      style={{ 
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      }}
-                    >
+                  <div className="flex items-center gap-3 pb-3 picote-horizontal !border-t-0 border-b-2 border-dashed border-ferro-200">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-ferro-800 text-creme-200 font-display font-semibold text-lg flex-shrink-0">
                       {(user?.name || user?.email || '?')[0].toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div 
-                        className="font-semibold truncate"
-                        style={{ color: '#111827' }}
-                      >
+                      <div className="font-semibold truncate text-ferro-900">
                         {user?.name || 'Usuário'}
                       </div>
-                      <div style={{ color: '#6b7280', fontSize: '12px' }}>
-                        {user?.role === 'admin' ? '👑 Administrador' : 
-                         user?.role === 'lojinha' ? '🏪 Equipe Lojinha' :
-                         user?.role === 'lanchonete' ? '🍔 Equipe Lanchonete' :
-                         user?.role === 'comunicacao' ? '📢 Comunicação' :
-                         user?.role === 'servico' ? '⚙️ Serviço' :
-                         '👤 Encontrista'}
-                      </div>
+                      <div className="text-xs text-ferro-600">{roleLabel(false)}</div>
                     </div>
                   </div>
-                  
-                  {/* Info do e-mail */}
+
                   <div className="pt-3">
-                    <div 
-                      className="flex items-center gap-2 mb-1"
-                      style={{ color: '#6b7280', fontSize: '12px' }}
-                    >
+                    <div className="flex items-center gap-2 mb-1 text-xs text-ferro-600 uppercase tracking-wider font-display">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                       E-mail
                     </div>
-                    <div 
-                      className="break-all pl-5"
-                      style={{ color: '#111827', fontSize: '14px', fontWeight: '500' }}
-                    >
+                    <div className="break-all pl-5 text-sm font-medium text-ferro-900">
                       {user?.email || 'Não informado'}
                     </div>
                   </div>
-                  
-                  {/* Botão Renovar o Feitiço */}
-                  <div className="pt-3 mt-3" style={{ borderTop: '1px solid #e5e7eb' }}>
+
+                  <div className="pt-3 mt-3 border-t-2 border-dashed border-ferro-200">
                     <button
                       onClick={handleRefreshProfile}
                       disabled={isRefreshing}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 active:scale-95 disabled:opacity-60"
-                      style={{
-                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                        color: '#ffffff',
-                        boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
-                      }}
+                      className="w-full !px-3 !py-2 flex items-center justify-center gap-2 rounded-xl text-sm font-display tracking-wide uppercase bg-ferro-800 hover:bg-ferro-700 text-creme-200 active:scale-95 disabled:opacity-60"
                     >
-                      <span className={isRefreshing ? 'animate-spin' : ''}>
-                        {isRefreshing ? '✨' : '🪄'}
-                      </span>
-                      {isRefreshing ? 'Renovando...' : 'Renovar o Feitiço'}
+                      <span className={isRefreshing ? 'animate-roda inline-block' : ''}>🔄</span>
+                      {isRefreshing ? 'Atualizando...' : 'Atualizar permissões'}
                     </button>
-                    <p 
-                      className="text-center mt-2"
-                      style={{ color: '#9ca3af', fontSize: '11px' }}
-                    >
-                      Atualiza suas permissões mágicas
+                    <p className="text-center mt-2 text-xs text-ferro-500">
+                      Use se seu acesso foi alterado por um administrador
                     </p>
                   </div>
                 </div>
               )}
             </div>
-            
+
             {/* Botões */}
-            <div className="flex gap-1.5 sm:gap-2 flex-shrink-0 ml-2">
+            <div className="flex gap-2 flex-shrink-0 ml-2">
               {!isHomePage && (
-                <button 
+                <button
                   onClick={() => navigate({ to: '/' as any })}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-sm sm:text-base font-medium transition-all duration-150 active:scale-95"
-                  style={{
-                    background: '#fbbf24',
-                    color: '#78350f',
-                    boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)',
-                  }}
+                  className="!p-0 w-10 h-10 rounded-full flex items-center justify-center text-base bg-latao-400 hover:bg-latao-300 border-2 border-ferro-800 shadow-sm active:scale-95"
+                  title="Início"
+                  aria-label="Início"
                 >
                   🏠
                 </button>
               )}
-              <button 
+              <button
                 onClick={handleLogout}
-                className="h-9 sm:h-10 px-3 sm:px-4 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium transition-all duration-150 active:scale-95"
-                style={{
-                  background: isHomePage ? 'rgba(255,255,255,0.2)' : '#ef4444',
-                  color: '#ffffff',
-                  backdropFilter: isHomePage ? 'blur(8px)' : 'none',
-                  border: isHomePage ? '1px solid rgba(255,255,255,0.3)' : 'none',
-                  boxShadow: isHomePage ? 'none' : '0 2px 8px rgba(239, 68, 68, 0.3)',
-                }}
+                className="!py-0 h-10 !px-3 sm:!px-4 rounded-full flex items-center justify-center gap-1.5 text-sm font-display tracking-wide uppercase bg-vagao-600 hover:bg-vagao-700 text-creme-100 shadow-sm active:scale-95"
               >
                 <span>🚪</span>
                 <span className="hidden sm:inline">Sair</span>
               </button>
             </div>
           </div>
-          
+
           {/* Header apenas em páginas internas, não na home */}
           {!isHomePage && (
-            <Header 
-              subtitle="Encontrão 2025 - em caminhos mágicos" 
-            />
+            <Header subtitle="Encontrão EJD 25 Anos · Trilhos e Destinos" />
           )}
 
           {/* Navegação por Abas - apenas em páginas internas */}
           {!isHomePage && (
             <TabNavigation activeTab={getActiveTab()} onTabChange={handleTabChange} />
           )}
-          
+
           {/* Botão de Voltar (apenas em páginas de produtos) */}
           {isInProductsPage && (
             <div className="flex justify-start mb-8 mt-4">
-              <Button
-                onClick={handleBackToContext}
-                variant="outline"
-                size="sm"
-                className="border-emerald-500 !text-black hover:bg-emerald-200 hover:!text-black font-semibold font-cardinal shadow-md"
-              >
+              <Button onClick={handleBackToContext} variant="outline" size="sm">
                 {getBackButtonText()}
               </Button>
             </div>
           )}
-          
+
           {/* Conteúdo das rotas */}
-          <div className={isInProductsPage ? "mt-0" : "mt-8"}>
+          <div className={isInProductsPage ? "mt-0" : "mt-6"}>
             {<Outlet />}
           </div>
         </div>

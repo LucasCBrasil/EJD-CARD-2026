@@ -41,29 +41,28 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
     }
   }, [user?.id, refetchUserCard])
 
+  const tabClass = (active: boolean) =>
+    `!px-5 !py-2.5 rounded-xl font-display font-medium uppercase tracking-wide text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+      active
+        ? 'bg-latao-400 text-ferro-900 shadow-md'
+        : 'bg-transparent text-creme-200 hover:bg-ferro-700 hover:text-creme-50'
+    }`
+
   return (
     <div className="flex justify-center mb-8 w-full">
-      <div className="bg-white/95 backdrop-blur-sm rounded-xl p-2 shadow-lg border-2 border-yellow-300 w-full max-w-full overflow-x-auto">
+      <div className="bg-ferro-800 rounded-2xl p-2 shadow-bilhete border-2 border-ferro-900 w-full max-w-full overflow-x-auto">
         <div className="flex gap-2 justify-center items-center min-w-max px-2 mx-auto">
           {/* Meu Cartão - sempre visível */}
           <button
             onClick={() => onTabChange('mycard')}
-            className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'mycard'
-                ? 'bg-emerald-300 text-white shadow-lg'
-                : 'text-gray-900 hover:bg-purple-100 bg-white border-2 border-gray-300'
-            }`}
+            className={tabClass(activeTab === 'mycard')}
           >
             💳 Meu Cartão
           </button>
           {(userRole === 'admin' || userRole === 'comunicacao') && (
             <button
               onClick={() => onTabChange('cards')}
-            className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'cards'
-                ? 'bg-emerald-300 text-white shadow-lg'
-                : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-            }`}
+            className={tabClass(activeTab === 'cards')}
             >
               💳 Comunicação
             </button>
@@ -71,11 +70,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
           {userRole !== 'encontrista' && canSellLojinha && (
             <button
               onClick={() => onTabChange('lojinha')}
-              className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'lojinha'
-                  ? 'bg-emerald-300 text-white shadow-lg'
-                  : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-              }`}
+              className={tabClass(activeTab === 'lojinha')}
             >
               🏪 Lojinha
             </button>
@@ -86,22 +81,15 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
                 onTabChange('historicoLojinha')
                 safeNavigate('/historico/lojinha')}
               }
-              className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'historicoLojinha'
-                  ? 'bg-emerald-300 text-white shadow-lg'
-                  : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-            }`}            >
+              className={tabClass(activeTab === 'historicoLojinha')}
+            >
               📊 Histórico Lojinha
             </button>
           )}
           {userRole !== 'encontrista' && canSellLanchonete && (
             <button
               onClick={() => onTabChange('lanchonete')}
-              className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'lanchonete'
-                  ? 'bg-emerald-300 text-white shadow-lg'
-                  : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-              }`}
+              className={tabClass(activeTab === 'lanchonete')}
             >
               🍔 Lanchonete
             </button>
@@ -112,11 +100,8 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
                 onTabChange('historicoLanchonete')
                 safeNavigate('/historico/lanchonete')}
               }
-              className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'historicoLanchonete'
-                  ? 'bg-emerald-300 text-white shadow-lg'
-                  : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-            }`}            >
+              className={tabClass(activeTab === 'historicoLanchonete')}
+            >
               📊 Histórico Lanchonete
             </button>
           )}
@@ -126,11 +111,8 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
                 onTabChange('historicoSapatinho')
                 safeNavigate('/historico/sapatinho')}
               }
-              className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'historicoSapatinho'
-                  ? 'bg-emerald-300 text-white shadow-lg'
-                  : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-            }`}            >
+              className={tabClass(activeTab === 'historicoSapatinho')}
+            >
               📊 Histórico Sapatinho
             </button>
           )}
@@ -138,13 +120,9 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
           {hasAssociatedCard && userRole === 'admin' && (
             <button
               onClick={() => safeNavigate('/sapatinho-veloz')}
-              className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'sapatinho-veloz'
-                  ? 'bg-emerald-300 text-white shadow-lg'
-                  : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-              }`}
+              className={tabClass(activeTab === 'sapatinho-veloz')}
             >
-              👠 Sapatinho velOz
+              💌 Sapatinho Veloz
             </button>
           )}
           {/* Produtos Sapatinho - Cadastrar e Listar - APENAS admin e lojinha podem gerenciar */}
@@ -152,21 +130,13 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
             <>
               <button
                 onClick={() => safeNavigate('/sapatinho-veloz/products/create')}
-                className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'sapatinho-veloz-products-create'
-                    ? 'bg-emerald-300 text-white shadow-lg'
-                    : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-                }`}
+                className={tabClass(activeTab === 'sapatinho-veloz-products-create')}
               >
-                👠 Cadastrar Itens Sapatinho
+                💌 Cadastrar Itens Sapatinho
               </button>
               <button
                 onClick={() => safeNavigate('/sapatinho-veloz/products')}
-                className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'sapatinho-veloz-products'
-                    ? 'bg-emerald-300 text-white shadow-lg'
-                    : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-                }`}
+                className={tabClass(activeTab === 'sapatinho-veloz-products')}
               >
                 📋 Listar Itens Sapatinho
               </button>
@@ -175,33 +145,23 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
           {canViewOpenOrders && (
             <button
               onClick={() => safeNavigate('/pedidos-lojinha')}
-              className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'lojinhaPedidos'
-                  ? 'bg-emerald-300 text-white shadow-lg'
-                  : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-            }`}            >
+              className={tabClass(activeTab === 'lojinhaPedidos')}
+            >
               📦 Pedidos Lojinha
             </button>
           )}
           {canViewOpenOrders && hasAssociatedCard && (
             <button
               onClick={() => safeNavigate('/pedidos-sapatinho-veloz')}
-              className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'pedidos-sapatinho-veloz'
-                ? 'bg-emerald-300 text-white shadow-lg'
-                : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-            }`}            >
-              📦 Pedidos Sapatinho velOz
+              className={tabClass(activeTab === 'pedidos-sapatinho-veloz')}
+            >
+              📦 Pedidos Sapatinho Veloz
             </button>
           )}
           {canViewAdmin && (
             <button
               onClick={() => onTabChange('admin')}
-            className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'admin'
-                ? 'bg-emerald-300 text-white shadow-lg'
-                : 'text-gray-900 hover:bg-emerald-100 bg-white border-2 border-gray-300'
-            }`}
+            className={tabClass(activeTab === 'admin')}
             >
               👥 Admin
             </button>

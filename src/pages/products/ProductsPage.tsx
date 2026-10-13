@@ -54,12 +54,12 @@ const ProductsPage = () => {
     shadow: string
   }> = {
     emerald: {
-      from: 'from-emerald-50',
-      to: 'to-emerald-100',
-      border: 'border-emerald-200',
-      bg: 'bg-emerald-500',
-      hover: 'hover:bg-emerald-600',
-      shadow: 'hover:shadow-emerald-200'
+      from: 'from-ferro-50',
+      to: 'to-ferro-100',
+      border: 'border-ferro-200',
+      bg: 'bg-ferro-500',
+      hover: 'hover:bg-ferro-600',
+      shadow: 'hover:shadow-ferro-200'
     },
     pink: {
       from: 'from-pink-50',
@@ -89,10 +89,10 @@ const ProductsPage = () => {
          >
            <div className="text-center">
              <div className="text-5xl mb-4">📦</div>
-             <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
+             <h3 className="text-xl font-semibold text-ferro-600 mb-4 font-display">
                {currentConfig.createLabel}
              </h3>
-             <p className="text-black-700 mb-4 font-farmhand">
+             <p className="text-black-700 mb-4 font-body">
                {currentConfig.createDescription}
              </p>
              <Button
@@ -115,10 +115,10 @@ const ProductsPage = () => {
          >
            <div className="text-center">
              <div className="text-5xl mb-4">📋</div>
-             <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
+             <h3 className="text-xl font-semibold text-ferro-600 mb-4 font-display">
                {currentConfig.listLabel}
              </h3>
-             <p className="text-black-700 mb-4 font-farmhand">
+             <p className="text-black-700 mb-4 font-body">
                {currentConfig.listDescription}
              </p>
              <Button

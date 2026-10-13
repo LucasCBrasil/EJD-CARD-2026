@@ -57,11 +57,11 @@ type TabType = 'transactions' | 'cards'
 // Componente de Heartbeat animado
 const Heartbeat: React.FC<{ isActive: boolean }> = ({ isActive }) => (
   <div className="relative flex items-center justify-center">
-    <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
+    <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-ferro-500' : 'bg-ferro-400'}`}>
       {isActive && (
         <>
-          <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
-          <span className="absolute inset-0 rounded-full bg-emerald-300 animate-pulse" />
+          <span className="absolute inset-0 rounded-full bg-ferro-400 animate-ping opacity-75" />
+          <span className="absolute inset-0 rounded-full bg-ferro-300 animate-pulse" />
         </>
       )}
     </div>
@@ -72,7 +72,7 @@ const Heartbeat: React.FC<{ isActive: boolean }> = ({ isActive }) => (
 const CountdownBar: React.FC<{ progress: number; isFetching: boolean }> = ({ progress, isFetching }) => (
   <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
     <div 
-      className={`h-full transition-all duration-200 ${isFetching ? 'bg-cyan-500 animate-pulse' : 'bg-emerald-500'}`}
+      className={`h-full transition-all duration-200 ${isFetching ? 'bg-cyan-500 animate-pulse' : 'bg-ferro-500'}`}
       style={{ width: `${progress}%` }}
     />
   </div>
@@ -285,24 +285,24 @@ const MonitoringPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-200 p-6 relative overflow-hidden">
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-ferro-200 p-6 relative overflow-hidden">
         {/* Efeito de onda sutil no fundo */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-emerald-100/50 to-transparent rounded-full animate-pulse" style={{ animationDuration: '3s' }} />
+          <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-ferro-100/50 to-transparent rounded-full animate-pulse" style={{ animationDuration: '3s' }} />
           <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-cyan-100/50 to-transparent rounded-full animate-pulse" style={{ animationDuration: '4s', animationDelay: '1s' }} />
         </div>
 
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center relative">
+              <div className="w-12 h-12 bg-ferro-100 rounded-xl flex items-center justify-center relative">
                 <span className="text-2xl">📡</span>
                 {/* Ondas de sinal */}
                 <div className="absolute -right-1 -top-1">
                   <div className="flex gap-0.5">
-                    <div className="w-1 h-2 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1 h-3 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1 h-4 bg-emerald-600 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                    <div className="w-1 h-2 bg-ferro-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1 h-3 bg-ferro-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1 h-4 bg-ferro-600 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
@@ -327,9 +327,9 @@ const MonitoringPage: React.FC = () => {
               </button>
 
               {/* Indicador LIVE com heartbeat */}
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 rounded-lg border border-emerald-300">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-ferro-100 rounded-lg border border-ferro-300">
                 <Heartbeat isActive={!isFetching} />
-                <span className="text-emerald-700 text-sm font-medium">LIVE</span>
+                <span className="text-ferro-700 text-sm font-medium">LIVE</span>
               </div>
               
               {/* Contador e horário */}
@@ -359,14 +359,14 @@ const MonitoringPage: React.FC = () => {
               onClick={() => setActiveTab('transactions')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                 activeTab === 'transactions'
-                  ? 'bg-emerald-500 text-white shadow-md'
+                  ? 'bg-ferro-500 text-white shadow-md'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               <span>📊</span>
               <span>Transações</span>
               <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                activeTab === 'transactions' ? 'bg-emerald-600' : 'bg-slate-200'
+                activeTab === 'transactions' ? 'bg-ferro-600' : 'bg-slate-200'
               }`}>
                 {stats.count}
               </span>
@@ -403,12 +403,12 @@ const MonitoringPage: React.FC = () => {
                 </div>
                 <div className="text-2xl font-bold text-cyan-600 tabular-nums">{stats.last5min}</div>
               </div>
-              <div className={`bg-emerald-50 rounded-xl p-4 border border-emerald-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
+              <div className={`bg-ferro-50 rounded-xl p-4 border border-ferro-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
                 <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
                   Créditos
-                  <span className="text-emerald-500">↑</span>
+                  <span className="text-ferro-500">↑</span>
                 </div>
-                <div className="text-xl font-bold text-emerald-600 tabular-nums">{formatCurrency(stats.totalCredits, !showValues)}</div>
+                <div className="text-xl font-bold text-ferro-600 tabular-nums">{formatCurrency(stats.totalCredits, !showValues)}</div>
               </div>
               <div className={`bg-rose-50 rounded-xl p-4 border border-rose-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
                 <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
@@ -417,9 +417,9 @@ const MonitoringPage: React.FC = () => {
                 </div>
                 <div className="text-xl font-bold text-rose-600 tabular-nums">{formatCurrency(stats.totalDebits, !showValues)}</div>
               </div>
-              <div className={`rounded-xl p-4 border transition-all duration-300 ${isFetching ? 'opacity-70' : ''} ${stats.netFlow >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+              <div className={`rounded-xl p-4 border transition-all duration-300 ${isFetching ? 'opacity-70' : ''} ${stats.netFlow >= 0 ? 'bg-ferro-50 border-ferro-200' : 'bg-rose-50 border-rose-200'}`}>
                 <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Fluxo Líquido</div>
-                <div className={`text-xl font-bold tabular-nums ${stats.netFlow >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                <div className={`text-xl font-bold tabular-nums ${stats.netFlow >= 0 ? 'text-ferro-600' : 'text-rose-600'}`}>
                   {formatCurrency(stats.netFlow, !showValues)}
                 </div>
               </div>
@@ -433,9 +433,9 @@ const MonitoringPage: React.FC = () => {
                 <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Total</div>
                 <div className="text-2xl font-bold text-amber-600 tabular-nums">{cardStats.count}</div>
               </div>
-              <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+              <div className="bg-ferro-50 rounded-xl p-4 border border-ferro-200">
                 <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Com Saldo</div>
-                <div className="text-2xl font-bold text-emerald-600 tabular-nums">{cardStats.withBalance}</div>
+                <div className="text-2xl font-bold text-ferro-600 tabular-nums">{cardStats.withBalance}</div>
               </div>
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                 <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Sem Saldo</div>
@@ -475,7 +475,7 @@ const MonitoringPage: React.FC = () => {
                   <span className="font-mono text-slate-400">#{card.card_number}</span>
                   <span className="text-slate-700 truncate">{card.user_name || 'Sem nome'}</span>
                 </div>
-                <span className={`font-medium tabular-nums ${parseFloat(card.balance) > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className={`font-medium tabular-nums ${parseFloat(card.balance) > 0 ? 'text-ferro-600' : 'text-slate-400'}`}>
                   {formatCurrency(card.balance, !showValues)}
                 </span>
               </div>
@@ -524,14 +524,14 @@ const MonitoringPage: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 10 }}>
             <Box sx={{ textAlign: 'center' }}>
               <div className="relative mb-4 mx-auto" style={{ width: 64, height: 64 }}>
-                <div className="w-16 h-16 border-4 border-emerald-200 rounded-full" />
-                <div className="absolute inset-0 w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-16 h-16 border-4 border-ferro-200 rounded-full" />
+                <div className="absolute inset-0 w-16 h-16 border-4 border-ferro-500 border-t-transparent rounded-full animate-spin" />
               </div>
               <Typography color="text.secondary">Carregando transações...</Typography>
               <div className="flex gap-1 justify-center mt-2">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2 h-2 bg-ferro-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-ferro-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-ferro-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </Box>
           </Box>
@@ -588,8 +588,8 @@ const MonitoringPage: React.FC = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             {isNew && (
                               <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ferro-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-ferro-500" />
                               </span>
                             )}
                             <Typography 

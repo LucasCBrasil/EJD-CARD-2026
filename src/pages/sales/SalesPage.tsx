@@ -446,7 +446,7 @@ const SalesPage: React.FC = () => {
                     </div>
                     <div className="p-3">
                       <h4 className="font-bold text-gray-900 text-sm mb-1 truncate">{p.name}</h4>
-                      <p className="text-lg font-bold text-emerald-600 mb-3">R$ {formatPrice(p.price)}</p>
+                      <p className="text-lg font-bold text-ferro-600 mb-3">R$ {formatPrice(p.price)}</p>
                       <button 
                         onClick={() => handleAddToCart(p)} 
                         className={`w-full ${
@@ -543,7 +543,7 @@ const SalesPage: React.FC = () => {
               />
               
               {selectedCard ? (
-                <div className="bg-emerald-50 rounded-md p-2 border border-emerald-200">
+                <div className="bg-ferro-50 rounded-md p-2 border border-ferro-200">
                   <p className="text-xs text-gray-900">
                     <strong>Nome:</strong> {selectedCard.userName}
                   </p>
@@ -551,7 +551,7 @@ const SalesPage: React.FC = () => {
                     <strong>Saldo:</strong> R$ {selectedCard.balance.toFixed(2)}
                   </p>
                   <p className={`text-xs font-semibold ${
-                    discountedTotal > selectedCard.balance ? 'text-red-600' : 'text-emerald-600'
+                    discountedTotal > selectedCard.balance ? 'text-red-600' : 'text-ferro-600'
                   }`}>
                     <strong>Após:</strong> R$ {(selectedCard.balance - discountedTotal).toFixed(2)}
                   </p>
@@ -662,14 +662,14 @@ const SalesPage: React.FC = () => {
                         }
                       }}
                       disabled={isCouponApplied || (context === 'lojinha' && total < 150) || !couponCode}
-                      className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white font-semibold rounded text-xs flex-shrink-0"
+                      className="px-2.5 py-1.5 bg-ferro-500 hover:bg-ferro-600 disabled:bg-gray-300 text-white font-semibold rounded text-xs flex-shrink-0"
                     >
                       Aplicar
                     </button>
                   </div>
                   {context === 'lojinha' && total < 150 && <p className="text-xs text-amber-600 mt-1">Mínimo: R$150</p>}
                   {isCouponApplied && (
-                    <p className="text-xs text-emerald-700 font-semibold mt-1">
+                    <p className="text-xs text-ferro-700 font-semibold mt-1">
                       ✅ -R$ {couponDiscountAmount.toFixed(2)}
                     </p>
                   )}
@@ -683,7 +683,7 @@ const SalesPage: React.FC = () => {
                         <span>Subtotal</span>
                         <span>R$ {formatPrice(total)}</span>
                       </div>
-                      <div className="flex justify-between text-xs text-emerald-600">
+                      <div className="flex justify-between text-xs text-ferro-600">
                         <span>Desconto</span>
                         <span>- R$ {formatPrice(couponDiscountAmount)}</span>
                       </div>
@@ -691,7 +691,7 @@ const SalesPage: React.FC = () => {
                   )}
                   <div className="flex justify-between items-center pt-1.5">
                     <span className="font-bold text-gray-900 text-sm">Total</span>
-                    <span className="text-lg font-bold text-emerald-600">
+                    <span className="text-lg font-bold text-ferro-600">
                       R$ {formatPrice(discountedTotal)}
                     </span>
                   </div>
@@ -754,10 +754,10 @@ const SalesPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3 font-cardinal">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3 font-display">
                 {context === 'lojinha' ? '🛍️ Processando venda...' : '🍔 Processando pedido...'}
               </h3>
-              <p className="text-gray-700 text-base font-farmhand">
+              <p className="text-gray-700 text-base font-body">
                 Por favor, aguarde enquanto finalizamos sua {context === 'lojinha' ? 'venda' : 'pedido'}
               </p>
               <div className="mt-4 flex justify-center space-x-1">

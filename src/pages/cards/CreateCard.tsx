@@ -117,7 +117,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
     <div className="space-y-3">
       {/* Header compacto */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-emerald-600 font-cardinal">
+        <h1 className="text-2xl font-bold text-ferro-600 font-display">
           💳 Cadastrar Cartão
         </h1>
       </div>
@@ -132,7 +132,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                 <div className="flex items-center justify-center gap-3 mb-3">
                   <span className="text-3xl">✅</span>
                   <div className="text-left">
-                    <p className="font-bold text-green-800 text-lg font-cardinal">
+                    <p className="font-bold text-green-800 text-lg font-display">
                       Cartão Criado!
                     </p>
                     <p className="text-green-600 text-sm">
@@ -141,7 +141,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-4 mb-4 space-y-2">
+                <div className="bg-gradient-to-r from-ferro-100 to-ferro-200 rounded-xl p-4 mb-4 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-black/70 text-sm">Número</span>
                     <span className="font-bold text-black text-lg font-mono">
@@ -154,7 +154,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                       {createdCard.userName}
                     </span>
                   </div>
-                  <div className="border-t border-emerald-300 pt-2 mt-2">
+                  <div className="border-t border-ferro-300 pt-2 mt-2">
                     <p className="text-black/70 text-xs mb-1">Saldo Inicial</p>
                     <p className="text-3xl font-bold text-black">
                       R$ {createdCard.balance.toFixed(2).replace('.', ',')}
@@ -165,7 +165,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                 <Button
                   onClick={handleNewCard}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                  className="w-full bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-black shadow-lg hover:shadow-ferro-200 font-semibold"
                 >
                   ➕ Cadastrar Novo Cartão
                 </Button>
@@ -179,7 +179,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Nome do Portador */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-semibold text-black mb-1 font-farmhand">
+                  <label htmlFor="name" className="block text-sm font-semibold text-black mb-1 font-body">
                     👤 Nome do Portador
                   </label>
                   <input
@@ -188,7 +188,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                     placeholder="Digite o nome completo"
                     autoFocus
                   />
@@ -196,7 +196,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
 
                 {/* Número do Cartão */}
                 <div>
-                  <label htmlFor="cardNumber" className="block text-sm font-semibold text-black mb-1 font-farmhand">
+                  <label htmlFor="cardNumber" className="block text-sm font-semibold text-black mb-1 font-body">
                     💳 Número do Cartão
                   </label>
                   <input
@@ -206,7 +206,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
                     required
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                     placeholder="001"
                     maxLength={3}
                   />
@@ -214,7 +214,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
 
                 {/* Código do Cartão */}
                 <div>
-                  <label htmlFor="cardCode" className="block text-sm font-semibold text-black mb-1 font-farmhand">
+                  <label htmlFor="cardCode" className="block text-sm font-semibold text-black mb-1 font-body">
                     🔑 Código do Cartão
                   </label>
                   <input
@@ -223,14 +223,14 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     value={cardCode}
                     onChange={(e) => setCardCode(e.target.value.replace(/\s+/g, ''))}
                     required
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                     placeholder="Digite o código do cartão"
                   />
                 </div>
 
                 {/* Telefone */}
                 <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-semibold text-black mb-1 font-farmhand">
+                  <label htmlFor="phoneNumber" className="block text-sm font-semibold text-black mb-1 font-body">
                     📱 Telefone
                   </label>
                   <input
@@ -240,14 +240,14 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     value={formattedPhone}
                     onChange={handlePhoneChange}
                     required
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                     placeholder="(11) 99999-9999"
                   />
                 </div>
 
                 {/* Saldo Inicial */}
                 <div>
-                  <label htmlFor="initialBalance" className="block text-sm font-semibold text-black mb-1 font-farmhand">
+                  <label htmlFor="initialBalance" className="block text-sm font-semibold text-black mb-1 font-body">
                     💰 Saldo Inicial (R$)
                   </label>
                   <input
@@ -256,7 +256,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                     id="initialBalance"
                     value={formattedBalance}
                     onChange={handleBalanceChange}
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90"
+                    className="w-full px-4 py-3 border-2 border-ferro-200 rounded-lg focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 bg-white/90"
                     placeholder="0,00"
                   />
                 </div>
@@ -284,7 +284,7 @@ const CreateCard: React.FC<CreateCardProps> = ({ onBack: _onBack }) => {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                  className="w-full bg-gradient-to-r from-ferro-500 to-ferro-600 hover:from-ferro-600 hover:to-ferro-700 text-black shadow-lg hover:shadow-ferro-200 font-semibold"
                   disabled={createCardMutation.isPending}
                 >
                   {createCardMutation.isPending ? (
