@@ -7,12 +7,12 @@ const CardsPage = () => {
 
   const cards = [
     {
-      icon: '➕',
+      icon: '🎫',
       title: 'Criar Cartão',
       description: 'Cadastrar novo encontrista no sistema',
       path: '/cards/create',
-      color: 'from-emerald-100 to-emerald-200',
-      gradient: 'border-emerald-300',
+      color: 'from-ferro-700 to-ferro-800',
+      gradient: 'border-ferro-300',
       canAccess: canViewCards
     },
     {
@@ -20,8 +20,8 @@ const CardsPage = () => {
       title: 'Adicionar Saldo',
       description: 'Creditar valores em cartões',
       path: '/cards/add',
-      color: 'from-golden-100 to-golden-200',
-      gradient: 'border-golden-300',
+      color: 'from-latao-400 to-latao-500',
+      gradient: 'border-latao-300',
       canAccess: canAddBalance
     },
     {
@@ -29,8 +29,8 @@ const CardsPage = () => {
       title: 'Consultar Saldo',
       description: 'Ver saldo disponível em cartões',
       path: '/cards/balance',
-      color: 'from-compass-100 to-compass-200',
-      gradient: 'border-compass-300',
+      color: 'from-anil-600 to-anil-700',
+      gradient: 'border-anil-300',
       canAccess: canViewCards
     },
     {
@@ -38,8 +38,8 @@ const CardsPage = () => {
       title: 'Débito Manual',
       description: 'Debitar valores de cartões',
       path: '/cards/debit',
-      color: 'from-ruby-100 to-ruby-200',
-      gradient: 'border-ruby-300',
+      color: 'from-vagao-500 to-vagao-600',
+      gradient: 'border-vagao-300',
       canAccess: canAddBalance
     }
   ]
@@ -49,18 +49,14 @@ const CardsPage = () => {
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-black mb-3 font-cardinal drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
+        <p className="carimbo text-vagao-600 text-xs mb-3">🎫 Estação Comunicação</p>
+        <h2 className="text-3xl md:text-4xl font-semibold text-ferro-900 mb-2 font-display uppercase tracking-wide">
           📢 Comunicação
         </h2>
-        <p className="text-lg text-gray-700 font-farmhand drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+        <p className="text-base md:text-lg text-ferro-700 font-body">
           Gerenciar cartões, criar e adicionar saldo
         </p>
-        {/* Linha decorativa */}
-        <div className="flex justify-center items-center mt-4 space-x-2">
-          <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent"></div>
-          <span className="text-emerald-400 text-xl">✨</span>
-          <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent"></div>
-        </div>
+        <div className="trilho w-full max-w-xs mx-auto mt-5" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">

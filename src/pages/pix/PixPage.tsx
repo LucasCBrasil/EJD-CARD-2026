@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { Button, CurrencyInput, CpfCnpjInput, isValidCpfCnpj } from '../../components/shared'
+import { Button, CurrencyInput, CpfCnpjInput, isValidCpfCnpj, TrainLoader } from '../../components/shared'
 import { useAuth } from '../../contexts/AuthContext'
 import { isSupabaseConfigured } from '../../lib/auth-client'
 
@@ -329,9 +329,8 @@ export const PixPage: React.FC = () => {
     if (isLoadingFlags) {
       return (
         <div className="max-w-md mx-auto">
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-200 p-8 text-center">
-            <div className="animate-spin text-4xl mb-4">⏳</div>
-            <p className="text-gray-600">Carregando...</p>
+          <div className="painel p-8">
+            <TrainLoader fullScreen={false} title="Carregando..." message="Preparando o guichê do PIX" />
           </div>
         </div>
       )
@@ -345,20 +344,22 @@ export const PixPage: React.FC = () => {
 
     return (
       <div className="max-w-md mx-auto">
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-200 p-6">
-          <div className="text-center mb-6">
-            <div className="text-5xl mb-3">💰</div>
-            <h1 className="text-2xl font-bold text-gray-900 font-cardinal">
+        <div className="painel p-5 sm:p-6 text-ferro-900">
+          <div className="text-center mb-5">
+            <div className="text-5xl mb-2">⛽</div>
+            <p className="text-xs font-display uppercase tracking-[0.2em] text-vagao-600">Guichê de abastecimento</p>
+            <h1 className="text-2xl font-display font-semibold uppercase tracking-wide text-ferro-900">
               Abastecer via PIX
             </h1>
-            <p className="text-gray-600 text-sm mt-2">
+            <p className="text-ferro-600 text-sm mt-1">
               Gere um código PIX para adicionar créditos
             </p>
+            <div className="trilho w-full mt-4" />
           </div>
 
           {!card ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">Você precisa ter um cartão associado.</p>
+              <p className="text-ferro-700 mb-4">Você precisa ter um cartão associado.</p>
               <Button onClick={() => navigate({ to: '/cards/associate' })}>
                 Associar Cartão
               </Button>
@@ -366,15 +367,15 @@ export const PixPage: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {/* Info do Cartão */}
-              <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-                <p className="text-sm text-emerald-700">Cartão selecionado</p>
-                <p className="font-bold text-emerald-900">{card.user_name || 'Meu Cartão'}</p>
-                <p className="text-xs text-emerald-600 font-mono">{card.card_number}</p>
+              <div className="bilhete px-5 py-4">
+                <p className="text-xs font-display uppercase tracking-[0.2em] text-ferro-500">Cartão selecionado</p>
+                <p className="font-bold text-lg text-ferro-900">{card.user_name || 'Meu Cartão'}</p>
+                <p className="text-sm text-ferro-700 font-ticket tracking-wider">{card.card_number}</p>
               </div>
 
               {/* Campo Valor */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-ferro-900 mb-2">
                   Quanto quer adicionar ao cartão?
                 </label>
                 <CurrencyInput
@@ -384,31 +385,31 @@ export const PixPage: React.FC = () => {
                   placeholder="0,00"
                   aria-label="Valor a adicionar"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-ferro-500 mt-1">
                   Mínimo: R$ {MIN_AMOUNT.toFixed(2).replace('.', ',')}
                 </p>
               </div>
 
               {/* Resumo do Valor com Taxa */}
               {amountValue > 0 && (
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200">
+                <div className="bg-creme-200 rounded-xl p-4 border border-ferro-200">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Valor para o cartão:</span>
-                      <span className="font-semibold text-gray-900">
+                      <span className="text-ferro-700">Valor para o cartão:</span>
+                      <span className="font-semibold text-ferro-900">
                         R$ {amountValue.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Taxa de transação:</span>
-                      <span className="font-semibold text-amber-600">
+                      <span className="text-ferro-700">Taxa de transação:</span>
+                      <span className="font-semibold text-latao-700">
                         + R$ {PIX_FEE.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
-                    <hr className="border-emerald-200" />
-                    <div className="flex justify-between">
-                      <span className="font-bold text-gray-900">Total a pagar no PIX:</span>
-                      <span className="font-bold text-xl text-emerald-600">
+                    <div className="picote-horizontal" />
+                    <div className="flex justify-between items-baseline">
+                      <span className="font-bold text-ferro-900">Total a pagar no PIX:</span>
+                      <span className="font-slab text-xl text-vagao-600">
                         R$ {totalWithFee.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
@@ -418,7 +419,7 @@ export const PixPage: React.FC = () => {
 
               {/* Campo CPF/CNPJ */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-ferro-900 mb-2">
                   CPF/CNPJ do Pagador
                 </label>
                 <CpfCnpjInput
@@ -428,7 +429,7 @@ export const PixPage: React.FC = () => {
                   aria-label="CPF ou CNPJ do pagador"
                 />
                 {formData.cpfCnpj.length > 0 && !cpfCnpjValidation.valid && (
-                  <p className="text-xs text-amber-600 mt-1">
+                  <p className="text-xs text-latao-700 mt-1">
                     {formData.cpfCnpj.length < 11 
                       ? `Faltam ${11 - formData.cpfCnpj.length} dígitos para CPF`
                       : formData.cpfCnpj.length < 14
@@ -438,7 +439,7 @@ export const PixPage: React.FC = () => {
                   </p>
                 )}
                 {cpfCnpjValidation.valid && (
-                  <p className="text-xs text-emerald-600 mt-1">
+                  <p className="text-xs text-green-700 mt-1">
                     ✓ {cpfCnpjValidation.type === 'cpf' ? 'CPF' : 'CNPJ'} válido
                   </p>
                 )}
@@ -446,7 +447,7 @@ export const PixPage: React.FC = () => {
 
               {/* Erro */}
               {error && (
-                <div className="bg-red-50 text-red-700 rounded-xl p-4 border border-red-200">
+                <div className="bg-vagao-50 text-vagao-700 rounded-xl p-4 border border-vagao-200">
                   {error}
                 </div>
               )}
@@ -456,7 +457,7 @@ export const PixPage: React.FC = () => {
                 <Button
                   onClick={generatePix}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold"
+                  className="w-full !bg-vagao-600 hover:!bg-vagao-700 !text-creme-50 !border-vagao-600 uppercase"
                   disabled={!isValidAmount}
                 >
                   {isValidAmount 
@@ -466,7 +467,7 @@ export const PixPage: React.FC = () => {
                 </Button>
                 <Button
                   onClick={goBack}
-                  variant="outline"
+                  variant="secondary"
                   className="w-full"
                 >
                   ← Voltar
@@ -474,7 +475,7 @@ export const PixPage: React.FC = () => {
               </div>
 
               {/* Info sobre a taxa */}
-              <p className="text-xs text-center text-gray-500">
+              <p className="text-xs text-center text-ferro-500">
                 A taxa de R$ {PIX_FEE.toFixed(2).replace('.', ',')} é cobrada pela plataforma de pagamentos (Asaas).
               </p>
             </div>
@@ -488,10 +489,8 @@ export const PixPage: React.FC = () => {
   if (pageState === 'loading') {
     return (
       <div className="max-w-md mx-auto">
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-200 p-8 text-center">
-          <div className="animate-spin text-5xl mb-4">⏳</div>
-          <h2 className="text-xl font-bold text-gray-900">Gerando PIX...</h2>
-          <p className="text-gray-600 mt-2">Aguarde um momento</p>
+        <div className="painel p-8">
+          <TrainLoader fullScreen={false} title="Gerando PIX..." message="Aguarde um momento" />
         </div>
       </div>
     )
@@ -503,18 +502,18 @@ export const PixPage: React.FC = () => {
     
     return (
       <div className="max-w-md mx-auto">
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-200 p-6">
+        <div className="painel p-5 sm:p-6 text-ferro-900">
           <div className="text-center mb-6">
-            <div className="text-5xl mb-3 animate-pulse">⏳</div>
-            <h1 className="text-xl font-bold text-gray-900">Aguardando Pagamento</h1>
+            <div className="text-5xl mb-2">🚉</div>
+            <h1 className="text-xl font-display font-semibold uppercase tracking-wide text-ferro-900">Aguardando Pagamento</h1>
             
             {/* Valores */}
-            <div className="mt-4 bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-              <p className="text-sm text-gray-600 mb-1">Valor do PIX:</p>
-              <p className="text-3xl font-bold text-emerald-600">
+            <div className="bilhete mt-4 px-5 py-4">
+              <p className="text-xs font-display uppercase tracking-[0.2em] text-ferro-500 mb-1">Valor do PIX</p>
+              <p className="text-3xl font-slab text-vagao-600">
                 R$ {paymentTotal.toFixed(2).replace('.', ',')}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-ferro-600 mt-2">
                 (R$ {paymentData.amount.toFixed(2).replace('.', ',')} para o cartão + R$ {PIX_FEE.toFixed(2).replace('.', ',')} taxa)
               </p>
             </div>
@@ -523,7 +522,7 @@ export const PixPage: React.FC = () => {
           {/* QR Code */}
           {paymentData.qrCodeUrl && (
             <div className="flex justify-center mb-6">
-              <div className="bg-white p-4 rounded-xl border-2 border-emerald-300 shadow-lg">
+              <div className="p-4 rounded-xl border-2 border-ferro-800 shadow-bilhete" style={{ backgroundColor: '#ffffff' }}>
                 <img 
                   src={`data:image/png;base64,${paymentData.qrCodeUrl}`}
                   alt="QR Code PIX"
@@ -536,17 +535,17 @@ export const PixPage: React.FC = () => {
           {/* Código Copia e Cola */}
           {paymentData.pixCode && (
             <div className="mb-6">
-              <p className="text-sm font-semibold text-gray-700 mb-2 text-center">
+              <p className="text-sm font-semibold text-ferro-800 mb-2 text-center">
                 Ou copie o código:
               </p>
-              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200 max-h-20 overflow-auto">
-                <p className="text-xs font-mono text-gray-600 break-all">
+              <div className="bg-creme-100 rounded-xl p-3 border border-ferro-200 max-h-20 overflow-auto">
+                <p className="text-xs font-ticket text-ferro-700 break-all">
                   {paymentData.pixCode}
                 </p>
               </div>
               <Button
                 onClick={copyPixCode}
-                className="w-full mt-3 bg-emerald-500 hover:bg-emerald-600 text-white"
+                className="w-full mt-3"
               >
                 📋 Copiar Código PIX
               </Button>
@@ -554,16 +553,16 @@ export const PixPage: React.FC = () => {
           )}
 
           {/* Status */}
-          <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 mb-4">
+          <div className="bg-latao-50 rounded-xl p-4 border border-latao-300 mb-4">
             <div className="flex items-center justify-center gap-2">
-              <div className="animate-spin w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full"></div>
-              <p className="text-amber-800 font-medium">Verificando pagamento...</p>
+              <div className="animate-spin w-4 h-4 border-2 border-latao-600 border-t-transparent rounded-full"></div>
+              <p className="text-latao-800 font-medium">Verificando pagamento...</p>
             </div>
           </div>
 
           {/* Instruções */}
-          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
-            <p className="text-sm text-blue-800">
+          <div className="bg-anil-100/60 rounded-xl p-4 border border-anil-200 mb-4">
+            <p className="text-sm text-anil-800">
               <strong>Instruções:</strong><br/>
               1. Abra o app do seu banco<br/>
               2. Escaneie o QR Code ou cole o código<br/>
@@ -574,7 +573,7 @@ export const PixPage: React.FC = () => {
 
           <Button
             onClick={goBack}
-            variant="outline"
+            variant="secondary"
             className="w-full"
           >
             ← Cancelar e Voltar
@@ -588,23 +587,24 @@ export const PixPage: React.FC = () => {
   if (pageState === 'success') {
     return (
       <div className="max-w-md mx-auto">
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-green-300 p-8 text-center">
-          <div className="text-6xl mb-4">✅</div>
-          <h1 className="text-2xl font-bold text-green-700 mb-2">
+        <div className="painel p-8 text-center text-ferro-900">
+          <div className="text-6xl mb-3">🚂</div>
+          <span className="carimbo text-sm text-green-700 mb-3">✓ Confirmado</span>
+          <h1 className="text-2xl font-display font-semibold uppercase tracking-wide text-green-800 mb-2 mt-2">
             Pagamento Confirmado!
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-ferro-700 mb-6">
             Seu saldo foi atualizado com sucesso.
           </p>
           {paymentData && (
-            <p className="text-3xl font-bold text-green-600 mb-6">
+            <p className="text-3xl font-slab text-green-700 mb-6">
               + R$ {paymentData.amount.toFixed(2).replace('.', ',')}
             </p>
           )}
           <Button
             onClick={goBack}
             size="lg"
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold"
+            className="w-full"
           >
             ✓ Voltar para Meu Cartão
           </Button>
@@ -617,12 +617,12 @@ export const PixPage: React.FC = () => {
   if (pageState === 'error') {
     return (
       <div className="max-w-md mx-auto">
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-red-300 p-8 text-center">
-          <div className="text-6xl mb-4">❌</div>
-          <h1 className="text-2xl font-bold text-red-700 mb-2">
+        <div className="painel p-8 text-center text-ferro-900">
+          <div className="text-6xl mb-3">🚧</div>
+          <h1 className="text-2xl font-display font-semibold uppercase tracking-wide text-vagao-700 mb-2">
             Erro no Pagamento
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-ferro-700 mb-6">
             {error || 'Ocorreu um erro. Tente novamente.'}
           </p>
           <div className="space-y-3">
@@ -633,13 +633,13 @@ export const PixPage: React.FC = () => {
                 navigate({ to: '/pix/$paymentId', params: { paymentId: 'new' } })
               }}
               size="lg"
-              className="w-full bg-red-500 hover:bg-red-600 text-white font-bold"
+              className="w-full !bg-vagao-600 hover:!bg-vagao-700 !text-creme-50 !border-vagao-600"
             >
               Tentar Novamente
             </Button>
             <Button
               onClick={goBack}
-              variant="outline"
+              variant="secondary"
               className="w-full"
             >
               ← Voltar

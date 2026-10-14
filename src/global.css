@@ -1,51 +1,79 @@
+/* Identidade visual: Encontrão EJD 25 Anos - Trilhos e Destinos */
+@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Courier+Prime:wght@400;700&family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
 
-/* Importação das fontes da identidade visual */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:wght@400;600;700&family=Playfair+Display:wght@400;600;700;800&display=swap');
+:root {
+  --ferro-950: #211004;
+  --ferro-900: #331908;
+  --ferro-800: #48240c;
+  --ferro-700: #63341f;
+  --ferro-500: #9c6048;
+  --ferro-200: #e6cdb0;
+  --vagao-700: #8c271d;
+  --vagao-600: #a83024;
+  --vagao-500: #c2443a;
+  --creme-50: #fffdf8;
+  --creme-100: #fdf8ec;
+  --creme-200: #fcf0d8;
+  --creme-300: #f6e3bf;
+  --latao-500: #fc9000;
+  --latao-400: #fea72a;
+  --anil-700: #004878;
+  --fumaca-200: #ccd8d8;
+  --tinta: #2a1a10;
+}
+
 /* PRIORIDADE MÁXIMA: Botões de paginação */
 button[data-btn-type="pagination"] {
-  background-color: #6b7280 !important;
-  color: #000000 !important;
+  background-color: var(--ferro-200) !important;
+  color: var(--ferro-900) !important;
 }
 
-button[data-btn-type="pagination"] * {
-  color: #000000 !important;
-  background-color: transparent !important;
-}
-
+button[data-btn-type="pagination"] *,
 button[data-btn-type="pagination"] span {
-  color: #000000 !important;
+  color: var(--ferro-900) !important;
   background-color: transparent !important;
 }
 
 button[data-btn-type="page-number"][data-active="true"] {
-  background-color: #10b981 !important;
-  color: #ffffff !important;
+  background-color: var(--ferro-800) !important;
+  color: var(--creme-200) !important;
 }
 
 button[data-btn-type="page-number"][data-active="true"] *,
 button[data-btn-type="page-number"][data-active="true"] span {
-  color: #ffffff !important;
+  color: var(--creme-200) !important;
   background-color: transparent !important;
 }
 
 button[data-btn-type="page-number"][data-active="false"] {
-  background-color: #ffffff !important;
+  background-color: var(--creme-50) !important;
 }
 
 button[data-btn-type="page-number"][data-active="false"],
 button[data-btn-type="page-number"][data-active="false"] *,
 button[data-btn-type="page-number"][data-active="false"] span {
-  color: #374151 !important;
+  color: var(--ferro-800) !important;
 }
 
-/* Configuração global de fundo - Transparente para permitir imagens de fundo */
+/* Fundo global: papel creme envelhecido */
 html, body {
-  background: transparent !important;
   min-height: 100vh !important;
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-  font-family: 'Farmhand Serif', serif !important;
+}
+
+body {
+  background-color: var(--creme-100) !important;
+  background-image:
+    radial-gradient(ellipse at top, rgba(255, 253, 248, 0.9) 0%, rgba(255, 253, 248, 0) 60%),
+    radial-gradient(ellipse at bottom, rgba(156, 96, 72, 0.12) 0%, rgba(156, 96, 72, 0) 65%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.28 0 0 0 0 0.14 0 0 0 0 0.05 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") !important;
+  background-attachment: fixed !important;
+  font-family: 'Source Sans 3', system-ui, sans-serif !important;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--tinta);
 }
 
 #root {
@@ -55,35 +83,36 @@ html, body {
 }
 
 /* Exceto para elementos que devem ter fundo específico */
-.bg-white, .bg-gray-50, .bg-emerald-50, .bg-wizard-50, .bg-sky-50, .bg-cotton-50 {
+.bg-white, .bg-gray-50, .bg-ferro-50, .bg-anil-50 {
   background-color: inherit !important;
 }
 
 /* Modal de confirmação - sobrescreve a regra transparent */
 .modal-confirmation {
-  background-color: white !important;
+  background-color: var(--creme-50) !important;
 }
 
 .modal-confirmation .card-data {
-  background-color: #d1fae5 !important;
+  background-color: var(--creme-200) !important;
 }
 
 .modal-confirmation .transaction-summary {
-  background-color: #fef3c7 !important;
+  background-color: #fff3dc !important;
 }
 
-/* Modal PIX - sobrescreve a regra transparent com fundo branco sólido */
-.pix-modal-wrapper {
-  background-color: #ffffff !important;
+.modal-delete-confirmation {
+  background-color: var(--creme-50) !important;
 }
 
+/* Modal PIX - fundo sólido */
+.pix-modal-wrapper,
 .pix-modal-content {
-  background-color: #ffffff !important;
+  background-color: var(--creme-50) !important;
 }
 
 .pix-modal-wrapper div:not(button):not(.pix-modal-button),
 .pix-modal-content div:not(button):not(.pix-modal-button) {
-  background-color: #ffffff !important;
+  background-color: var(--creme-50) !important;
 }
 
 .pix-modal-wrapper p,
@@ -91,121 +120,115 @@ html, body {
   background-color: transparent !important;
 }
 
-/* Overlay escuro para modal */
-.modal-overlay {
-  background-color: rgba(0, 0, 0, 0.7) !important;
-}
-
-/* Notificações com fundo opaco */
-.toast-notification.bg-emerald-500 {
-  background-color: #22c55e !important;
-}
-
-.toast-notification.bg-red-500 {
-  background-color: #ef4444 !important;
-}
-
-.toast-notification.bg-yellow-500 {
-  background-color: #eab308 !important;
-}
-
-.toast-notification.bg-blue-500 {
-  background-color: #3b82f6 !important;
+/* Overlays escuros para modais */
+.modal-overlay,
+.modal-delete-overlay {
+  background-color: rgba(33, 16, 4, 0.72) !important;
 }
 
 /* Tipografia da identidade visual */
-.font-cardinal {
-  font-family: 'Playfair Display', serif !important;
-  font-weight: 700 !important;
+.font-display {
+  font-family: 'Oswald', 'Arial Narrow', sans-serif !important;
+  letter-spacing: 0.02em;
 }
 
-.font-farmhand {
-  font-family: 'Crimson Text', serif !important;
-  font-weight: 600 !important;
+.font-slab {
+  font-family: 'Alfa Slab One', Georgia, serif !important;
+  font-weight: 400 !important;
 }
 
-.font-newyorker {
-  font-family: 'Cinzel', serif !important;
-  font-weight: 600 !important;
+.font-body {
+  font-family: 'Source Sans 3', system-ui, sans-serif !important;
 }
 
-/* Aplicação de fontes por hierarquia */
+.font-ticket {
+  font-family: 'Courier Prime', ui-monospace, monospace !important;
+}
+
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Playfair Display', serif !important;
-  font-weight: 700 !important;
-  color: #1a1a1a !important;
+  font-family: 'Oswald', 'Arial Narrow', sans-serif !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ferro-900);
 }
 
-p, span, div, input, textarea, select, button {
-  font-family: 'Crimson Text', serif !important;
-  font-size: 16px !important;
-  line-height: 1.6 !important;
-  color: #2d2d2d !important;
+p, span, div, input, textarea, select, button, label, li, td, th, a {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
 }
 
-/* Melhorar legibilidade de inputs e labels */
 label {
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  color: #1a1a1a !important;
-  margin-bottom: 8px !important;
-  display: block !important;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ferro-900);
+  margin-bottom: 8px;
+  display: block;
 }
 
-/* Inputs padrão */
+/* Inputs padrão (16px evita zoom automático no iOS) */
 input, textarea, select {
   font-size: 16px !important;
-  padding: 12px 16px !important;
-  border-radius: 8px !important;
-  color: #1a1a1a;
-  background-color: #ffffff;
-  border: 2px solid #d1d5db;
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: var(--tinta);
+  background-color: var(--creme-50);
+  border: 2px solid var(--ferro-200);
 }
 
-/* Inputs em formulário escuro - permite estilos inline */
-.dark-form input, 
-.dark-form textarea, 
+input::placeholder,
+textarea::placeholder {
+  color: #a8907c;
+}
+
+/* Inputs em formulário escuro */
+.dark-form input,
+.dark-form textarea,
 .dark-form select {
-  color: #ffffff !important;
-  background-color: rgba(255,255,255,0.08) !important;
-  border: 2px solid rgba(255,255,255,0.15) !important;
+  color: var(--creme-200) !important;
+  background-color: rgba(252, 240, 216, 0.08) !important;
+  border: 2px solid rgba(252, 240, 216, 0.2) !important;
 }
 
 .dark-form input::placeholder,
 .dark-form textarea::placeholder {
-  color: rgba(255,255,255,0.4) !important;
+  color: rgba(252, 240, 216, 0.45) !important;
 }
 
-.dark-form input:focus, 
-.dark-form textarea:focus, 
+.dark-form input:focus,
+.dark-form textarea:focus,
 .dark-form select:focus {
-  border-color: rgba(16, 185, 129, 0.6) !important;
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(252, 144, 0, 0.7) !important;
+  box-shadow: 0 0 0 3px rgba(252, 144, 0, 0.2) !important;
   outline: none !important;
 }
 
 input:focus, textarea:focus, select:focus {
   outline: none !important;
-  border-color: #22c55e !important;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
+  border-color: var(--ferro-500) !important;
+  box-shadow: 0 0 0 3px rgba(156, 96, 72, 0.2) !important;
 }
 
 button {
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  padding: 12px 24px !important;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 24px;
 }
 
-/* Títulos especiais com Cinzel */
+button:focus-visible {
+  outline: 3px solid rgba(252, 144, 0, 0.55);
+  outline-offset: 2px;
+}
+
+/* Títulos especiais */
 .special-title {
-  font-family: 'Cinzel', serif !important;
-  font-weight: 600 !important;
+  font-family: 'Alfa Slab One', Georgia, serif !important;
+  font-weight: 400 !important;
 }
 
 /* Scroll horizontal personalizado para navegação de abas */
 .overflow-x-auto {
   scrollbar-width: thin;
-  scrollbar-color: rgba(34, 197, 94, 0.5) rgba(255, 255, 255, 0.1);
+  scrollbar-color: rgba(156, 96, 72, 0.5) rgba(72, 36, 12, 0.06);
+  scroll-behavior: smooth;
 }
 
 .overflow-x-auto::-webkit-scrollbar {
@@ -213,318 +236,203 @@ button {
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(72, 36, 12, 0.06);
   border-radius: 10px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  background: rgba(34, 197, 94, 0.5);
+  background: rgba(156, 96, 72, 0.5);
   border-radius: 10px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: rgba(34, 197, 94, 0.7);
+  background: rgba(156, 96, 72, 0.75);
 }
 
-/* Garantir scroll suave */
-.overflow-x-auto {
-  scroll-behavior: smooth;
-}
-/* Exceção para bg-gray-500 e bg-gray-600 */
 .bg-gray-500 {
-  background-color: #6b7280 !important;
+  background-color: #78716c !important;
 }
 
-.modal-confirmation .card-data {
-  background-color: #d1fae5 !important;
-}
-
-.modal-confirmation .transaction-summary {
-  background-color: #fef3c7 !important;
-}
-
-.modal-delete-confirmation {
-  background-color: white !important;
-
-}
-
-/* Overlay escuro para modal */
-.modal-delete-overlay {
-  background-color: rgba(0, 0, 0, 0.7) !important;
-}
-
-/* Notificações com fundo opaco */
-.toast-notification.bg-emerald-500 {
-  background-color: #22c55e !important;
-}
-
-.toast-notification.bg-red-500 {
-  background-color: #ef4444 !important;
-}
-
-.toast-notification.bg-yellow-500 {
-  background-color: #eab308 !important;
-}
-
-.toast-notification.bg-blue-500 {
-  background-color: #3b82f6 !important;
-}
-
-/* Tipografia da identidade visual */
-.font-cardinal {
-  font-family: 'Playfair Display', serif !important;
-  font-weight: 700 !important;
-}
-
-.font-farmhand {
-  font-family: 'Crimson Text', serif !important;
-  font-weight: 600 !important;
-}
-
-.font-newyorker {
-  font-family: 'Cinzel', serif !important;
-  font-weight: 600 !important;
-}
-
-/* Aplicação de fontes por hierarquia */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Playfair Display', serif !important;
-  font-weight: 700 !important;
-}
-
-p, span, div, input, textarea, select, button {
-  font-family: 'Crimson Text', serif !important;
-}
-
-button[data-btn-type="page-number"][data-active="true"],
-button[data-btn-type="page-number"][data-active="true"] *,
-button[data-btn-type="page-number"][data-active="true"] span {
-  color: #ffffff !important;
-}
-
-button[data-btn-type="page-number"][data-active="false"],
-button[data-btn-type="page-number"][data-active="false"] *,
-button[data-btn-type="page-number"][data-active="false"] span {
-  color: #374151 !important;
-}
-/* Títulos especiais com Cinzel */
-.special-title {
-  font-family: 'Cinzel', serif !important;
-  font-weight: 600 !important;
-}
-
-/* Animação para fade-in dos sub-cards */
+/* Animações */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
 
-/* Animação de entrada dos cards principais */
 @keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-slide-in-up {
   animation: slideInUp 0.5s ease-out forwards;
 }
 
-/* Delay progressivo para os cards */
-.delay-0 {
-  animation-delay: 0s;
-}
+.delay-0 { animation-delay: 0s; }
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-600 { animation-delay: 0.6s; }
 
-.delay-100 {
-  animation-delay: 0.1s;
-}
-
-.delay-200 {
-  animation-delay: 0.2s;
-}
-
-.delay-300 {
-  animation-delay: 0.3s;
-}
-
-.delay-400 {
-  animation-delay: 0.4s;
-}
-
-.delay-500 {
-  animation-delay: 0.5s;
-}
-
-.delay-600 {
-  animation-delay: 0.6s;
-}
-
-/* Smooth scrolling para toda a página */
 html {
   scroll-behavior: smooth;
 }
 
-/* Melhorar o tap highlight no mobile */
 * {
-  -webkit-tap-highlight-color: rgba(251, 191, 36, 0.2);
+  -webkit-tap-highlight-color: rgba(252, 144, 0, 0.2);
   -webkit-touch-callout: none;
 }
 
-/* Efeito de estrelas/brilhos no fundo */
-.stars {
-  background-image: 
-    radial-gradient(2px 2px at 20px 30px, rgba(251, 191, 36, 0.4), rgba(0, 0, 0, 0)),
-    radial-gradient(2px 2px at 60px 70px, rgba(34, 197, 94, 0.4), rgba(0, 0, 0, 0)),
-    radial-gradient(1px 1px at 50px 50px, rgba(168, 85, 247, 0.4), rgba(0, 0, 0, 0)),
-    radial-gradient(1px 1px at 130px 80px, rgba(251, 191, 36, 0.4), rgba(0, 0, 0, 0)),
-    radial-gradient(2px 2px at 90px 10px, rgba(34, 197, 94, 0.4), rgba(0, 0, 0, 0));
-  background-repeat: repeat;
-  background-size: 200px 200px;
-  animation: sparkle 8s linear infinite;
-}
-
-@keyframes sparkle {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* Animação suave de flutuação */
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
 }
 
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: float 3.2s ease-in-out infinite;
 }
 
-/* Efeito glass morphism */
-.glass-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+/* Vapor saindo da chaminé */
+@keyframes vapor {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  20% { opacity: 0.55; }
+  100% { transform: translate(-30px, -90px) scale(1.8); opacity: 0; }
 }
 
-/* Cidade Esmeralda - Silhueta de prédios */
-.emerald-city {
-  background: 
-    /* Prédios */
-    linear-gradient(transparent 40%, rgba(16, 185, 129, 0.3) 40%, rgba(16, 185, 129, 0.3) 60%, transparent 60%),
-    linear-gradient(transparent 30%, rgba(5, 150, 105, 0.4) 30%, rgba(5, 150, 105, 0.4) 65%, transparent 65%),
-    linear-gradient(transparent 35%, rgba(16, 185, 129, 0.3) 35%, rgba(16, 185, 129, 0.3) 70%, transparent 70%),
-    linear-gradient(transparent 25%, rgba(4, 120, 87, 0.5) 25%, rgba(4, 120, 87, 0.5) 55%, transparent 55%),
-    linear-gradient(transparent 45%, rgba(16, 185, 129, 0.3) 45%, rgba(16, 185, 129, 0.3) 75%, transparent 75%);
-  background-size: 
-    150px 100%,
-    200px 100%,
-    180px 100%,
-    220px 100%,
-    160px 100%;
-  background-position: 
-    5% bottom,
-    25% bottom,
-    45% bottom,
-    65% bottom,
-    85% bottom;
-  background-repeat: no-repeat;
-  animation: cityGlow 4s ease-in-out infinite alternate;
+.animate-vapor {
+  animation: vapor 4s ease-out infinite;
 }
 
-@keyframes cityGlow {
-  0%, 100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.3);
-  }
+/* Locomotiva balançando nos trilhos */
+@keyframes chacoalhar {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-1px) rotate(-0.4deg); }
+  75% { transform: translateY(1px) rotate(0.4deg); }
 }
 
-/* Brilhos dourados no caminho */
-.sparkles-on-road {
-  background-image: 
-    radial-gradient(circle at 30% 80%, rgba(251, 191, 36, 0.6) 2px, transparent 2px),
-    radial-gradient(circle at 50% 60%, rgba(245, 158, 11, 0.6) 3px, transparent 3px),
-    radial-gradient(circle at 70% 70%, rgba(251, 191, 36, 0.6) 2px, transparent 2px),
-    radial-gradient(circle at 40% 50%, rgba(245, 158, 11, 0.5) 2px, transparent 2px),
-    radial-gradient(circle at 60% 40%, rgba(251, 191, 36, 0.5) 3px, transparent 3px),
-    radial-gradient(circle at 35% 30%, rgba(245, 158, 11, 0.4) 2px, transparent 2px),
-    radial-gradient(circle at 65% 25%, rgba(251, 191, 36, 0.4) 2px, transparent 2px);
-  background-size: 200px 200px;
-  background-position: 0 0, 50px 50px, 100px 100px, 150px 20px, 80px 120px, 120px 60px, 180px 140px;
-  animation: sparkleMove 3s linear infinite;
+.animate-chacoalhar {
+  animation: chacoalhar 0.9s ease-in-out infinite;
 }
 
-@keyframes sparkleMove {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
+/* Rodas girando (loader) */
+@keyframes roda {
+  to { transform: rotate(360deg); }
 }
 
-/* Caminho de tijolos amarelos - padrão adicional */
-.yellow-brick-road {
-  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5));
+.animate-roda {
+  animation: roda 1.4s linear infinite;
 }
 
-/* Animação de brilho para botão do Google */
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+/* Trilho: duas barras de aço com dormentes */
+.trilho {
+  height: 18px;
+  background:
+    linear-gradient(var(--ferro-800), var(--ferro-800)) top 3px left 0 / 100% 3px no-repeat,
+    linear-gradient(var(--ferro-800), var(--ferro-800)) bottom 3px left 0 / 100% 3px no-repeat,
+    repeating-linear-gradient(90deg, var(--ferro-500) 0 8px, transparent 8px 22px);
+  opacity: 0.85;
 }
 
-/* Força texto branco - para botões em fundos escuros */
+.trilho-claro {
+  height: 18px;
+  background:
+    linear-gradient(var(--creme-200), var(--creme-200)) top 3px left 0 / 100% 3px no-repeat,
+    linear-gradient(var(--creme-200), var(--creme-200)) bottom 3px left 0 / 100% 3px no-repeat,
+    repeating-linear-gradient(90deg, rgba(252, 240, 216, 0.55) 0 8px, transparent 8px 22px);
+}
+
+/* Bilhete de trem: cantos recortados e picote */
+.bilhete {
+  position: relative;
+  background-color: var(--creme-50);
+  border: 2px solid var(--ferro-800);
+  border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(72, 36, 12, 0.08), 0 8px 24px -8px rgba(72, 36, 12, 0.35);
+}
+
+.bilhete::before,
+.bilhete::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  border-radius: 9999px;
+  background-color: var(--creme-100);
+  border: 2px solid var(--ferro-800);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bilhete::before {
+  left: -12px;
+  clip-path: inset(0 0 0 50%);
+}
+
+.bilhete::after {
+  right: -12px;
+  clip-path: inset(0 50% 0 0);
+}
+
+.picote-vertical {
+  border-left: 2px dashed rgba(72, 36, 12, 0.35);
+}
+
+.picote-horizontal {
+  border-top: 2px dashed rgba(72, 36, 12, 0.3);
+}
+
+/* Painel padrão das páginas internas */
+.painel {
+  background-color: rgba(255, 253, 248, 0.94);
+  border: 1px solid rgba(72, 36, 12, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 1px 0 rgba(72, 36, 12, 0.06), 0 12px 32px -14px rgba(72, 36, 12, 0.4);
+}
+
+/* Carimbo */
+.carimbo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.6rem;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  font-family: 'Oswald', sans-serif !important;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+
+/* Força texto claro - para botões em fundos escuros */
 .text-white-override,
 .text-white-override span,
 .text-white-override * {
   color: #ffffff !important;
 }
 
-/* Dropdown do menu do usuário - força fundo branco */
+/* Dropdown do menu do usuário */
 .user-dropdown-menu {
-  background-color: #ffffff !important;
+  background-color: var(--creme-50) !important;
 }
 
 .user-dropdown-menu div {
   background-color: transparent !important;
 }
 
-/* Subtítulo do Header com efeito bevel and emboss */
+/* Subtítulo do cabeçalho */
 .header-subtitle {
-  color: #047857 !important;
-  text-shadow: 
-    0 1px 0 rgba(255,255,255,1),
-    0 -1px 0 rgba(0,0,0,0.15),
-    1px 1px 0 rgba(255,255,255,0.8),
-    -1px -1px 0 rgba(0,0,0,0.05) !important;
-  font-weight: 700 !important;
+  color: var(--vagao-600) !important;
+  font-family: 'Oswald', sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase;
 }

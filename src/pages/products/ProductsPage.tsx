@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from '@tanstack/react-router'
-import { Card, Button, Header } from '../../components/shared'
+import { Card, Header } from '../../components/shared'
 import type { ProductCategory } from '../../types'
 
 const ProductsPage = () => {
@@ -16,8 +16,7 @@ const ProductsPage = () => {
   // Configurações específicas por contexto
   const config = {
     lojinha: {
-      title: '📦 Produtos da Lojinha',
-      color: 'emerald',
+      title: 'Produtos da Lojinha',
       createLabel: 'Cadastrar Produto',
       listLabel: 'Listar Produtos',
       createDescription: 'Adicione novos produtos da lojinha',
@@ -25,8 +24,7 @@ const ProductsPage = () => {
       selectDescription: 'Cadastre, edite e visualize produtos da lojinha'
     },
     lanchonete: {
-      title: '📦 Cardápio da Lanchonete',
-      color: 'emerald',
+      title: 'Cardápio da Lanchonete',
       createLabel: 'Cadastrar Item',
       listLabel: 'Listar Cardápio',
       createDescription: 'Adicione novos itens ao cardápio',
@@ -34,108 +32,73 @@ const ProductsPage = () => {
       selectDescription: 'Cadastre, edite e visualize itens da lanchonete'
     },
     sapatinho: {
-      title: '👠 Itens do Sapatinho velOz',
-      color: 'pink',
-      createLabel: 'Cadastrar Item Mágico',
-      listLabel: 'Listar Itens Mágicos',
-      createDescription: 'Adicione novos itens especiais ao Sapatinho velOz',
-      listDescription: 'Visualize os itens mágicos disponíveis',
-      selectDescription: 'Gerencie os itens encantados do Sapatinho'
+      title: 'Itens do Sapatinho Veloz',
+      createLabel: 'Cadastrar Item',
+      listLabel: 'Listar Itens',
+      createDescription: 'Adicione novos itens especiais ao Sapatinho Veloz',
+      listDescription: 'Visualize os itens disponíveis',
+      selectDescription: 'Gerencie os itens do Sapatinho Veloz'
     }
   }
   
   const currentConfig = config[context]
-  const colorClasses: Record<string, {
-    from: string
-    to: string
-    border: string
-    bg: string
-    hover: string
-    shadow: string
-  }> = {
-    emerald: {
-      from: 'from-emerald-50',
-      to: 'to-emerald-100',
-      border: 'border-emerald-200',
-      bg: 'bg-emerald-500',
-      hover: 'hover:bg-emerald-600',
-      shadow: 'hover:shadow-emerald-200'
+
+  const options = [
+    {
+      icon: '📦',
+      label: currentConfig.createLabel,
+      description: currentConfig.createDescription,
+      path: `${basePath}/products/create`,
+      buttonClass: 'bg-vagao-600 hover:bg-vagao-700 text-creme-50'
     },
-    pink: {
-      from: 'from-pink-50',
-      to: 'to-pink-100',
-      border: 'border-pink-200',
-      bg: 'bg-pink-500',
-      hover: 'hover:bg-pink-600',
-      shadow: 'hover:shadow-pink-200'
+    {
+      icon: '📋',
+      label: currentConfig.listLabel,
+      description: currentConfig.listDescription,
+      path: `${basePath}/products`,
+      buttonClass: 'bg-ferro-800 hover:bg-ferro-700 text-creme-200'
     }
-  }
-  
-  const colors = colorClasses[currentConfig.color]
+  ]
  
-   return (
-     <div className="space-y-6">
-       <Header 
-             title={currentConfig.title}
-             subtitle={currentConfig.selectDescription}
-             showLogo={false}
-         />
-       {/* Cards de Funcionalidades de Produtos */}
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-         {/* Cadastrar Produto/Item */}
-         <Card
-           className={`bg-gradient-to-br ${colors.from} ${colors.to} ${colors.border} hover:shadow-lg transition-shadow duration-300 cursor-pointer`}
-           onClick={() => navigate({ to: `${basePath}/products/create` as any, search: {} as any })}
-         >
-           <div className="text-center">
-             <div className="text-5xl mb-4">📦</div>
-             <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-               {currentConfig.createLabel}
-             </h3>
-             <p className="text-black-700 mb-4 font-farmhand">
-               {currentConfig.createDescription}
-             </p>
-             <Button
-               size="lg"
-               className={`${colors.bg} ${colors.hover} text-white shadow-lg ${colors.shadow}`}
-               onClick={(event) => {
-                 event.stopPropagation()
-                 navigate({ to: `${basePath}/products/create` as any, search: {} as any })
-               }}
-             >
-               📦 {currentConfig.createLabel}
-             </Button>
-           </div>
-         </Card>
- 
-         {/* Listar Produtos/Cardápio */}
-         <Card
-           className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-           onClick={() => navigate({ to: `${basePath}/products` as any, search: {} as any })}
-         >
-           <div className="text-center">
-             <div className="text-5xl mb-4">📋</div>
-             <h3 className="text-xl font-semibold text-emerald-600 mb-4 font-cardinal">
-               {currentConfig.listLabel}
-             </h3>
-             <p className="text-black-700 mb-4 font-farmhand">
-               {currentConfig.listDescription}
-             </p>
-             <Button
-               size="lg"
-               className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-blue-200"
-               onClick={(event) => {
-                 event.stopPropagation()
-                 navigate({ to: `${basePath}/products` as any, search: {} as any })
-               }}
-             >
-               📋 {currentConfig.listLabel}
-             </Button>
-           </div>
-         </Card>
-       </div>
-     </div>
-   )
- }
- 
- export default ProductsPage
+  return (
+    <div className="space-y-6">
+      <Header 
+        title={currentConfig.title}
+        subtitle={currentConfig.selectDescription}
+        showLogo={false}
+      />
+      {/* Cards de Funcionalidades de Produtos */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+        {options.map(option => (
+          <Card
+            key={option.path}
+            className="hover:shadow-bilhete-hover hover:-translate-y-0.5 transition-all duration-300"
+            onClick={() => navigate({ to: option.path as any, search: {} as any })}
+          >
+            <div className="text-center">
+              <div className="text-5xl mb-3">{option.icon}</div>
+              <h3 className="text-xl font-display font-semibold uppercase tracking-wide text-ferro-900 mb-2">
+                {option.label}
+              </h3>
+              <p className="text-ferro-700 mb-5">
+                {option.description}
+              </p>
+              <button
+                type="button"
+                className={`${option.buttonClass} w-full sm:w-auto font-display font-semibold tracking-wide px-8 py-3 rounded-xl shadow-sm transition-colors`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  navigate({ to: option.path as any, search: {} as any })
+                }}
+              >
+                {option.label} →
+              </button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export default ProductsPage

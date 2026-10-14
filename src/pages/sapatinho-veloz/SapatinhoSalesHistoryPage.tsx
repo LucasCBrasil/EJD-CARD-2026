@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { api } from '../../lib/api-client'
 import { SapatinhoVelozOrder } from '../../types'
+import { TrainLoader } from '../../components/shared'
 
 const SapatinhoSalesHistoryPage: React.FC = () => {
   const [allOrders, setAllOrders] = useState<SapatinhoVelozOrder[]>([])
@@ -121,21 +122,29 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <span className="px-4 py-2 bg-yellow-200 text-yellow-900 rounded-full text-base font-bold border-2 border-yellow-400">⏳ Pendente</span>
+        return <span className="carimbo text-sm text-latao-700 bg-latao-50">⏳ Pendente</span>
       case 'completed':
-        return <span className="px-4 py-2 bg-blue-200 text-blue-900 rounded-full text-base font-bold border-2 border-blue-400">📦 Aguardando entrega</span>
+        return <span className="carimbo text-sm text-anil-700 bg-anil-100/60">📦 Aguardando entrega</span>
       case 'delivered':
-        return <span className="px-4 py-2 bg-green-200 text-green-900 rounded-full text-base font-bold border-2 border-green-400">🚚 Entregue</span>
+        return <span className="carimbo text-sm text-green-700 bg-green-50">🚂 Entregue</span>
       default:
-        return <span className="px-4 py-2 bg-gray-200 text-gray-900 rounded-full text-base font-bold border-2 border-gray-400">{status}</span>
+        return <span className="carimbo text-sm text-ferro-600">{status}</span>
     }
   }
 
+  const pagerButtonClass = `!px-4 !py-2 bg-creme-200 border-2 border-ferro-200 rounded-xl
+                          text-ferro-800 font-display uppercase tracking-wide text-sm
+                          hover:bg-creme-300
+                          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-creme-200
+                          transition-all duration-200`
+
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border-2 border-yellow-300 p-10">
-      <div className="mb-8">
-        <h2 className="text-4xl font-bold text-black mb-4">📊 Histórico de Pedidos - Sapatinho velOz</h2>
-        <p className="text-lg text-gray-800">Visualize todos os pedidos do Sapatinho velOz</p>
+    <div className="painel p-4 sm:p-6 md:p-10 text-ferro-900">
+      <div className="mb-6 md:mb-8">
+        <p className="text-xs font-display uppercase tracking-[0.2em] text-vagao-600 mb-1">Livro de despachos</p>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-semibold uppercase tracking-wide text-ferro-900 mb-2">💌 Histórico – Sapatinho Veloz</h2>
+        <p className="text-base sm:text-lg text-ferro-700 mb-4">Visualize todos os pedidos do Sapatinho Veloz</p>
+        <div className="trilho w-full" />
       </div>
 
       {/* Search Filter */}
@@ -144,28 +153,27 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
           type="text"
           value={searchName}
           onChange={e => setSearchName(e.target.value)}
-          placeholder="Buscar por remetente ou destinatário..."
-          className="w-full px-5 py-3 bg-white border-2 border-gray-300 rounded-lg
-                    focus:border-yellow-400 focus:outline-none focus:ring-0 transition-all
-                    placeholder:text-gray-400 text-gray-900 text-base shadow-sm"
+          placeholder="🔍 Buscar por remetente ou destinatário..."
+          className="w-full px-4 py-3 bg-creme-50 border-2 border-ferro-200 rounded-xl
+                    focus:border-ferro-500 transition-all
+                    text-ferro-900 text-base shadow-sm"
         />
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <p className="text-gray-500">Carregando pedidos...</p>
+        <div className="py-4">
+          <TrainLoader fullScreen={false} title="Carregando pedidos..." message="Consultando o livro de despachos" />
         </div>
       ) : paginatedOrders.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="text-center py-10 bg-creme-100 border border-ferro-200 rounded-xl">
           <div className="text-6xl mb-4">📭</div>
-          <p className="text-gray-500 text-lg">Nenhum pedido encontrado</p>
+          <p className="text-ferro-600 text-lg">Nenhum pedido encontrado</p>
         </div>
       ) : (
         <>
           {/* Info de Paginação */}
           <div className="mb-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-ferro-600">
               Mostrando {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredOrders.length)} de {filteredOrders.length} pedidos
               {totalPages > 1 && ` • Página ${currentPage} de ${totalPages}`}
             </p>
@@ -173,39 +181,38 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
 
           <div className="space-y-6">
           {paginatedOrders.map(order => (
-            <div key={order.id} className="border-2 border-gray-300 rounded-lg p-6 bg-white shadow-lg">
-              <div className="flex justify-between items-start mb-5">
-                <div>
-                  <div className="flex items-center space-x-4 mb-3">
-                    <h3 className="text-2xl font-bold text-black">Pedido #{order.id.slice(-5)}</h3>
-                    {getStatusBadge(order.status)}
-                  </div>
-                  <p className="text-base text-gray-700">
+            <div key={order.id} className="bilhete p-4 sm:p-6">
+              <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
+                <div className="min-w-0">
+                  <p className="text-xs font-display uppercase tracking-[0.2em] text-ferro-500">Encomenda</p>
+                  <h3 className="text-xl sm:text-2xl font-ticket font-bold text-ferro-900 mb-2">#{order.id.slice(-5)}</h3>
+                  <div className="mb-2">{getStatusBadge(order.status)}</div>
+                  <p className="text-sm text-ferro-600">
                     Criado em: {formatDate(order.createdAt)}
                   </p>
                   {order.deliveredAt && (
-                    <p className="text-base text-gray-700 mt-1">
+                    <p className="text-sm text-ferro-600 mt-1">
                       Entregue em: {formatDate(order.deliveredAt)}
                     </p>
                   )}
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-emerald-700">
+                  <div className="text-2xl sm:text-3xl font-slab text-vagao-600">
                     R$ {order.total.toFixed(2)}
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-                <div className={`rounded-lg p-5 border-2 ${
+              <div className="picote-horizontal pt-4 grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className={`rounded-xl p-4 border ${
                   order.isAnonymous 
-                    ? 'bg-purple-50 border-purple-300' 
-                    : 'bg-gray-50 border-gray-200'
+                    ? 'bg-anil-100/50 border-anil-200' 
+                    : 'bg-creme-100 border-ferro-200'
                 }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-lg font-bold text-black">👤 Remetente</h4>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <h4 className="text-base font-display uppercase tracking-wide text-ferro-800">👤 Remetente</h4>
                     {order.isAnonymous && (
-                      <span className="px-3 py-1 bg-purple-200 text-purple-900 rounded-full text-sm font-bold border-2 border-purple-400">
+                      <span className="carimbo text-xs text-anil-700">
                         🔒 Anônimo
                       </span>
                     )}
@@ -213,12 +220,12 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
                   {order.senderName ? (
                     <>
                       <p className={`text-base font-medium ${
-                        order.isAnonymous ? 'text-purple-900 italic' : 'text-gray-900'
+                        order.isAnonymous ? 'text-anil-800 italic' : 'text-ferro-900'
                       }`}>
                         {order.senderName}
                       </p>
                       <p className={`text-base mt-1 ${
-                        order.isAnonymous ? 'text-purple-700 italic' : 'text-gray-700'
+                        order.isAnonymous ? 'text-anil-700 italic' : 'text-ferro-700'
                       }`}>
                         {order.senderTeam ? (
                           <>
@@ -226,57 +233,55 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
                             {order.isAnonymous && ' (não será exibida)'}
                           </>
                         ) : (
-                          <span className="text-gray-500 italic">Equipe não informada</span>
+                          <span className="text-ferro-500 italic">Equipe não informada</span>
                         )}
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="text-base text-purple-900 font-medium italic">Mensagem Anônima</p>
-                      <p className="text-base text-purple-700 mt-1 italic">
+                      <p className="text-base text-anil-800 font-medium italic">Mensagem Anônima</p>
+                      <p className="text-base text-anil-700 mt-1 italic">
                         {order.senderTeam ? (
                           <>Equipe: {order.senderTeam} (não será exibida)</>
                         ) : (
-                          <span className="text-gray-500">Equipe não informada</span>
+                          <span className="text-ferro-500">Equipe não informada</span>
                         )}
                       </p>
                     </>
                   )}
                 </div>
-                <div className="bg-gray-50 rounded-lg p-5 border-2 border-gray-200">
-                  <h4 className="text-lg font-bold text-black mb-3">📍 Destinatário</h4>
-                  <p className="text-base text-gray-900 font-medium">{order.recipientName}</p>
-                  <p className="text-base text-gray-700 mt-1">Equipe: {order.recipientAddress}</p>
-                  <p className="text-base text-gray-600 mt-2 font-medium">
+                <div className="bg-creme-100 rounded-xl p-4 border border-ferro-200">
+                  <h4 className="text-base font-display uppercase tracking-wide text-ferro-800 mb-2">📍 Destino</h4>
+                  <p className="text-base text-ferro-900 font-medium">{order.recipientName}</p>
+                  <p className="text-base text-ferro-700 mt-1">Equipe: {order.recipientAddress}</p>
+                  <p className="text-sm text-ferro-600 mt-2 font-medium">
                     Entrega na Sala de Apoio da {order.recipientAddress}
                   </p>
                 </div>
               </div>
 
               {order.message && (
-                <div className="bg-yellow-100 border-l-4 border-yellow-500 p-5 mb-5 rounded-r-lg">
-                  <h4 className="text-lg font-bold text-black mb-2">💌 Mensagem:</h4>
-                  <p className="text-base text-gray-900">{order.message}</p>
+                <div className="bg-creme-200 border border-ferro-200 border-l-4 border-l-vagao-600 p-4 mb-4 rounded-xl">
+                  <h4 className="text-base font-display uppercase tracking-wide text-ferro-800 mb-2">💌 Mensagem</h4>
+                  <p className="text-base text-ferro-900 italic leading-relaxed whitespace-pre-line break-words">{order.message}</p>
                 </div>
               )}
 
               {/* Items */}
-              <div className="mb-5">
-                <h4 className="text-lg font-bold text-black mb-3">🛍️ Produtos:</h4>
-                <div className="bg-gray-50 rounded-lg p-5 border-2 border-gray-200">
-                  <div className="space-y-3">
-                    {order.items.map(item => (
-                      <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-300 last:border-b-0">
-                        <div>
-                          <span className="text-base font-semibold text-gray-900">{item.productName}</span>
-                          <span className="text-base text-gray-700 ml-3">x{item.quantity}</span>
-                        </div>
-                        <span className="text-lg font-bold text-gray-900">
-                          R$ {(item.price * item.quantity).toFixed(2)}
-                        </span>
+              <div>
+                <h4 className="text-base font-display uppercase tracking-wide text-ferro-800 mb-2">🧳 Bagagem</h4>
+                <div className="bg-creme-100 rounded-xl px-4 py-2 border border-ferro-200">
+                  {order.items.map(item => (
+                    <div key={item.id} className="flex justify-between items-center gap-3 py-2 border-b border-dashed border-ferro-200 last:border-b-0">
+                      <div className="min-w-0">
+                        <span className="text-base font-semibold text-ferro-900 break-words">{item.productName}</span>
+                        <span className="text-base text-ferro-600 ml-2 font-ticket">x{item.quantity}</span>
                       </div>
-                    ))}
-                  </div>
+                      <span className="text-base font-slab text-ferro-900 whitespace-nowrap">
+                        R$ {(item.price * item.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -285,16 +290,12 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
 
           {/* Paginação */}
           {totalPages > 1 && (
-            <div className="mt-10 flex items-center justify-center gap-3">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               {/* Botão Anterior */}
               <button
                 onClick={goToPrevPage}
                 disabled={currentPage === 1}
-                className="px-5 py-2.5 bg-white border-2 border-yellow-400 rounded-lg
-                          text-yellow-600 font-semibold text-sm
-                          hover:bg-yellow-400 hover:text-black
-                          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-yellow-600
-                          transition-all duration-200"
+                className={pagerButtonClass}
               >
                 ← Anterior
               </button>
@@ -319,10 +320,10 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
                     <button
                       key={pageNum}
                       onClick={() => goToPage(pageNum)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold text-sm transition-all duration-200 ${
+                      className={`!p-0 w-10 h-10 flex items-center justify-center rounded-lg font-ticket font-bold text-sm transition-all duration-200 ${
                         isActive
-                          ? 'bg-yellow-400 text-black border-2 border-yellow-500 shadow-md'
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50'
+                          ? 'bg-ferro-800 text-creme-200 border-2 border-ferro-800 shadow-md'
+                          : 'bg-creme-50 text-ferro-800 border-2 border-ferro-200 hover:border-ferro-400'
                       }`}
                     >
                       {pageNum}
@@ -335,11 +336,7 @@ const SapatinhoSalesHistoryPage: React.FC = () => {
               <button
                 onClick={goToNextPage}
                 disabled={currentPage === totalPages}
-                className="px-5 py-2.5 bg-white border-2 border-yellow-400 rounded-lg
-                          text-yellow-600 font-semibold text-sm
-                          hover:bg-yellow-400 hover:text-black
-                          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-yellow-600
-                          transition-all duration-200"
+                className={pagerButtonClass}
               >
                 Próxima →
               </button>

@@ -15,8 +15,8 @@ const LanchonetePage = () => {
       title: 'Realizar Venda',
       description: 'Processar vendas de lanches e bebidas',
       path: '/lanchonete/select',
-      color: 'from-golden-100 to-golden-200',
-      gradient: 'border-golden-300',
+      color: 'from-latao-400 to-latao-600',
+      gradient: 'border-latao-300',
       canAccess: canSellLanchonete
     },
     {
@@ -24,8 +24,8 @@ const LanchonetePage = () => {
       title: 'Histórico de Vendas',
       description: 'Consultar vendas realizadas',
       path: '/historico/lanchonete',
-      color: 'from-blue-100 to-blue-200',
-      gradient: 'border-blue-300',
+      color: 'from-anil-600 to-anil-800',
+      gradient: 'border-anil-300',
       canAccess: canViewSalesHistoryLanchonete
     },
     {
@@ -33,8 +33,8 @@ const LanchonetePage = () => {
       title: 'Cadastrar Produto',
       description: 'Adicionar novo item ao cardápio',
       path: '/lanchonete/products/create',
-      color: 'from-emerald-100 to-emerald-200',
-      gradient: 'border-emerald-300',
+      color: 'from-ferro-700 to-ferro-900',
+      gradient: 'border-ferro-300',
       canAccess: canManageProductsLanchonete
     },
     {
@@ -42,8 +42,8 @@ const LanchonetePage = () => {
       title: 'Listar Produtos',
       description: 'Gerenciar cardápio completo',
       path: '/lanchonete/products',
-      color: 'from-compass-100 to-compass-200',
-      gradient: 'border-compass-300',
+      color: 'from-vagao-500 to-vagao-700',
+      gradient: 'border-vagao-300',
       canAccess: canManageProductsLanchonete
     }
   ]
@@ -52,19 +52,15 @@ const LanchonetePage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-black mb-3 font-cardinal drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
-          🍔 Lanchonete Mágica
+      <div className="text-center mb-8 flex flex-col items-center">
+        <span className="carimbo text-latao-600 text-xs">☕ Vagão-restaurante</span>
+        <h2 className="mt-3 text-3xl md:text-4xl font-display font-semibold uppercase tracking-wide text-ferro-900">
+          Lanchonete
         </h2>
-        <p className="text-lg text-gray-700 font-farmhand drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+        <p className="text-base md:text-lg text-ferro-700 mt-1">
           Vendas, produtos e histórico da lanchonete
         </p>
-        {/* Linha decorativa */}
-        <div className="flex justify-center items-center mt-4 space-x-2">
-          <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-golden-400 to-transparent"></div>
-          <span className="text-golden-400 text-xl">✨</span>
-          <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-golden-400 to-transparent"></div>
-        </div>
+        <div className="trilho w-full max-w-xs mt-4" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">

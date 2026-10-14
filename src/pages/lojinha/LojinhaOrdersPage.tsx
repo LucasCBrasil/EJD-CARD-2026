@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useToastContext } from '../../contexts/ToastContext'
-import { Button, Header } from '../../components/shared'
+import { Header, TrainLoader } from '../../components/shared'
 import { ConfirmationModal } from '../../components/shared'
 import { Order, useSupabaseData } from '../../contexts/SupabaseDataContext'
 
@@ -69,61 +69,69 @@ const [isConfirming, setIsConfirming] = useState(false)
   }
 
   if (loading) {
-    return <div className="flex justify-center p-8">Carregando pedidos...</div>
+    return <TrainLoader title="Carregando pedidos..." fullScreen={false} />
   }
 
   return (
     <div className="space-y-6">
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-yellow-200 p-6 md:p-8">
-        <Header title="📦 Pedidos Pendentes - Lojinha"
+      <div className="painel p-4 md:p-8">
+        <Header title="Pedidos Pendentes"
           subtitle={"Confirme as entregas dos pedidos realizados na lojinha"}
           showLogo={false}/>
 
         {orders.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Nenhum pedido pendente</p>
+          <div className="bg-creme-100 border border-ferro-200 rounded-xl text-center py-10 px-4">
+            <div className="text-5xl mb-3">🚉</div>
+            <p className="text-ferro-600">Nenhum pedido pendente</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [grid-auto-rows:1fr]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 [grid-auto-rows:1fr]">
             {orders.map(order => (
               <div
                 key={order.id}
-                className="bg-white shadow-md rounded-xl p-4 flex flex-col justify-between h-full"
+                className="bilhete flex flex-col justify-between h-full"
               >
-        <div>
-            <div className="flex justify-between items-start mb-4">
-            <div>
-                <h3 className="font-bold">Pedido #{order.saleNumber}</h3>
-                <p className="text-sm text-gray-600">{order.customerName}</p>
-            </div>
-            <span className="text-lg font-semibold">
-                R$ {order.total.toFixed(2)}
-            </span>
-            </div>
+                <div className="p-4">
+                  <div className="flex justify-between items-start gap-3 mb-3">
+                    <div className="min-w-0">
+                      <span className="font-display text-[11px] tracking-[0.3em] text-ferro-500 uppercase">Pedido</span>
+                      <h3 className="font-ticket text-lg font-bold text-ferro-900 leading-tight">Nº {order.saleNumber}</h3>
+                      <p className="text-sm text-ferro-700 truncate">{order.customerName}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="font-slab text-xl text-vagao-600">
+                        R$ {order.total.toFixed(2)}
+                      </span>
+                      <div>
+                        <span className="carimbo text-latao-700 text-[11px] mt-1">Pendente</span>
+                      </div>
+                    </div>
+                  </div>
 
-            <div className="mb-4">
-            <h4 className="font-semibold mb-2">Itens:</h4>
-            <ul className="text-sm space-y-1">
-                {order.items?.map((item, index) => (
-                <li key={index}>
-                    {item.productName} ({item.quantity}x)
-                </li>
-            ))}
-            </ul>
-            </div>
-        </div>
+                  <div className="bg-creme-100 border border-ferro-200 rounded-xl p-3">
+                    <h4 className="font-display text-xs tracking-[0.2em] uppercase text-ferro-500 mb-1">Itens</h4>
+                    <ul className="text-sm text-ferro-900 space-y-1">
+                      {order.items?.map((item, index) => (
+                        <li key={index} className="flex justify-between gap-2">
+                          <span>{item.productName}</span>
+                          <span className="font-ticket text-ferro-500 shrink-0">{item.quantity}x</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
 
-        <div className="flex justify-between items-center mt-auto">
-            <span className="text-sm text-gray-500">
-            {formatDate(order.createdAt)}
-            </span>
-            <Button
-            onClick={() => handleOpenConfirmation(order)}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-1 py-2.5"
-            >
-            ✅ Confirmar Entrega
-            </Button>
-        </div>
+                <div className="picote-horizontal flex justify-between items-center gap-2 px-4 py-3 mt-auto">
+                  <span className="text-xs text-ferro-500 font-ticket">
+                    {formatDate(order.createdAt)}
+                  </span>
+                  <button
+                    onClick={() => handleOpenConfirmation(order)}
+                    className="bg-ferro-800 hover:bg-ferro-700 text-creme-200 font-display font-semibold tracking-wide text-sm px-3 py-2 rounded-lg shrink-0 transition-colors"
+                  >
+                    ✓ Confirmar entrega
+                  </button>
+                </div>
               </div>
             ))}
           </div>

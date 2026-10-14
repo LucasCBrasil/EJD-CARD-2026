@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { Button } from '../shared'
+import { Button, TrilhosBackground } from '../shared'
 
 interface ErrorPageProps {
   error?: any
@@ -25,34 +25,24 @@ export function ErrorPage(props?: ErrorPageProps) {
   // Se não houver erro, mostrar mensagem genérica
   if (!error) {
     return (
-      <div className="min-h-screen w-full relative flex items-center justify-center">
-        <div 
-          className="fixed inset-0 z-0"
-          style={{
-            backgroundImage: 'url(/background-emerald-city.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed'
-          }}
-        >
-          <div className="absolute inset-0 bg-white/40 backdrop-blur-sm"></div>
-        </div>
-        <div className="relative z-10 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-golden-200 p-8 md:p-12 max-w-lg mx-4 text-center">
-          <div className="text-6xl mb-6 animate-bounce">⚠️</div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 font-cardinal">
-            Ops! Algo deu errado
+      <div className="min-h-screen w-full relative flex items-center justify-center px-4 py-10">
+        <TrilhosBackground />
+        <div className="painel relative z-10 p-6 sm:p-10 max-w-lg w-full text-center text-ferro-900">
+          <img src="/logos/web/trenzinho-marrom.webp" alt="" className="w-32 mx-auto mb-2 rotate-[-6deg]" />
+          <div className="trilho w-40 mx-auto mb-6 rotate-[-3deg]" />
+          <h1 className="text-3xl md:text-4xl font-display font-semibold uppercase tracking-wide text-ferro-900 mb-3">
+            O trem saiu dos trilhos!
           </h1>
-          <p className="text-lg text-gray-700 mb-8 font-farmhand">
+          <p className="text-lg text-ferro-700 mb-8 font-body">
             Ocorreu um erro inesperado. Por favor, tente novamente.
           </p>
           <Button
             onClick={() => navigate({ to: '/' })}
             variant="primary"
             size="lg"
-            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-emerald-200 font-semibold"
+            className="w-full sm:w-auto uppercase"
           >
-            🏠 Voltar para Home
+            🚉 Voltar para a Estação
           </Button>
         </div>
       </div>
@@ -60,23 +50,23 @@ export function ErrorPage(props?: ErrorPageProps) {
   }
 
   // Determinar tipo de erro e mensagem
-  let title = 'Ops! Algo deu errado'
+  let title = 'O trem saiu dos trilhos!'
   let message = 'Ocorreu um erro inesperado. Por favor, tente novamente.'
-  let icon = '⚠️'
+  let icon = '🚧'
 
   if (error instanceof Response) {
     if (error.status === 404) {
-      title = 'Página não encontrada'
-      message = 'A página que você está procurando não existe ou foi movida.'
-      icon = '🔍'
+      title = 'Estação não encontrada'
+      message = 'A página que você está procurando não existe ou mudou de linha.'
+      icon = '🗺️'
     } else if (error.status === 403) {
       title = 'Acesso negado'
-      message = 'Você não tem permissão para acessar esta página.'
-      icon = '🔒'
+      message = 'Seu bilhete não dá acesso a esta plataforma.'
+      icon = '🎫'
     } else if (error.status === 500) {
-      title = 'Erro no servidor'
+      title = 'Pane na casa de máquinas'
       message = 'Ocorreu um erro no servidor. Por favor, tente novamente mais tarde.'
-      icon = '💥'
+      icon = '🔧'
     } else {
       title = `Erro ${error.status}`
       message = 'Ocorreu um erro ao carregar esta página.'
@@ -88,47 +78,39 @@ export function ErrorPage(props?: ErrorPageProps) {
       message = 'Houve um problema ao verificar sua autenticação. Por favor, faça login novamente.'
       icon = '🔐'
     } else {
-      title = 'Erro na aplicação'
+      title = 'O trem saiu dos trilhos!'
       message = error.message || 'Ocorreu um erro inesperado.'
-      icon = '⚠️'
+      icon = '🚧'
     }
   }
 
   return (
-    <div className="min-h-screen w-full relative flex items-center justify-center">
-      {/* Imagem de fundo */}
-      <div 
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: 'url(/background-emerald-city.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed'
-        }}
-      >
-        <div className="absolute inset-0 bg-white/40 backdrop-blur-sm"></div>
-      </div>
+    <div className="min-h-screen w-full relative flex items-center justify-center px-4 py-10">
+      <TrilhosBackground />
 
       {/* Conteúdo do erro */}
-      <div className="relative z-10 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-golden-200 p-8 md:p-12 max-w-lg mx-4 text-center">
-        <div className="text-6xl mb-6 animate-bounce">{icon}</div>
+      <div className="painel relative z-10 p-6 sm:p-10 max-w-lg w-full text-center text-ferro-900">
+        <div className="relative w-32 mx-auto mb-2">
+          <img src="/logos/web/trenzinho-marrom.webp" alt="" className="w-32 rotate-[-6deg]" />
+          <span className="absolute -top-2 -right-4 text-4xl">{icon}</span>
+        </div>
+        <div className="trilho w-40 mx-auto mb-6 rotate-[-3deg]" />
         
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 font-cardinal">
+        <h1 className="text-3xl md:text-4xl font-display font-semibold uppercase tracking-wide text-ferro-900 mb-3">
           {title}
         </h1>
         
-        <p className="text-lg text-gray-700 mb-8 font-farmhand">
+        <p className="text-lg text-ferro-700 mb-8 font-body break-words">
           {message}
         </p>
 
         {/* Detalhes do erro (apenas em desenvolvimento) */}
         {import.meta.env.DEV && error && (
           <details className="mb-6 text-left">
-            <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800 font-semibold mb-2">
+            <summary className="cursor-pointer text-sm text-ferro-600 hover:text-ferro-800 font-semibold mb-2">
               Detalhes técnicos (desenvolvimento)
             </summary>
-            <pre className="bg-gray-100 rounded-lg p-4 text-xs overflow-auto max-h-48 text-gray-800">
+            <pre className="bg-creme-200 border border-ferro-200 rounded-lg p-4 text-xs font-ticket overflow-auto max-h-48 text-ferro-800">
               {error instanceof Error 
                 ? error.stack || error.message
                 : JSON.stringify(error, null, 2)
@@ -138,7 +120,7 @@ export function ErrorPage(props?: ErrorPageProps) {
         )}
 
         {/* Botões de ação */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button
             onClick={() => {
               try {
@@ -149,16 +131,16 @@ export function ErrorPage(props?: ErrorPageProps) {
             }}
             variant="primary"
             size="lg"
-            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-emerald-200 font-semibold"
+            className="uppercase"
           >
-            🏠 Voltar para Home
+            🚉 Voltar para a Estação
           </Button>
           
           <Button
             onClick={() => window.location.reload()}
             variant="secondary"
             size="lg"
-            className="bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 shadow-lg font-semibold"
+            className="uppercase"
           >
             🔄 Recarregar Página
           </Button>
@@ -175,7 +157,7 @@ export function ErrorPage(props?: ErrorPageProps) {
                   window.location.href = '/login'
                 }
               }}
-              className="text-emerald-600 hover:text-emerald-800 font-semibold underline text-sm"
+              className="text-vagao-600 hover:text-vagao-700 font-semibold underline text-sm"
             >
               Ir para página de login →
             </button>

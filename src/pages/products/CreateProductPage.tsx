@@ -94,24 +94,24 @@ const CreateProductPage = () => {
   // Configurações específicas por contexto
   const config = {
     lojinha: {
-      title: isEditing ? '✏️ Editar Produto' : '📦 Cadastrar Produto',
+      title: isEditing ? 'Editar Produto' : 'Cadastrar Produto',
       subtitle: isEditing ? 'Atualize as informações do produto' : 'Adicione um novo produto à lojinha',
       nameLabel: 'Nome do Produto',
-      namePlaceholder: 'Ex: Camiseta Mágica',
+      namePlaceholder: 'Ex: Camiseta EJD 25 Anos',
       successMessage: isEditing ? 'Produto atualizado com sucesso!' : 'Produto cadastrado com sucesso!'
     },
     lanchonete: {
-      title: isEditing ? '✏️ Editar Item' : '🍔 Cadastrar Item',
+      title: isEditing ? 'Editar Item' : 'Cadastrar Item',
       subtitle: isEditing ? 'Atualize as informações do item' : 'Adicione um novo item ao cardápio',
       nameLabel: 'Nome do Item',
-      namePlaceholder: 'Ex: Hambúrguer de Esmeralda',
+      namePlaceholder: 'Ex: Hambúrguer da Estação',
       successMessage: isEditing ? 'Item atualizado com sucesso!' : 'Item cadastrado com sucesso!'
     },
     sapatinho: {
-      title: isEditing ? '✏️ Editar Item do Sapatinho' : '👠 Cadastrar Item do Sapatinho',
-      subtitle: isEditing ? 'Atualize as informações do item mágico' : 'Adicione um novo item especial para o Sapatinho velOz',
-      nameLabel: 'Nome do Item Mágico',
-      namePlaceholder: 'Ex: Bilhete Encantado',
+      title: isEditing ? 'Editar Item do Sapatinho' : 'Cadastrar Item do Sapatinho',
+      subtitle: isEditing ? 'Atualize as informações do item' : 'Adicione um novo item especial para o Sapatinho Veloz',
+      nameLabel: 'Nome do Item',
+      namePlaceholder: 'Ex: Bilhete Especial',
       successMessage: isEditing ? 'Item do Sapatinho atualizado!' : 'Item do Sapatinho cadastrado!'
     }
   }
@@ -248,6 +248,8 @@ const CreateProductPage = () => {
     safeNavigate(`${basePath}/select`)
   }
 
+  const labelClass = 'block text-sm font-display font-semibold uppercase tracking-wide text-ferro-800 mb-2'
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -258,12 +260,12 @@ const CreateProductPage = () => {
       />
 
       {/* Formulário */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-8">
+      <div className="painel p-5 md:p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Nome do Produto */}
           <div>
-            <label htmlFor="name" className="block text-sm font-semibold text-black mb-2 font-cardinal">
-              🏷️ {currentConfig.nameLabel}
+            <label htmlFor="name" className={labelClass}>
+              {currentConfig.nameLabel}
             </label>
             <input
               type="text"
@@ -271,7 +273,7 @@ const CreateProductPage = () => {
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               required
-              className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 font-farmhand"
+              className="w-full"
               placeholder={currentConfig.namePlaceholder}
             />
           </div>
@@ -280,12 +282,12 @@ const CreateProductPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Coluna da esquerda: Upload de Imagem */}
             <div>
-              <label htmlFor="image" className="block text-sm font-semibold text-black mb-2 font-cardinal">
-                📸 Imagem do Produto <span className="text-gray-500 font-normal text-xs">(opcional)</span>
+              <label htmlFor="image" className={labelClass}>
+                Imagem do Produto <span className="text-ferro-500 font-body font-normal normal-case tracking-normal text-xs">(opcional)</span>
               </label>
               
               {!imagePreview ? (
-                <div className="border-2 border-dashed border-emerald-300 rounded-lg p-4 text-center hover:border-emerald-500 transition-colors duration-200" style={{ height: '155px' }}>
+                <div className="bg-creme-100 border-2 border-dashed border-ferro-300 rounded-xl p-4 text-center hover:border-ferro-500 hover:bg-creme-200 transition-colors duration-200" style={{ height: '155px' }}>
                   <input
                     type="file"
                     id="image"
@@ -295,19 +297,19 @@ const CreateProductPage = () => {
                   />
                   <label 
                     htmlFor="image" 
-                    className="cursor-pointer flex flex-col items-center justify-center h-full"
+                    className="cursor-pointer flex flex-col items-center justify-center h-full !m-0"
                   >
                     <div className="text-4xl mb-2">📷</div>
-                    <p className="text-black font-semibold mb-1 font-cardinal text-sm">
+                    <p className="text-ferro-900 font-semibold mb-1 font-display text-sm">
                       Clique para selecionar
                     </p>
-                    <p className="text-xs text-gray-600 font-farmhand">
+                    <p className="text-xs text-ferro-500 font-normal">
                       PNG, JPG ou WEBP
                     </p>
                   </label>
                 </div>
               ) : (
-                <div className="relative rounded-lg border-2 border-emerald-200 overflow-hidden" style={{ height: '155px' }}>
+                <div className="relative rounded-xl border-2 border-ferro-200 bg-creme-100 overflow-hidden" style={{ height: '155px' }}>
                   <img 
                     src={imagePreview} 
                     alt="Preview" 
@@ -316,23 +318,14 @@ const CreateProductPage = () => {
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="absolute top-2 right-2 bg-white hover:bg-red-50 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-red-500 hover:border-red-600 group"
-                    style={{ 
-                      width: '18px', 
-                      height: '18px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      padding: 0
-                    }}
+                    className="absolute top-2 right-2 w-8 h-8 !p-0 flex items-center justify-center rounded-full bg-creme-50 hover:bg-vagao-50 border-2 border-vagao-600 text-vagao-600 text-sm font-bold shadow-sm transition-colors"
                     title="Remover imagem"
+                    aria-label="Remover imagem"
                   >
-                    <span className="text-red-500 group-hover:text-red-600 font-bold" style={{ fontSize: '14px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      ✕
-                    </span>
+                    ✕
                   </button>
-                  <div className="absolute bottom-0 left-0 right-0 bg-white/90 px-2 py-1">
-                    <p className="text-xs text-gray-600 font-farmhand truncate">
+                  <div className="absolute bottom-0 left-0 right-0 bg-creme-50/90 px-2 py-1">
+                    <p className="text-xs text-ferro-700 truncate">
                       {getSelectedImageName()}
                     </p>
                   </div>
@@ -342,8 +335,8 @@ const CreateProductPage = () => {
             {/* Coluna da direita: Valor e Quantidade */}
             <div className="space-y-6">
               <div>
-                <label htmlFor="price" className="block text-sm font-semibold text-black mb-2 font-cardinal">
-                  💰 Valor (R$)
+                <label htmlFor="price" className={labelClass}>
+                  Valor (R$)
                 </label>
                 <input
                   type="text"
@@ -352,14 +345,14 @@ const CreateProductPage = () => {
                   value={formData.price}
                   onChange={handlePriceChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 font-farmhand"
+                  className="w-full font-slab"
                   placeholder="0,00"
                 />
               </div>
 
               <div>
-                <label htmlFor="quantity" className="block text-sm font-semibold text-black mb-2 font-cardinal">
-                  📦 Quantidade
+                <label htmlFor="quantity" className={labelClass}>
+                  Quantidade
                 </label>
                 <input
                   type="number"
@@ -369,7 +362,7 @@ const CreateProductPage = () => {
                   onChange={(e) => handleInputChange('stock', e.target.value)}
                   min="1"
                   required
-                  className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 font-farmhand [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   placeholder="0"
                 />
               </div>
@@ -377,31 +370,31 @@ const CreateProductPage = () => {
           </div>
 
           {/* Botões */}
-          <div className="flex space-x-4 pt-4">
+          <div className="flex gap-3 pt-4 picote-horizontal">
             <Button
               type="button"
               onClick={handleCancel}
-              variant="outline"
+              variant="secondary"
               size="lg"
-              className="!text-black flex-1 bg-gradient-to-r from-ruby-600 to-ruby-700 hover:from-ruby-700 hover:to-ruby-800 font-cardinal"
+              className="flex-1 !px-3"
               disabled={isLoading}
             >
-              ❌ Cancelar
+              Cancelar
             </Button>
             <Button
               type="submit"
               size="lg"
-              className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg hover:shadow-emerald-200 font-semibold font-cardinal"
+              className="flex-1 !px-3 !bg-vagao-600 hover:!bg-vagao-700 !border-vagao-600 !text-creme-50"
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <span className="animate-spin mr-2">✨</span>
+                  <span className="inline-block animate-roda mr-2">⚙️</span>
                   {isEditing ? 'Atualizando...' : 'Salvando...'}
                 </>
               ) : (
                 <>
-                  {isEditing ? '💾 Atualizar' : '💾 Salvar'} {context === 'lojinha' ? 'Produto' : 'Item'}
+                  {isEditing ? 'Atualizar' : 'Salvar'} {context === 'lojinha' ? 'Produto' : 'Item'}
                 </>
               )}
             </Button>
@@ -410,8 +403,8 @@ const CreateProductPage = () => {
       </div>
 
       {/* Dicas */}
-      <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4">
-        <p className="text-black text-sm font-farmhand">
+      <div className="bg-latao-50 border border-latao-300 rounded-xl p-4">
+        <p className="text-ferro-800 text-sm">
           💡 <strong>Dica:</strong> A imagem é opcional - se você não adicionar uma, será usada uma imagem padrão. 
           O valor será formatado automaticamente conforme você digita.
         </p>
@@ -421,4 +414,3 @@ const CreateProductPage = () => {
 }
 
 export default CreateProductPage
-

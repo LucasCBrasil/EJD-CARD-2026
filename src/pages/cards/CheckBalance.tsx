@@ -54,12 +54,14 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
   }
 
   return (
-    <div className="space-y-3">
-      {/* Header compacto */}
+    <div className="space-y-4">
+      {/* Cabeçalho */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-emerald-600 font-cardinal">
-          💳 Conferir Saldo
+        <h1 className="text-2xl md:text-3xl font-semibold text-ferro-900 font-display uppercase tracking-wide">
+          🔍 Conferir Saldo
         </h1>
+        <p className="text-sm text-ferro-600 mt-1">Consulte o saldo de um bilhete</p>
+        <div className="trilho w-full max-w-xs mx-auto mt-3" />
       </div>
 
       <div className="w-full relative z-10">
@@ -67,58 +69,51 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
 
           {/* Estado: Resultado encontrado */}
           {selectedCard && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-6 animate-fade-in">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-3 mb-3">
-                  <span className="text-2xl">✅</span>
-                  <div className="text-left">
-                    <p className="font-bold text-black font-cardinal">
-                      Cartão #{formatCardNumber(selectedCard.cardNumber || '')}
-                    </p>
-                    <p className="text-lg text-black font-farmhand">
-                      {selectedCard.userName || 'Sem nome'}
+            <div className="painel p-5 md:p-6 animate-fade-in">
+              <div className="bilhete overflow-hidden mb-5">
+                <div className="bg-caldeira rounded-t-xl px-4 py-2 flex items-center justify-between">
+                  <span className="font-display text-xs tracking-[0.25em] uppercase text-creme-200">Bilhete</span>
+                  <span className="font-ticket text-lg font-bold text-latao-400">
+                    Nº {formatCardNumber(selectedCard.cardNumber || '')}
+                  </span>
+                </div>
+                <div className="px-5 py-4 text-left">
+                  <p className="font-display text-[11px] tracking-[0.25em] uppercase text-ferro-500">Passageiro</p>
+                  <p className="text-lg font-semibold text-ferro-900 leading-tight">
+                    {selectedCard.userName || 'Sem nome'}
+                  </p>
+                  <div className="picote-horizontal mt-3 pt-3 text-center">
+                    <p className="font-display text-[11px] tracking-[0.25em] uppercase text-ferro-500 mb-1">Saldo Disponível</p>
+                    <p className={`font-slab text-4xl ${(selectedCard.balance || 0) < 0 ? 'text-vagao-600' : 'text-ferro-900'}`}>
+                      R$ {(selectedCard.balance || 0).toFixed(2).replace('.', ',')}
                     </p>
                   </div>
                 </div>
-
-                <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-xl p-5 mb-4">
-                  <p className="text-black text-xs mb-1">Saldo Disponível</p>
-                  <p className="text-4xl font-bold text-black">
-                    R$ {(selectedCard.balance || 0).toFixed(2).replace('.', ',')}
-                  </p>
-                </div>
-
-                <Button
-                  onClick={handleNewSearch}
-                  size="lg"
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
-                >
-                  🔍 Nova Consulta
-                </Button>
               </div>
+
+              <Button
+                onClick={handleNewSearch}
+                size="lg"
+                className="w-full"
+              >
+                🔍 Nova Consulta
+              </Button>
             </div>
           )}
 
           {/* Estado: Cartão não encontrado */}
           {hasSearched && !selectedCard && error && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-red-200 p-6 animate-fade-in">
+            <div className="painel p-5 md:p-6 animate-fade-in">
               <div className="text-center">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <span className="text-3xl">❌</span>
-                  <div className="text-left">
-                    <h3 className="font-bold text-red-800 text-lg">
-                      Cartão não encontrado
-                    </h3>
-                    <p className="text-red-600 text-sm">
-                      O cartão #{searchNumber} não existe
-                    </p>
-                  </div>
-                </div>
+                <p className="carimbo text-vagao-600 text-sm mb-3">✕ Cartão não encontrado</p>
+                <p className="text-ferro-700 text-sm mb-5">
+                  O cartão <span className="font-ticket font-bold text-ferro-900">#{searchNumber}</span> não existe
+                </p>
 
                 <Button
                   onClick={handleNewSearch}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                  className="w-full"
                 >
                   🔍 Tentar Novamente
                 </Button>
@@ -128,10 +123,10 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
 
           {/* Estado: Formulário de busca (inicial ou digitando) */}
           {!hasSearched && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-yellow-200 p-6">
+            <div className="painel p-5 md:p-6">
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="cardNumber" className="block text-sm font-semibold text-black mb-2">
+                  <label htmlFor="cardNumber" className="block text-sm font-semibold text-ferro-900 mb-2 text-center">
                     Número do Cartão
                   </label>
                   <input
@@ -140,7 +135,7 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
                     id="cardNumber"
                     value={searchNumber}
                     onChange={(e) => handleInputChange(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                    className="w-full px-4 py-4 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors duration-200 bg-white/90 text-center text-3xl font-mono"
+                    className="w-full px-4 py-4 border-2 border-ferro-200 rounded-xl bg-creme-50 text-ferro-900 focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200 text-center !text-3xl font-ticket font-bold tracking-[0.3em]"
                     placeholder="001"
                     autoFocus
                   />
@@ -149,7 +144,7 @@ const CheckBalance: React.FC<CheckBalanceProps> = ({ onBack: _onBack }) => {
                 <Button
                   onClick={handleSearch}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black shadow-lg hover:shadow-emerald-200 font-semibold"
+                  className="w-full"
                   disabled={isLoading || !searchNumber}
                 >
                   {isLoading ? '🔍 Buscando...' : '🔍 Consultar'}

@@ -96,15 +96,15 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   const getConfirmButtonClass = () => {
     if (computedVariant === 'delete-product') {
-      return 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
+      return 'bg-vagao-600 hover:bg-vagao-700 border-vagao-600 text-creme-50'
     }
     else if (computedVariant === 'delivery-confirmation') {
-      return 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white'
+      return 'bg-ferro-800 hover:bg-ferro-700 border-ferro-800 text-creme-200'
     }
     if (transactionType === 'credit' || computedVariant === 'card-transaction') {
-      return 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white'
+      return 'bg-ferro-800 hover:bg-ferro-700 border-ferro-800 text-creme-200'
     }
-    return 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
+    return 'bg-vagao-600 hover:bg-vagao-700 border-vagao-600 text-creme-50'
   }
 
   const getConfirmButtonText = () => {
@@ -112,98 +112,87 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       if (computedVariant === 'delete-product') return 'Excluindo...'
       return transactionType === 'credit' ? 'Adicionando...' : 'Processando...'
     }
-    return '✅ Confirmar'
+    return '✓ Confirmar'
   }
 
   return (
-    <div 
-      className="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
-    >
+    <div className="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4">
       <div 
         data-modal="content"
-        className="modal-confirmation rounded-2xl shadow-2xl border-4 border-yellow-200 max-w-md w-full p-8"
+        className="modal-confirmation rounded-2xl shadow-bilhete border-2 border-ferro-800 max-w-md w-full max-h-[90vh] overflow-y-auto p-5 sm:p-7"
       >
-        <div className="text-center mb-6">
-          <div className="text-6xl mb-4">{icon}</div>
-          <h3 className="text-2xl font-bold text-black mb-4 font-cardinal">
+        <div className="text-center mb-5">
+          <div className="text-5xl mb-3">{icon}</div>
+          <h3 className="text-2xl font-semibold text-ferro-900 mb-2 font-display uppercase tracking-wide">
             {title}
           </h3>
           {message && (
-            <p className="text-gray-700 mb-4 font-farmhand">
+            <p className="text-ferro-700 font-body">
               {message}
             </p>
           )}
+          <div className="trilho w-full max-w-[180px] mx-auto mt-4" />
         </div>
 
         {/* Conteúdo específico por variante */}
         {(computedVariant === 'card-transaction' || (!!card && !computedVariant)) && card && (
           <>
             {/* Dados do Cartão */}
-            <div 
-              className="rounded-xl p-4 mb-6"
-              style={{ 
-                background: 'linear-gradient(to right, #d1fae5, #a7f3d0)',
-                backgroundColor: '#d1fae5'
-              }}
-            >
-              <h4 className="font-semibold text-black mb-3 font-farmhand">📋 Dados do Cartão</h4>
-              <div className="space-y-2">
-                <p className="text-black font-farmhand">
-                  <strong>Nome:</strong> {card.userName || card.user_name}
-                </p>
-                <p className="text-black font-farmhand">
-                  <strong>Número:</strong> {formatCardNumber(card.cardNumber || card.card_number || '')}
-                </p>
-                <p className="text-black font-farmhand">
-                  <strong>Saldo Atual:</strong> R$ {card.balance.toFixed(2).replace('.', ',')}
-                </p>
+            <div className="card-data rounded-xl border border-ferro-200 p-4 mb-4">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <h4 className="font-display text-sm uppercase tracking-wider text-ferro-700">🎫 Dados do Cartão</h4>
+                <span className="font-ticket font-bold text-ferro-900">
+                  Nº {formatCardNumber(card.cardNumber || card.card_number || '')}
+                </span>
+              </div>
+              <p className="text-ferro-900 font-semibold font-body">
+                {card.userName || card.user_name}
+              </p>
+              <div className="flex justify-between items-baseline mt-1">
+                <span className="text-sm text-ferro-600">Saldo atual</span>
+                <span className="font-slab text-ferro-900">R$ {card.balance.toFixed(2).replace('.', ',')}</span>
               </div>
             </div>
 
             {/* Resumo da Transação */}
-            <div 
-              className="transaction-summary rounded-xl p-4 mb-6"
-              style={{ 
-                background: 'linear-gradient(to right, #fef3c7, #fde68a)',
-                backgroundColor: '#fef3c7'
-              }}
-            >
-              <h4 className="font-semibold text-black mb-3 font-farmhand">💳 Resumo da Transação</h4>
-              <div className="space-y-2">
-                <p className="text-black font-farmhand">
-                  <strong>{getTransactionLabel()}:</strong> R$ {formattedAmount}
-                </p>
+            <div className="transaction-summary rounded-xl border border-latao-300 p-4 mb-6">
+              <h4 className="font-display text-sm uppercase tracking-wider text-ferro-700 mb-2">💳 Resumo da Transação</h4>
+              <div className="space-y-1">
+                <div className="flex justify-between items-baseline gap-3">
+                  <span className="text-sm text-ferro-600">{getTransactionLabel()}</span>
+                  <span className={`font-slab ${transactionType === 'credit' ? 'text-green-700' : 'text-vagao-600'}`}>
+                    {transactionType === 'credit' ? '+' : '−'} R$ {formattedAmount}
+                  </span>
+                </div>
                 {description && (
-                  <p className="text-black font-farmhand">
-                    <strong>Descrição:</strong> {description}
-                  </p>
+                  <div className="flex justify-between items-baseline gap-3">
+                    <span className="text-sm text-ferro-600">Descrição</span>
+                    <span className="text-ferro-900 text-right break-words">{description}</span>
+                  </div>
                 )}
-                <p className="text-black font-farmhand">
-                  <strong>Novo Saldo:</strong> R$ {getNewBalance().toFixed(2).replace('.', ',')}
-                </p>
+                <div className="picote-horizontal mt-2 pt-2 flex justify-between items-baseline gap-3">
+                  <span className="text-sm font-semibold text-ferro-700">Novo saldo</span>
+                  <span className="font-slab text-xl text-ferro-900">R$ {getNewBalance().toFixed(2).replace('.', ',')}</span>
+                </div>
               </div>
             </div>
           </>
         )}
 
         {computedVariant === 'delete-product' && product && (
-          <div 
-            className="modal-delete-product-info border-2 border-red-200 rounded-lg p-4 mb-6"
-            style={{ backgroundColor: '#fef2f2' }}
-          >
+          <div className="modal-delete-product-info bg-vagao-50 border-2 border-vagao-200 rounded-xl p-4 mb-6">
             <div className="flex items-center space-x-4">
               <img
                 src={product.image_url || ''}
                 alt={product.name}
-                className="w-16 h-16 object-cover rounded-lg"
+                className="w-16 h-16 object-cover rounded-lg border border-ferro-200 bg-creme-200"
               />
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-800 font-cardinal">{product.name}</h4>
-                <p className="text-sm text-gray-600 font-farmhand">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-ferro-900 font-display break-words">{product.name}</h4>
+                <p className="text-sm text-ferro-700 font-slab">
                   R$ {formatPrice(product.price)}
                 </p>
-                <p className="text-sm text-gray-600 font-farmhand">
+                <p className="text-sm text-ferro-600 font-body">
                   Quantidade: {product.stock}
                 </p>
               </div>
@@ -212,20 +201,20 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         )}
 
         {/* Botões de Ação */}
-        <div className="flex space-x-4">
+        <div className="flex gap-3">
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 px-6 py-3 font-semibold rounded-lg shadow-lg transition-all duration-200 bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 border-2 border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 !px-4 !py-3 font-display font-semibold tracking-wide rounded-xl transition-all duration-200 bg-creme-200 hover:bg-creme-300 text-ferro-800 border-2 border-ferro-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            ❌ Cancelar
+            Cancelar
           </button>
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className={`flex-1 px-6 py-3 font-semibold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${getConfirmButtonClass()}`}
+            className={`flex-1 !px-4 !py-3 font-display font-semibold tracking-wide rounded-xl border-2 shadow-sm transition-all duration-200 hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${getConfirmButtonClass()}`}
           >
-            {isLoading && <span className="animate-spin mr-2">✨</span>}
+            {isLoading && <span className="inline-block animate-spin mr-2">⚙️</span>}
             {getConfirmButtonText()}
           </button>
         </div>

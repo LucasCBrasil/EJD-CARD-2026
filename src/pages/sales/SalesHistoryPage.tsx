@@ -182,9 +182,7 @@ const SalesHistoryPage: React.FC = () => {
   }
 
 
-  const title = context === 'lojinha' ? '🏪 Histórico de Vendas - Lojinha' : '🍔 Histórico de Vendas - Lanchonete'
-  const borderColor = context === 'lojinha' ? 'border-blue-300' : 'border-orange-300'
-  const accentColor = context === 'lojinha' ? 'blue' : 'orange'
+  const title = context === 'lojinha' ? 'Histórico · Lojinha' : 'Histórico · Lanchonete'
 
   const formatDate = (iso?: string | null): string => {
     if (!iso) {
@@ -207,8 +205,10 @@ const SalesHistoryPage: React.FC = () => {
       return 'Erro na data'
     }
   }
-  
+
   const formatPrice = (price: number) => price.toFixed(2)
+
+  const navBtn = 'px-3 py-2 bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-200 font-display text-sm rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
 
   // Se não estiver na rota correta, não renderizar nada (DEPOIS de todos os hooks)
   if (!isCorrectRoute) {
@@ -216,120 +216,115 @@ const SalesHistoryPage: React.FC = () => {
   }
 
   return (
-    <div className={`bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border-2 ${borderColor} p-10`}>
-      <div className="mb-8">
-        <h2 className="text-4xl font-bold text-black mb-4">{title}</h2>
-        <p className="text-lg text-gray-800">Visualize todas as vendas realizadas</p>
+    <div className="painel p-4 md:p-8">
+      <div className="mb-6">
+        <span className="carimbo text-anil-700 text-xs">📜 Diário de bordo</span>
+        <h2 className="mt-3 text-2xl md:text-3xl font-display font-semibold uppercase tracking-wide text-ferro-900">{title}</h2>
+        <p className="text-base text-ferro-700">Visualize todas as vendas realizadas</p>
+        <div className="trilho w-full mt-4" />
       </div>
 
       {isEmpty ? (
-        <div className="text-center py-8">
-          <div className="text-6xl mb-4">📭</div>
-          <p className="text-gray-500 text-lg mb-6">Nenhuma venda registrada ainda.</p>
-          <button 
-            onClick={() => navigate({ to: context === 'lojinha' ? '/lojinha' : '/lanchonete' })} 
-            className={`bg-${accentColor}-500 hover:bg-${accentColor}-600 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5`}
+        <div className="bg-creme-100 border border-ferro-200 rounded-xl text-center py-10 px-4">
+          <div className="text-5xl mb-3">🚉</div>
+          <p className="text-ferro-600 text-lg mb-6">Nenhuma venda registrada ainda.</p>
+          <button
+            onClick={() => navigate({ to: context === 'lojinha' ? '/lojinha' : '/lanchonete' })}
+            className="bg-vagao-600 hover:bg-vagao-700 text-creme-50 font-display font-semibold tracking-wide uppercase px-8 py-3 rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5"
           >
-            + NOVA VENDA
+            + Nova venda
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Search Filter */}
-          <div className="mb-6">
-            <input
-              type="text"
-              value={searchName}
-              onChange={e => setSearchName(e.target.value)}
-              placeholder="Buscar por cliente..."
-              className={`w-full px-5 py-3 bg-white border-2 border-gray-300 rounded-lg
-                        focus:border-${accentColor}-400 focus:outline-none focus:ring-0 transition-all
-                        placeholder:text-gray-400 text-gray-900 text-base shadow-sm`}
-            />
-          </div>
+          <input
+            type="text"
+            value={searchName}
+            onChange={e => setSearchName(e.target.value)}
+            placeholder="🔍 Buscar por cliente..."
+            className="w-full"
+          />
 
           {/* Info de Paginação */}
-          <div className="mb-6 text-center">
-            <p className="text-sm text-gray-600">
-              {allSales.length > 0 ? (
-                <>
-                  Mostrando {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalSales || (currentPage * itemsPerPage))} de {totalSales || '?'} vendas
-                  {totalPages > 1 && ` • Página ${currentPage} de ${totalPages}`}
-                </>
-              ) : isLoading ? (
-                'Carregando vendas...'
-              ) : (
-                'Nenhuma venda encontrada'
-              )}
-            </p>
-          </div>
+          <p className="text-center text-sm text-ferro-500">
+            {allSales.length > 0 ? (
+              <>
+                Mostrando {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalSales || (currentPage * itemsPerPage))} de {totalSales || '?'} vendas
+                {totalPages > 1 && ` • Página ${currentPage} de ${totalPages}`}
+              </>
+            ) : isLoading ? (
+              'Carregando vendas...'
+            ) : (
+              'Nenhuma venda encontrada'
+            )}
+          </p>
 
           {/* Sales List */}
-          <div className="space-y-6">
+          <div className="space-y-5">
             {paginatedSales.map(sale => (
-              <div key={sale.id} className="border-2 border-gray-300 rounded-lg p-6 bg-white shadow-lg">
-                <div className="flex justify-between items-start mb-5">
-                  <div>
-                    <div className="flex items-center space-x-4 mb-3">
-                      <h3 className="text-2xl font-bold text-black">Venda #{sale.saleId}</h3>
+              <div key={sale.id} className="bilhete">
+                <div className="p-4 md:p-5">
+                  <div className="flex justify-between items-start gap-3 mb-3">
+                    <div className="min-w-0">
+                      <span className="font-display text-[11px] tracking-[0.3em] text-ferro-500 uppercase">Venda</span>
+                      <h3 className="font-ticket text-xl font-bold text-ferro-900 leading-tight">Nº {sale.saleId}</h3>
                     </div>
-                    <p className="text-base text-gray-700 mb-2">
-                      📅 <span className="font-semibold">{sale.createdAt ? formatDate(sale.createdAt) : 'Data não disponível'}</span>
+                    <div className="text-right shrink-0">
+                      <div className="font-slab text-2xl text-vagao-600 leading-tight">
+                        R$ {formatPrice(sale.total)}
+                      </div>
+                      <span className={`carimbo text-[11px] mt-1 ${
+                        sale.status === 'completed' ? 'text-green-700' :
+                        sale.status === 'delivered' ? 'text-anil-700' :
+                        'text-ferro-500'
+                      }`}>
+                        {sale.status === 'completed' ? '✓ Concluída' :
+                         sale.status === 'delivered' ? 'Entregue' :
+                         sale.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 text-sm text-ferro-700">
+                    <p>
+                      <span className="text-ferro-500">Data:</span> <span className="font-semibold text-ferro-900">{sale.createdAt ? formatDate(sale.createdAt) : 'Data não disponível'}</span>
                     </p>
                     {sale.card?.cardNumber && sale.card?.userName && (
-                      <p className="text-base text-gray-700 mt-2">
-                        💳 Cartão: <span className="font-semibold">{sale.card.cardNumber}</span> • 
-                        👤 Cliente: <span className="font-semibold">{sale.card.userName}</span>
+                      <p>
+                        <span className="text-ferro-500">Cartão:</span> <span className="font-ticket font-bold text-ferro-900">{sale.card.cardNumber}</span>
+                        <span className="text-ferro-300"> · </span>
+                        <span className="text-ferro-500">Cliente:</span> <span className="font-semibold text-ferro-900">{sale.card.userName}</span>
                       </p>
                     )}
                     {sale.seller?.name && (
-                      <p className="text-base text-gray-700 mt-1">
-                        🏪 Vendedor: <span className="font-semibold">{sale.seller.name}</span>
+                      <p>
+                        <span className="text-ferro-500">Vendedor:</span> <span className="font-semibold text-ferro-900">{sale.seller.name}</span>
                       </p>
                     )}
                   </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold text-emerald-700">
-                      R$ {formatPrice(sale.total)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Status Badge */}
-                <div className="mb-5">
-                  <span className={`inline-block px-4 py-2 rounded-full text-sm font-bold ${
-                    sale.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
-                    sale.status === 'delivered' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {sale.status === 'completed' ? '✓ Concluída' :
-                     sale.status === 'delivered' ? '📦 Entregue' :
-                     sale.status}
-                  </span>
                 </div>
 
                 {/* Items */}
-                <div className="mb-5">
-                  <h4 className="text-lg font-bold text-black mb-3">🛍️ Produtos:</h4>
-                  <div className="bg-gray-50 rounded-lg p-5 border-2 border-gray-200">
-                    {sale.items && sale.items.length > 0 ? (
-                      <div className="space-y-3">
-                        {sale.items.map((item, index) => (
-                          <div key={item.productId || item.id || index} className="flex justify-between items-center py-2 border-b border-gray-300 last:border-b-0">
-                            <div>
-                              <span className="text-base font-semibold text-gray-900">{item.productName || 'Produto sem nome'}</span>
-                              <span className="text-base text-gray-700 ml-3">x{item.quantity || 0}</span>
-                            </div>
-                            <span className="text-lg font-bold text-gray-900">
-                              R$ {formatPrice((item.price || 0) * (item.quantity || 0))}
-                            </span>
+                <div className="picote-horizontal bg-creme-100 rounded-b-xl px-4 md:px-5 py-3">
+                  <h4 className="font-display text-xs tracking-[0.2em] uppercase text-ferro-500 mb-2">Produtos</h4>
+                  {sale.items && sale.items.length > 0 ? (
+                    <div className="divide-y divide-ferro-200">
+                      {sale.items.map((item, index) => (
+                        <div key={item.productId || item.id || index} className="flex justify-between items-center gap-3 py-1.5">
+                          <div className="min-w-0">
+                            <span className="text-sm font-semibold text-ferro-900">{item.productName || 'Produto sem nome'}</span>
+                            <span className="font-ticket text-sm text-ferro-500 ml-2">x{item.quantity || 0}</span>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 italic">Nenhum item encontrado nesta venda</p>
-                    )}
-                  </div>
+                          <span className="font-slab text-sm text-ferro-900 shrink-0">
+                            R$ {formatPrice((item.price || 0) * (item.quantity || 0))}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-ferro-500 italic">Nenhum item encontrado nesta venda</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -337,22 +332,12 @@ const SalesHistoryPage: React.FC = () => {
 
           {/* Paginação */}
           {totalPages > 1 && (
-            <div className="mt-10 flex items-center justify-center gap-3">
-              {/* Botão Anterior */}
-              <button
-                onClick={goToPrevPage}
-                disabled={currentPage === 1}
-                className={`px-5 py-2.5 bg-white border-2 border-${accentColor}-400 rounded-lg
-                          text-${accentColor}-600 font-semibold text-sm
-                          hover:bg-${accentColor}-400 hover:text-${context === 'lojinha' ? 'white' : 'black'}
-                          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-${accentColor}-600
-                          transition-all duration-200`}
-              >
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+              <button onClick={goToPrevPage} disabled={currentPage === 1} className={navBtn}>
                 ← Anterior
               </button>
 
-              {/* Números de Página */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                   let pageNum: number
                   if (totalPages <= 5) {
@@ -371,10 +356,10 @@ const SalesHistoryPage: React.FC = () => {
                     <button
                       key={pageNum}
                       onClick={() => goToPage(pageNum)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold text-sm transition-all duration-200 ${
+                      className={`w-10 h-10 p-0 flex items-center justify-center rounded-lg font-display text-sm transition-colors ${
                         isActive
-                          ? `bg-${accentColor}-400 text-${context === 'lojinha' ? 'white' : 'black'} border-2 border-${accentColor}-500 shadow-md`
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-' + accentColor + '-400 hover:bg-' + accentColor + '-50'
+                          ? 'bg-ferro-800 text-creme-200'
+                          : 'bg-creme-200 text-ferro-800 border border-ferro-200 hover:bg-creme-300'
                       }`}
                     >
                       {pageNum}
@@ -383,16 +368,7 @@ const SalesHistoryPage: React.FC = () => {
                 })}
               </div>
 
-              {/* Botão Próxima */}
-              <button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages}
-                className={`px-5 py-2.5 bg-white border-2 border-${accentColor}-400 rounded-lg
-                          text-${accentColor}-600 font-semibold text-sm
-                          hover:bg-${accentColor}-400 hover:text-${context === 'lojinha' ? 'white' : 'black'}
-                          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-${accentColor}-600
-                          transition-all duration-200`}
-              >
+              <button onClick={goToNextPage} disabled={currentPage === totalPages} className={navBtn}>
                 Próxima →
               </button>
             </div>
@@ -404,4 +380,3 @@ const SalesHistoryPage: React.FC = () => {
 }
 
 export default SalesHistoryPage
-

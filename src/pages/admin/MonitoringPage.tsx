@@ -1,20 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react'
 import { usePermissions } from '../../hooks/usePermissions'
 import { api } from '../../lib/api-client'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Paper,
-  Box,
-  Chip,
-  LinearProgress,
-  Typography,
-} from '@mui/material'
 
 interface Transaction {
   id: string
@@ -57,11 +43,11 @@ type TabType = 'transactions' | 'cards'
 // Componente de Heartbeat animado
 const Heartbeat: React.FC<{ isActive: boolean }> = ({ isActive }) => (
   <div className="relative flex items-center justify-center">
-    <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
+    <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-latao-500'}`}>
       {isActive && (
         <>
-          <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
-          <span className="absolute inset-0 rounded-full bg-emerald-300 animate-pulse" />
+          <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75" />
+          <span className="absolute inset-0 rounded-full bg-green-300/60 animate-pulse" />
         </>
       )}
     </div>
@@ -70,11 +56,29 @@ const Heartbeat: React.FC<{ isActive: boolean }> = ({ isActive }) => (
 
 // Componente de barra de progresso para countdown
 const CountdownBar: React.FC<{ progress: number; isFetching: boolean }> = ({ progress, isFetching }) => (
-  <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
+  <div className="h-1 bg-creme-200/15 rounded-full overflow-hidden">
     <div 
-      className={`h-full transition-all duration-200 ${isFetching ? 'bg-cyan-500 animate-pulse' : 'bg-emerald-500'}`}
+      className={`h-full transition-all duration-200 ${isFetching ? 'bg-anil-300 animate-pulse' : 'bg-latao-400'}`}
       style={{ width: `${progress}%` }}
     />
+  </div>
+)
+
+// Célula do painel de partidas
+const BoardStat: React.FC<{ label: React.ReactNode; value: React.ReactNode; tone?: string; small?: boolean; className?: string }> = ({
+  label,
+  value,
+  tone = 'text-latao-400',
+  small = false,
+  className = '',
+}) => (
+  <div className={`rounded-lg bg-ferro-950/60 border border-creme-200/10 px-3 py-2.5 transition-all duration-300 ${className}`}>
+    <div className="font-display text-[10px] sm:text-xs uppercase tracking-[0.18em] text-creme-200/60 mb-1 flex items-center gap-1">
+      {label}
+    </div>
+    <div className={`font-slab tabular-nums leading-tight break-words ${small ? 'text-base sm:text-lg' : 'text-2xl'} ${tone}`}>
+      {value}
+    </div>
   </div>
 )
 
@@ -262,7 +266,7 @@ const MonitoringPage: React.FC = () => {
     setPage(newPage)
   }
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10))
     setPage(0)
   }
@@ -274,208 +278,160 @@ const MonitoringPage: React.FC = () => {
 
   if (!canManageUsers) {
     return (
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-red-200 p-8 text-center">
-        <div className="text-6xl mb-4">🚫</div>
-        <h2 className="text-2xl font-bold text-red-600 mb-4">Acesso Negado</h2>
-        <p className="text-gray-600">Você não tem permissão para acessar esta área.</p>
+      <div className="painel border-2 !border-vagao-600/40 p-6 sm:p-8 text-center">
+        <div className="text-5xl mb-4">🚫</div>
+        <h2 className="text-2xl font-display font-semibold uppercase text-vagao-600 mb-3">Acesso Negado</h2>
+        <p className="text-ferro-700">Você não tem permissão para acessar esta área.</p>
       </div>
     )
   }
 
+  const totalPagesTx = Math.max(1, Math.ceil(transactions.length / rowsPerPage))
+  const fromTx = transactions.length === 0 ? 0 : page * rowsPerPage + 1
+  const toTx = Math.min(transactions.length, (page + 1) * rowsPerPage)
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-200 p-6 relative overflow-hidden">
-        {/* Efeito de onda sutil no fundo */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-emerald-100/50 to-transparent rounded-full animate-pulse" style={{ animationDuration: '3s' }} />
-          <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-cyan-100/50 to-transparent rounded-full animate-pulse" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+    <div className="space-y-5">
+      {/* Painel de partidas */}
+      <div className="rounded-2xl bg-caldeira shadow-bilhete border-2 border-ferro-950 p-4 sm:p-6 text-creme-200">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 shrink-0 bg-creme-200/10 border border-creme-200/20 rounded-xl flex items-center justify-center text-2xl">
+              📡
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-display font-semibold uppercase tracking-wide !text-creme-100 leading-tight">Acompanhar</h1>
+              <p className="text-creme-200/70 text-sm">Pulso do sistema em tempo real</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Toggle de valores */}
+            <button
+              onClick={() => setShowValues(!showValues)}
+              className={`!px-3 !py-1.5 flex items-center gap-2 rounded-lg border text-sm transition-all ${
+                showValues 
+                  ? 'bg-latao-400 border-latao-300 text-ferro-900' 
+                  : 'bg-creme-200/10 border-creme-200/25 text-creme-200'
+              }`}
+              title={showValues ? 'Esconder valores' : 'Mostrar valores'}
+            >
+              <span>{showValues ? '👁️' : '🙈'}</span>
+              <span className="font-display tracking-wide">{showValues ? 'R$' : '•••'}</span>
+            </button>
+
+            {/* Indicador AO VIVO com heartbeat */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-creme-200/10 rounded-lg border border-creme-200/25">
+              <Heartbeat isActive={!isFetching} />
+              <span className="font-display text-sm tracking-widest uppercase text-creme-100">Ao vivo</span>
+            </div>
+            
+            {/* Contador e horário */}
+            <div className="text-right font-ticket leading-tight">
+              <div className="text-latao-300 text-xs tabular-nums">
+                {lastUpdate.toLocaleTimeString('pt-BR')}
+              </div>
+              <div className="text-creme-200/60 text-xs">
+                {isFetching ? (
+                  <span className="text-anil-200 animate-pulse">Atualizando...</span>
+                ) : (
+                  `${Math.ceil(countdown)}s`
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center relative">
-                <span className="text-2xl">📡</span>
-                {/* Ondas de sinal */}
-                <div className="absolute -right-1 -top-1">
-                  <div className="flex gap-0.5">
-                    <div className="w-1 h-2 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1 h-3 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1 h-4 bg-emerald-600 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-800">Acompanhar</h1>
-                <p className="text-slate-500 text-sm">Pulso do sistema em tempo real</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Toggle de valores */}
-              <button
-                onClick={() => setShowValues(!showValues)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-                  showValues 
-                    ? 'bg-amber-100 border-amber-300 text-amber-700' 
-                    : 'bg-slate-100 border-slate-300 text-slate-600'
-                }`}
-                title={showValues ? 'Esconder valores' : 'Mostrar valores'}
-              >
-                <span>{showValues ? '👁️' : '🙈'}</span>
-                <span className="text-sm font-medium">{showValues ? 'R$' : '•••'}</span>
-              </button>
-
-              {/* Indicador LIVE com heartbeat */}
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 rounded-lg border border-emerald-300">
-                <Heartbeat isActive={!isFetching} />
-                <span className="text-emerald-700 text-sm font-medium">LIVE</span>
-              </div>
-              
-              {/* Contador e horário */}
-              <div className="text-right">
-                <div className="text-slate-500 text-xs">
-                  {lastUpdate.toLocaleTimeString('pt-BR')}
-                </div>
-                <div className="text-slate-400 text-xs">
-                  {isFetching ? (
-                    <span className="text-cyan-600 animate-pulse">Atualizando...</span>
-                  ) : (
-                    `${Math.ceil(countdown)}s`
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Barra de progresso do countdown */}
-          <div className="mb-4">
-            <CountdownBar progress={(countdown / 5) * 100} isFetching={isFetching} />
-          </div>
-
-          {/* Abas */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setActiveTab('transactions')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                activeTab === 'transactions'
-                  ? 'bg-emerald-500 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              <span>📊</span>
-              <span>Transações</span>
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                activeTab === 'transactions' ? 'bg-emerald-600' : 'bg-slate-200'
-              }`}>
-                {stats.count}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('cards')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                activeTab === 'cards'
-                  ? 'bg-amber-500 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              <span>💳</span>
-              <span>Cartões Hoje</span>
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                activeTab === 'cards' ? 'bg-amber-600' : 'bg-slate-200'
-              }`}>
-                {cardStats.count}
-              </span>
-            </button>
-          </div>
-
-          {/* Stats Cards - Transações */}
-          {activeTab === 'transactions' && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className={`bg-slate-50 rounded-xl p-4 border border-slate-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Transações</div>
-                <div className="text-2xl font-bold text-slate-800 tabular-nums">{stats.count}</div>
-              </div>
-              <div className={`bg-cyan-50 rounded-xl p-4 border border-cyan-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''} ${stats.last5min > 0 ? 'ring-2 ring-cyan-300 ring-opacity-50' : ''}`}>
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
-                  Últimos 5min
-                  {stats.last5min > 0 && <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />}
-                </div>
-                <div className="text-2xl font-bold text-cyan-600 tabular-nums">{stats.last5min}</div>
-              </div>
-              <div className={`bg-emerald-50 rounded-xl p-4 border border-emerald-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
-                  Créditos
-                  <span className="text-emerald-500">↑</span>
-                </div>
-                <div className="text-xl font-bold text-emerald-600 tabular-nums">{formatCurrency(stats.totalCredits, !showValues)}</div>
-              </div>
-              <div className={`bg-rose-50 rounded-xl p-4 border border-rose-200 transition-all duration-300 ${isFetching ? 'opacity-70' : ''}`}>
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
-                  Débitos
-                  <span className="text-rose-500">↓</span>
-                </div>
-                <div className="text-xl font-bold text-rose-600 tabular-nums">{formatCurrency(stats.totalDebits, !showValues)}</div>
-              </div>
-              <div className={`rounded-xl p-4 border transition-all duration-300 ${isFetching ? 'opacity-70' : ''} ${stats.netFlow >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Fluxo Líquido</div>
-                <div className={`text-xl font-bold tabular-nums ${stats.netFlow >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {formatCurrency(stats.netFlow, !showValues)}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Stats Cards - Cartões Hoje */}
-          {activeTab === 'cards' && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Total</div>
-                <div className="text-2xl font-bold text-amber-600 tabular-nums">{cardStats.count}</div>
-              </div>
-              <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Com Saldo</div>
-                <div className="text-2xl font-bold text-emerald-600 tabular-nums">{cardStats.withBalance}</div>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Sem Saldo</div>
-                <div className="text-2xl font-bold text-slate-600 tabular-nums">{cardStats.withoutBalance}</div>
-              </div>
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Soma Saldos</div>
-                <div className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(cardStats.totalBalance, !showValues)}</div>
-              </div>
-              <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Média</div>
-                <div className="text-lg font-bold text-purple-600 tabular-nums">{formatCurrency(cardStats.avgBalance, !showValues)}</div>
-              </div>
-              <div className="bg-cyan-50 rounded-xl p-4 border border-cyan-200">
-                <div className="text-slate-500 text-xs uppercase tracking-wide mb-1">Maior Saldo</div>
-                <div className="text-lg font-bold text-cyan-600 tabular-nums">{formatCurrency(cardStats.maxBalance, !showValues)}</div>
-              </div>
-            </div>
-          )}
+        {/* Barra de progresso do countdown */}
+        <div className="mb-4">
+          <CountdownBar progress={(countdown / 5) * 100} isFetching={isFetching} />
         </div>
+
+        {/* Abas */}
+        <div className="flex gap-2 mb-4 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('transactions')}
+            className={`!px-4 !py-2 shrink-0 flex items-center gap-2 rounded-lg font-display uppercase tracking-wide text-sm transition-all ${
+              activeTab === 'transactions'
+                ? 'bg-latao-400 text-ferro-900 shadow-md'
+                : 'bg-creme-200/10 text-creme-200 hover:bg-creme-200/20'
+            }`}
+          >
+            <span>Transações</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-ticket ${
+              activeTab === 'transactions' ? 'bg-ferro-900 text-latao-300' : 'bg-creme-200/15'
+            }`}>
+              {stats.count}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('cards')}
+            className={`!px-4 !py-2 shrink-0 flex items-center gap-2 rounded-lg font-display uppercase tracking-wide text-sm transition-all ${
+              activeTab === 'cards'
+                ? 'bg-latao-400 text-ferro-900 shadow-md'
+                : 'bg-creme-200/10 text-creme-200 hover:bg-creme-200/20'
+            }`}
+          >
+            <span>Cartões Hoje</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-ticket ${
+              activeTab === 'cards' ? 'bg-ferro-900 text-latao-300' : 'bg-creme-200/15'
+            }`}>
+              {cardStats.count}
+            </span>
+          </button>
+        </div>
+
+        {/* Stats - Transações */}
+        {activeTab === 'transactions' && (
+          <div className={`grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 ${isFetching ? 'opacity-80' : ''}`}>
+            <BoardStat label="Transações" value={stats.count} />
+            <BoardStat
+              label={<>Últimos 5min{stats.last5min > 0 && <span className="w-1.5 h-1.5 bg-latao-400 rounded-full animate-pulse" />}</>}
+              value={stats.last5min}
+              className={stats.last5min > 0 ? 'ring-1 ring-latao-400/50' : ''}
+            />
+            <BoardStat label={<>Créditos <span className="text-green-400">↑</span></>} value={formatCurrency(stats.totalCredits, !showValues)} tone="text-green-400" small />
+            <BoardStat label={<>Débitos <span className="text-vagao-300">↓</span></>} value={formatCurrency(stats.totalDebits, !showValues)} tone="text-vagao-300" small />
+            <BoardStat
+              label="Fluxo Líquido"
+              value={formatCurrency(stats.netFlow, !showValues)}
+              tone={stats.netFlow >= 0 ? 'text-green-400' : 'text-vagao-300'}
+              small
+              className="col-span-2 md:col-span-1"
+            />
+          </div>
+        )}
+
+        {/* Stats - Cartões Hoje */}
+        {activeTab === 'cards' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+            <BoardStat label="Total" value={cardStats.count} />
+            <BoardStat label="Com Saldo" value={cardStats.withBalance} tone="text-green-400" />
+            <BoardStat label="Sem Saldo" value={cardStats.withoutBalance} tone="text-fumaca-200" />
+            <BoardStat label="Soma Saldos" value={formatCurrency(cardStats.totalBalance, !showValues)} small />
+            <BoardStat label="Média" value={formatCurrency(cardStats.avgBalance, !showValues)} small />
+            <BoardStat label="Maior Saldo" value={formatCurrency(cardStats.maxBalance, !showValues)} small />
+          </div>
+        )}
       </div>
 
       {/* Lista de Cartões Hoje */}
       {activeTab === 'cards' && cardStats.count > 0 && (
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-amber-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-800">Lista de Cartões Cadastrados Hoje</h3>
-            <span className="text-sm text-slate-500">{cardStats.count} cartões</span>
+        <div className="painel p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <h3 className="font-display font-semibold uppercase tracking-wide text-ferro-800">Cartões Cadastrados Hoje</h3>
+            <span className="text-sm text-ferro-500 shrink-0">{cardStats.count} cartões</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-96 overflow-y-auto">
             {todayCards.map(card => (
               <div 
                 key={card.id} 
-                className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-sm border border-slate-100"
+                className="flex items-center justify-between gap-2 bg-creme-100 rounded-lg px-3 py-2 text-sm border border-ferro-200"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-mono text-slate-400">#{card.card_number}</span>
-                  <span className="text-slate-700 truncate">{card.user_name || 'Sem nome'}</span>
+                  <span className="font-ticket font-bold text-ferro-500">#{card.card_number}</span>
+                  <span className="text-ferro-900 truncate">{card.user_name || 'Sem nome'}</span>
                 </div>
-                <span className={`font-medium tabular-nums ${parseFloat(card.balance) > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className={`font-semibold tabular-nums shrink-0 ${parseFloat(card.balance) > 0 ? 'text-green-700' : 'text-fumaca-500'}`}>
                   {formatCurrency(card.balance, !showValues)}
                 </span>
               </div>
@@ -484,236 +440,186 @@ const MonitoringPage: React.FC = () => {
         </div>
       )}
 
-      {/* Transactions Table with MUI */}
+      {/* Tabela de transações */}
       {activeTab === 'transactions' && (
-      <Paper 
-        elevation={0}
-        sx={{ 
-          borderRadius: 4, 
-          overflow: 'hidden',
-          border: '1px solid',
-          borderColor: 'grey.200',
-          bgcolor: 'rgba(255,255,255,0.9)',
-          backdropFilter: 'blur(8px)'
-        }}
-      >
+      <div className="painel overflow-hidden">
         {/* Header */}
-        <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'grey.200', bgcolor: 'grey.50' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box>
-              <Typography variant="h6" fontWeight={600} color="text.primary">
-                Transações Recentes
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Atualiza automaticamente a cada 5 segundos
-              </Typography>
-            </Box>
-            {isFetching && !loading && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'info.main' }}>
-                <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                <Typography variant="body2">Sincronizando...</Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
+        <div className="px-4 sm:px-6 py-3 border-b border-ferro-200 bg-creme-200 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="font-display font-semibold uppercase tracking-wide text-ferro-900">
+              Transações Recentes
+            </h3>
+            <p className="text-sm text-ferro-500">
+              Atualiza automaticamente a cada 5 segundos
+            </p>
+          </div>
+          {isFetching && !loading && (
+            <div className="flex items-center gap-2 text-anil-700 shrink-0">
+              <div className="w-4 h-4 border-2 border-anil-600 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm hidden sm:inline">Sincronizando...</span>
+            </div>
+          )}
+        </div>
 
         {/* Loading state */}
-        {isFetching && <LinearProgress color="success" />}
+        <div className="h-1 bg-creme-200 overflow-hidden">
+          {isFetching && <div className="h-full w-1/3 bg-latao-500 animate-pulse" />}
+        </div>
 
         {loading ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 10 }}>
-            <Box sx={{ textAlign: 'center' }}>
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
               <div className="relative mb-4 mx-auto" style={{ width: 64, height: 64 }}>
-                <div className="w-16 h-16 border-4 border-emerald-200 rounded-full" />
-                <div className="absolute inset-0 w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-16 h-16 border-4 border-ferro-200 rounded-full" />
+                <div className="absolute inset-0 w-16 h-16 border-4 border-ferro-700 border-t-transparent rounded-full animate-spin" />
               </div>
-              <Typography color="text.secondary">Carregando transações...</Typography>
-              <div className="flex gap-1 justify-center mt-2">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            </Box>
-          </Box>
+              <p className="text-ferro-500">Carregando transações...</p>
+            </div>
+          </div>
         ) : error ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 10 }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h2" sx={{ mb: 1 }}>⚠️</Typography>
-              <Typography color="error">{error}</Typography>
-            </Box>
-          </Box>
+          <div className="flex items-center justify-center py-16 px-4">
+            <div className="text-center">
+              <div className="text-5xl mb-2">⚠️</div>
+              <p className="text-vagao-600 break-words">{error}</p>
+            </div>
+          </div>
         ) : transactions.length === 0 ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 10 }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h2" sx={{ mb: 1 }}>📭</Typography>
-              <Typography color="text.secondary">Nenhuma transação encontrada</Typography>
-              <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
-                Aguardando atividade...
-              </Typography>
-            </Box>
-          </Box>
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="text-5xl mb-2">📭</div>
+              <p className="text-ferro-700">Nenhuma transação encontrada</p>
+              <p className="text-sm text-ferro-400 mt-1">Aguardando atividade...</p>
+            </div>
+          </div>
         ) : (
           <>
-            <TableContainer>
-              <Table size="small" stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Tempo</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Tipo</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Cartão</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Usuário</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Valor</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Descrição</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {visibleTransactions.map((t) => {
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] text-sm">
+                <thead>
+                  <tr className="bg-ferro-800 text-creme-200 font-display uppercase tracking-wider text-xs">
+                    <th className="px-3 py-2.5 text-left font-semibold">Tempo</th>
+                    <th className="px-3 py-2.5 text-left font-semibold">Tipo</th>
+                    <th className="px-3 py-2.5 text-left font-semibold">Cartão</th>
+                    <th className="px-3 py-2.5 text-left font-semibold">Usuário</th>
+                    <th className="px-3 py-2.5 text-right font-semibold">Valor</th>
+                    <th className="px-3 py-2.5 text-left font-semibold">Descrição</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ferro-200">
+                  {visibleTransactions.map((t, index) => {
                     const isNew = newTransactionIds.has(t.id)
                     const amount = parseFloat(t.amount)
                     const isCredit = t.type === 'credit'
 
                     return (
-                      <TableRow 
+                      <tr
                         key={t.id}
-                        hover
-                        sx={{
-                          bgcolor: isNew ? 'success.light' : 'inherit',
-                          transition: 'background-color 0.5s',
-                          '&:hover': {
-                            bgcolor: isNew ? 'success.light' : 'action.hover'
-                          }
-                        }}
+                        className={`transition-colors duration-500 hover:bg-creme-200 ${
+                          isNew ? 'bg-latao-100' : index % 2 === 0 ? 'bg-creme-50' : 'bg-creme-100'
+                        }`}
                       >
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
                             {isNew && (
                               <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-latao-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-latao-500" />
                               </span>
                             )}
-                            <Typography 
-                              variant="body2" 
-                              fontWeight={isNew ? 600 : 400}
-                              color={isNew ? 'success.dark' : 'text.primary'}
-                            >
+                            <span className={`font-ticket ${isNew ? 'font-bold text-latao-800' : 'text-ferro-700'}`}>
                               {timeAgo(t.created_at)}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            size="small"
-                            label={isCredit ? '↑ Crédito' : '↓ Débito'}
-                            color={isCredit ? 'success' : 'error'}
-                            variant="outlined"
-                            sx={{ fontWeight: 600, fontSize: '0.7rem' }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            size="small"
-                            label={`#${t.card_number || '---'}`}
-                            variant="filled"
-                            sx={{ 
-                              bgcolor: 'grey.100', 
-                              fontFamily: 'monospace',
-                              fontSize: '0.75rem'
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              maxWidth: 150, 
-                              overflow: 'hidden', 
-                              textOverflow: 'ellipsis', 
-                              whiteSpace: 'nowrap' 
-                            }}
-                            title={t.user_name || undefined}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-display uppercase tracking-wide whitespace-nowrap ${
+                              isCredit ? 'border-green-600 text-green-700' : 'border-vagao-500 text-vagao-600'
+                            }`}
                           >
-                            {t.user_name || <em style={{ color: '#9ca3af' }}>Sem nome</em>}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography 
-                            variant="body2" 
-                            fontWeight={700}
-                            color={isCredit ? 'success.main' : 'error.main'}
-                            sx={{ fontVariantNumeric: 'tabular-nums' }}
-                          >
+                            {isCredit ? '↑ Crédito' : '↓ Débito'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="inline-flex rounded-md bg-creme-200 border border-ferro-200 px-2 py-0.5 font-ticket text-xs text-ferro-800">
+                            #{t.card_number || '---'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-ferro-900">
+                          <div className="max-w-[150px] truncate" title={t.user_name || undefined}>
+                            {t.user_name || <em className="text-ferro-400">Sem nome</em>}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <span className={`font-bold tabular-nums whitespace-nowrap ${isCredit ? 'text-green-700' : 'text-vagao-600'}`}>
                             {isCredit ? '+' : ''}{formatCurrency(amount, !showValues)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography 
-                            variant="body2" 
-                            color="text.secondary"
-                            sx={{ 
-                              maxWidth: 200, 
-                              overflow: 'hidden', 
-                              textOverflow: 'ellipsis', 
-                              whiteSpace: 'nowrap' 
-                            }}
-                            title={t.description}
-                          >
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-ferro-500">
+                          <div className="max-w-[200px] truncate" title={t.description}>
                             {t.description}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
+                          </div>
+                        </td>
+                      </tr>
                     )
                   })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                </tbody>
+              </table>
+            </div>
 
             {/* Pagination */}
-            <TablePagination
-              component="div"
-              count={transactions.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[25, 50, 100]}
-              labelRowsPerPage="Por página:"
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-              sx={{
-                borderTop: 1,
-                borderColor: 'grey.200',
-                '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
-                  fontSize: '0.875rem'
-                }
-              }}
-            />
+            <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 px-4 py-2.5 border-t border-ferro-200 bg-creme-100 text-sm text-ferro-700">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">Por página:</span>
+                <select
+                  aria-label="Linhas por página"
+                  value={rowsPerPage}
+                  onChange={handleChangeRowsPerPage}
+                  className="!py-1 !px-2 !rounded-lg text-ferro-900"
+                >
+                  {[25, 50, 100].map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <span className="font-ticket">{fromTx}-{toTx} de {transactions.length}</span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  data-btn-type="pagination"
+                  onClick={() => handleChangePage(null, page - 1)}
+                  disabled={page <= 0}
+                  aria-label="Página anterior"
+                  className="!px-3 !py-1 rounded-lg disabled:opacity-40"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  data-btn-type="pagination"
+                  onClick={() => handleChangePage(null, page + 1)}
+                  disabled={page >= totalPagesTx - 1}
+                  aria-label="Próxima página"
+                  className="!px-3 !py-1 rounded-lg disabled:opacity-40"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
           </>
         )}
 
         {/* Footer com status */}
         {!loading && !error && transactions.length > 0 && (
-          <Box 
-            sx={{ 
-              px: 3, 
-              py: 1.5, 
-              bgcolor: 'grey.50', 
-              borderTop: 1, 
-              borderColor: 'grey.200',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <div className="px-4 sm:px-6 py-2.5 bg-creme-200 border-t border-ferro-200 flex items-center justify-between gap-3 text-sm text-ferro-500">
+            <div className="flex items-center gap-2">
               <Heartbeat isActive={true} />
-              <Typography variant="body2" color="text.secondary">Sistema ativo</Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              Total: {transactions.length} transações
-            </Typography>
-          </Box>
+              <span>Sistema ativo</span>
+            </div>
+            <span>Total: {transactions.length} transações</span>
+          </div>
         )}
-      </Paper>
+      </div>
       )}
     </div>
   )

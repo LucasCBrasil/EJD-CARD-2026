@@ -345,8 +345,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       { id: 'prod6', name: 'Batata Frita', price: 8.00, category: 'lanchonete', description: 'Porção média', active: true, createdAt: new Date().toISOString() },
 
       // Produtos Sapatinho
-      { id: 'prod7', name: 'Bilhete Mágico', price: 7.50, category: 'sapatinho', description: 'Mensagem especial encantada', active: true, createdAt: new Date().toISOString() },
-      { id: 'prod8', name: 'Docinho Encantado', price: 5.00, category: 'sapatinho', description: 'Delícia exclusiva do Sapatinho', active: true, createdAt: new Date().toISOString() }
+      { id: 'prod7', name: 'Bilhete de Viagem', price: 7.50, category: 'sapatinho', description: 'Mensagem especial para quem vai embarcar', active: true, createdAt: new Date().toISOString() },
+      { id: 'prod8', name: 'Docinho da Estação', price: 5.00, category: 'sapatinho', description: 'Delícia exclusiva do Sapatinho', active: true, createdAt: new Date().toISOString() }
     ]
     
     // Adicionar saldo inicial para alguns usuários

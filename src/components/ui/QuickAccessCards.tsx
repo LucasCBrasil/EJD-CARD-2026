@@ -32,8 +32,8 @@ const QuickAccessCards: React.FC = () => {
     title: '💳 Meu Cartão',
     description: 'Ver seu cartão e saldo',
     path: '/mycard',
-    color: 'from-purple-50 to-purple-100 border-purple-200',
-    buttonColor: 'bg-purple-500 hover:bg-purple-600'
+    color: 'bg-anil-700',
+    buttonColor: 'bg-anil-700 hover:bg-anil-800'
   })
 
   // Card: Comunicação (apenas admin e comunicacao)
@@ -42,8 +42,8 @@ const QuickAccessCards: React.FC = () => {
       title: '💳 Comunicação',
       description: 'Gerenciar cartões',
       path: '/cards',
-      color: 'from-emerald-50 to-emerald-100 border-emerald-200',
-      buttonColor: 'bg-emerald-500 hover:bg-emerald-600'
+      color: 'bg-ferro-800',
+      buttonColor: 'bg-ferro-800 hover:bg-ferro-700'
     })
   }
 
@@ -53,8 +53,8 @@ const QuickAccessCards: React.FC = () => {
       title: '🏪 Lojinha',
       description: 'Realizar vendas',
       path: '/lojinha',
-      color: 'from-green-50 to-green-100 border-green-200',
-      buttonColor: 'bg-green-500 hover:bg-green-600'
+      color: 'bg-vagao-600',
+      buttonColor: 'bg-vagao-600 hover:bg-vagao-700'
     })
   }
 
@@ -64,8 +64,8 @@ const QuickAccessCards: React.FC = () => {
       title: '🍔 Lanchonete',
       description: 'Realizar vendas',
       path: '/lanchonete',
-      color: 'from-orange-50 to-orange-100 border-orange-200',
-      buttonColor: 'bg-orange-500 hover:bg-orange-600'
+      color: 'bg-latao-500',
+      buttonColor: 'bg-latao-500 hover:bg-latao-600'
     })
   }
 
@@ -75,8 +75,8 @@ const QuickAccessCards: React.FC = () => {
       title: '📊 Histórico Lojinha',
       description: 'Ver histórico de vendas',
       path: '/historico/lojinha',
-      color: 'from-blue-50 to-blue-100 border-blue-200',
-      buttonColor: 'bg-blue-500 hover:bg-blue-600'
+      color: 'bg-vagao-500',
+      buttonColor: 'bg-vagao-500 hover:bg-vagao-600'
     })
   }
 
@@ -86,19 +86,19 @@ const QuickAccessCards: React.FC = () => {
       title: '📊 Histórico Lanchonete',
       description: 'Ver histórico de vendas',
       path: '/historico/lanchonete',
-      color: 'from-cyan-50 to-cyan-100 border-cyan-200',
-      buttonColor: 'bg-cyan-500 hover:bg-cyan-600'
+      color: 'bg-latao-600',
+      buttonColor: 'bg-latao-600 hover:bg-latao-700'
     })
   }
 
   // Card: Histórico Sapatinho (se tiver permissão)
   if (canViewSalesHistorySapatinho) {
     cards.push({
-      title: '📊 Histórico Sapatinho',
+      title: '💌 Histórico Sapatinho',
       description: 'Ver histórico de vendas',
       path: '/historico/sapatinho',
-      color: 'from-yellow-50 to-yellow-100 border-yellow-200',
-      buttonColor: 'bg-yellow-500 hover:bg-yellow-600'
+      color: 'bg-ferro-500',
+      buttonColor: 'bg-ferro-500 hover:bg-ferro-600'
     })
   }
 
@@ -108,8 +108,8 @@ const QuickAccessCards: React.FC = () => {
       title: '📦 Pedidos Lojinha',
       description: 'Ver pedidos abertos',
       path: '/pedidos-lojinha',
-      color: 'from-indigo-50 to-indigo-100 border-indigo-200',
-      buttonColor: 'bg-indigo-500 hover:bg-indigo-600'
+      color: 'bg-vagao-700',
+      buttonColor: 'bg-vagao-700 hover:bg-vagao-800'
     })
   }
 
@@ -119,8 +119,8 @@ const QuickAccessCards: React.FC = () => {
       title: '👥 Admin',
       description: 'Painel administrativo',
       path: '/admin',
-      color: 'from-yellow-50 to-yellow-100 border-yellow-200',
-      buttonColor: 'bg-yellow-500 hover:bg-yellow-600'
+      color: 'bg-fumaca-600',
+      buttonColor: 'bg-fumaca-600 hover:bg-fumaca-700'
     })
   }
 
@@ -130,23 +130,24 @@ const QuickAccessCards: React.FC = () => {
 
   return (
     <div className="mb-8">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {cards.map((card, index) => {
           const isActive = currentPath === card.path || currentPath.startsWith(card.path + '/')
           return (
             <Card
               key={index}
-              className={`bg-gradient-to-br ${card.color} hover:shadow-lg transition-all duration-300 cursor-pointer ${
-                isActive ? 'ring-2 ring-yellow-400 shadow-lg' : ''
+              className={`!p-0 overflow-hidden hover:-translate-y-0.5 hover:shadow-bilhete-hover transition-all duration-300 cursor-pointer ${
+                isActive ? 'ring-2 ring-latao-400 shadow-bilhete' : ''
               }`}
               onClick={() => navigate({ to: card.path as any })}
             >
-              <div className="text-center p-4">
+              <div className={`h-1.5 ${card.color}`} />
+              <div className="text-center p-3 sm:p-4">
                 <div className="text-3xl mb-2">{card.title.split(' ')[0]}</div>
-                <h3 className="text-sm font-semibold text-black mb-1 font-cardinal">
+                <h3 className="text-sm font-semibold text-ferro-900 uppercase tracking-wide mb-1 font-display">
                   {card.title.substring(card.title.indexOf(' ') + 1)}
                 </h3>
-                <p className="text-xs text-gray-600 font-farmhand">
+                <p className="text-xs text-ferro-600 font-body">
                   {card.description}
                 </p>
               </div>

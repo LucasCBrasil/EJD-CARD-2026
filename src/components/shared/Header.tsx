@@ -21,60 +21,38 @@ const Header: React.FC<HeaderProps> = ({
   className = ""
 }) => {
   return (
-    <header className={`text-center mb-8 ${className}`}>
-      {/* Botão de voltar */}
+    <header className={`text-center mb-6 ${className}`}>
       {showBackButton && onBack && (
         <div className="flex justify-start mb-6">
-          <Button
-            onClick={onBack}
-            variant="outline"
-            size="sm"
-            className="border-emerald-500 !text-black hover:bg-emerald-200 hover:!text-black font-semibold font-cardinal shadow-md"
-          >
+          <Button onClick={onBack} variant="outline" size="sm">
             {backButtonText}
           </Button>
         </div>
       )}
 
-      {/* Logo e Subtítulo */}
       {(showLogo || subtitle) && (
-        <div 
-          className="mx-auto max-w-md rounded-xl p-6"
-          style={{
-            background: '#ffffff',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          }}
-        >
-          {/* Logo */}
+        <div className="mx-auto max-w-md flex flex-col items-center">
           {showLogo && (
-            <div className="mb-4">
-              <img 
-                src="/logo-encontrão-2025.png" 
-                alt="Logo Encontrão 2025" 
-                className="max-w-[200px] sm:max-w-[240px] mx-auto h-auto"
-              />
-            </div>
+            <img 
+              src="/logos/web/trenzinho.webp" 
+              alt="Encontrão EJD 25 Anos - Trilhos e Destinos" 
+              className="w-[120px] sm:w-[140px] h-auto drop-shadow-[0_6px_10px_rgba(72,36,12,0.25)]"
+            />
           )}
 
-          {/* Subtítulo */}
           {subtitle && (
-            <p 
-              className="text-center header-subtitle"
-              style={{ 
-                fontWeight: '700',
-                fontSize: '16px',
-                letterSpacing: '0.5px',
-              }}
-            >
-              ✨ {subtitle} ✨
-            </p>
+            <div className="w-full mt-3">
+              <div className="trilho w-full" />
+              <p className="header-subtitle text-center text-sm sm:text-base mt-2">
+                {subtitle}
+              </p>
+            </div>
           )}
         </div>
       )}
 
-      {/* Título */}
       {title && (
-        <h1 className="text-4xl md:text-5xl font-bold text-emerald-600 mb-4 font-cardinal mt-6">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-semibold text-ferro-800 mb-4 font-display uppercase mt-6">
           {title}
         </h1>
       )}
