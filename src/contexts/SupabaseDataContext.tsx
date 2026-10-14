@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import type { UserAccount } from '../types'
 
 // Interfaces (mantendo compatibilidade com DataContext original)
 export interface Transaction {
@@ -38,14 +39,12 @@ export interface Sale {
   sellerId: string
   saleId?: string
   category: 'lojinha' | 'lanchonete' | 'sapatinho'
+  customerName?: string
+  customerEmail?: string
   items: SaleItem[]
   total: number
   status: 'completed' | 'delivered'
   createdAt: string
-  card?: {
-    cardNumber?: string
-    userName?: string
-  }
   seller?: {
     id: string
     name: string
@@ -69,17 +68,6 @@ export interface Order {
   deliveredAt?: string
 }
 
-export interface Card {
-  id: string
-  userId: string
-  userName: string
-  cardNumber: string
-  phoneNumber: string
-  balance: number
-  createdAt: string
-  updatedAt: string
-}
-
 export interface AppData {
   balances: Map<string, { balance: number; transactions: Transaction[] }>
   products: {
@@ -88,7 +76,6 @@ export interface AppData {
   }
   sales: Sale[]
   orders: Order[]
-  cards: Card[]
   coupons: string[]
 }
 
@@ -109,10 +96,9 @@ interface SupabaseDataContextType {
   getProducts: (category: 'lojinha' | 'lanchonete') => Product[]
   
   // Funções de vendas
-  // cardIdOrUserId: pode ser cardId (string UUID) ou userId (para buscar o cartão do usuário)
-  makeSale: (cardIdOrUserId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => Promise<string>
+  makeSale: (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => Promise<string>
   getSales: (category?: 'lojinha' | 'lanchonete' | 'sapatinho', limit?: number) => Promise<Sale[]>
-  getSalesByCardId: (cardId: string, limit?: number) => Promise<Sale[]>
+  getSalesByUserId: (userId: string, limit?: number) => Promise<Sale[]>
   
   // Funções de pedidos
   getOpenOrders: () => Promise<Order[]>
@@ -121,13 +107,10 @@ interface SupabaseDataContextType {
   // Funções de cupons
   getCoupons: (category?: 'lojinha' | 'lanchonete') => Promise<Array<{ name: string; discountAmount?: number }>>
   
-  // Funções de cartão
-  getCardByUserId: (userId: string) => Promise<Card | null>
-  createCard: (params: { name: string; cardNumber: string; cardCode: string; phoneNumber: string; initialBalance?: number }) => Promise<Card>
-  associateCard: (params: { cardNumber: string; cardCode: string }) => Promise<Card>
-  getCardByNumber: (cardNumber: string) => Promise<Card | null>
-  searchCardsByName: (userName: string) => Promise<Card[]>
-  updateCardBalance: (cardId: string, amount: number, type: 'credit' | 'debit', description?: string) => Promise<void>
+  // Funções de conta e saldo
+  getAccountByUserId: (userId: string) => Promise<UserAccount | null>
+  searchAccountsByName: (name: string) => Promise<UserAccount[]>
+  updateUserBalance: (userId: string, amount: number, type: 'credit' | 'debit', description?: string) => Promise<void>
   
   // Utilitários
   resetData: () => Promise<void>
@@ -148,13 +131,21 @@ interface SupabaseDataProviderProps {
   children: ReactNode
 }
 
+const mapUserAccount = (account: any): UserAccount => ({
+  id: account.user_id || account.id,
+  email: account.email || '',
+  name: account.name || account.user_name || '',
+  role: account.role || 'encontrista',
+  balance: Number(account.balance) || 0,
+  createdAt: account.created_at || account.createdAt || '',
+})
+
 export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ children }) => {
   const [data, setData] = useState<AppData>({
     balances: new Map(),
     products: { lojinha: [], lanchonete: [] },
     sales: [],
     orders: [],
-    cards: [],
     coupons: []
   })
   const [isLoading, setIsLoading] = useState(true)
@@ -178,14 +169,13 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
       setIsLoading(true)
       setError(null)
       
-      // Apenas inicializar estrutura vazia - dados serão carregados pelos hooks (useCards, useProducts, etc.)
+      // Apenas inicializar estrutura vazia - os dados são carregados sob demanda pelos hooks.
       // quando necessário, aproveitando o cache do React Query
       setData({
         balances: new Map(),
         products: { lojinha: [], lanchonete: [] },
         sales: [], // Será carregado sob demanda via getSales() (Edge Function)
         orders: [], // Será carregado sob demanda via getOpenOrders() (Edge Function)
-        cards: [],
         coupons: [] // Será carregado sob demanda via getCoupons()
       })
       
@@ -200,20 +190,10 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   // ✅ Agora usa Edge Function via api-client
   const addBalance = async (userId: string, amount: number, description: string, createdBy?: string) => {
     try {
-      // Buscar cartão do usuário primeiro
       const { api } = await import('../lib/api-client')
-      const cardResponse = await api.getCardByUserId(userId)
-      
-      if (!cardResponse.success || !cardResponse.data) {
-        throw new Error('Cartão não encontrado')
-      }
-
-      const card = cardResponse.data
-
-      // Usar Edge Function para atualizar saldo (seguro!)
       const response = await api.updateBalance({
-        action: amount > 0 ? 'credit' : 'debit',
-        cardId: card.id,
+        userId,
+        type: amount > 0 ? 'credit' : 'debit',
         amount: Math.abs(amount),
         description: description || (amount > 0 ? 'Crédito' : 'Débito'),
       })
@@ -234,7 +214,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   // Mantido apenas para compatibilidade com código legado
   const getBalance = (userId: string): number => {
     // data.cards não é mais populado no mount - use hooks ou API diretamente
-    console.warn('⚠️ SupabaseDataContext.getBalance() está DEPRECATED. Use useCardByUserId() hook para obter saldo')
+    console.warn('SupabaseDataContext.getBalance() está obsoleto; busque o saldo pelo endpoint da conta')
     return 0
   }
 
@@ -405,15 +385,11 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   }
 
   // ✅ Agora usa Edge Function via api-client
-  // cardIdOrUserId: pode ser cardId (string UUID) ou userId (para buscar o cartão do usuário)
-  const makeSale = async (cardIdOrUserId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
-    console.log('cardIdOrUserId:', cardIdOrUserId);
-    console.log('items:', items);
-    console.log('category:', category);
+  const makeSale = async (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
     
     // VALIDAÇÕES BÁSICAS
-    if (!cardIdOrUserId) {
-      throw new Error('Cartão não informado')
+    if (!userId) {
+      throw new Error('Usuário não informado')
     }
     
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -427,29 +403,8 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     try {
       const { api } = await import('../lib/api-client')
       
-      // Verificar se é um cardId (UUID) ou userId
-      // UUIDs têm formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 caracteres)
-      const isCardId = cardIdOrUserId && cardIdOrUserId.length === 36 && cardIdOrUserId.includes('-')
-      
-      let cardId: string
-      
-      if (isCardId) {
-        // É um cardId, usar diretamente
-        cardId = cardIdOrUserId
-      } else {
-        // É um userId, buscar o cartão do usuário
-        const cardResponse = await api.getCardByUserId(cardIdOrUserId)
-        
-        if (!cardResponse.success || !cardResponse.data) {
-          throw new Error('Cartão não encontrado')
-        }
-        
-        cardId = cardResponse.data.id
-      }
-
-      // Chamar Edge Function para fazer venda
       const response = await api.createSale({
-        cardId: cardId,
+        userId,
         items: items.map(item => ({
           productId: item.productId,
           productName: item.productName,
@@ -492,7 +447,9 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         // Mapear formato da Edge Function para formato esperado
         return {
           id: sale.id,
-          userId: sale.card_id,
+          userId: sale.user_id,
+          customerName: sale.user_name || sale.customer_name,
+          customerEmail: sale.user_email || sale.email,
           sellerId: sale.seller_id,
           saleId: sale.sale_number || sale.id,
           category: sale.category || category || 'lojinha',
@@ -506,7 +463,6 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
           total: parseFloat(sale.total) || 0,
           status: sale.status,
           createdAt: sale.created_at,
-          card: sale.cards || null,
         } as Sale
       })
       
@@ -518,14 +474,14 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     }
   }
 
-  // ⚠️ DEPRECATED: Use api.listSales(undefined, cardId) do api-client.ts em vez disso
+  // ⚠️ DEPRECATED: Use api.listSales(undefined, userId) do api-client.ts em vez disso
   // Mantido apenas para compatibilidade com código legado
-  const getSalesByCardId = async (cardId: string, limit: number = 50): Promise<Sale[]> => {
-    console.warn('⚠️ SupabaseDataContext.getSalesByCardId() está DEPRECATED. Use api.listSales(undefined, cardId) do api-client.ts')
+  const getSalesByUserId = async (userId: string, limit: number = 50): Promise<Sale[]> => {
+    console.warn('SupabaseDataContext.getSalesByUserId() está obsoleto. Use api.listSales(undefined, userId)')
     
     try {
       const { api } = await import('../lib/api-client')
-      const response = await api.listSales(undefined, cardId)
+      const response = await api.listSales(undefined, userId)
       
       if (!response.success) {
         throw new Error((response as any).error || 'Erro ao buscar vendas')
@@ -539,7 +495,9 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         )
         .map((sale: any) => ({
           id: sale.id,
-          userId: sale.card_id,
+          userId: sale.user_id,
+          customerName: sale.user_name || sale.customer_name,
+          customerEmail: sale.user_email || sale.email,
           sellerId: sale.seller_id,
           saleId: sale.sale_number || sale.id,
           category: sale.category || 'lojinha',
@@ -553,12 +511,11 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
           total: parseFloat(sale.total) || 0,
           status: sale.status,
           createdAt: sale.created_at,
-          card: sale.card || null,
         } as Sale))
       
       return sales
     } catch (error) {
-      console.error('Erro ao buscar vendas do cartão:', error)
+      console.error('Erro ao buscar vendas da conta:', error)
       return []
     }
   }
@@ -590,8 +547,8 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         saleId: order.sale_id || order.id,
         saleNumber: order.sale_number,
         orderCode: order.order_code || null,
-        userId: order.card_id,
-        customerName: order.cards.user_name || 'Cliente',
+        userId: order.user_id,
+        customerName: order.user_name || order.customer_name || 'Cliente',
         items: (order.sale_items || []).map((item: any) => ({
           productId: item.product_id,
           productName: item.product_name,
@@ -639,177 +596,20 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     }
   }
 
-  // Funções de cartão
-  // ⚠️ DEPRECATED: Use useCardByUserId() hook ou api.getCardByUserId() diretamente
-  // Mantido apenas para compatibilidade com código legado
-  const getCardByUserId = async (userId: string): Promise<Card | null> =>  {
-    try {
-      const { api } = await import('../lib/api-client')
-      const response = await api.getCardByUserId(userId)
-      
-      // Verifica se não tem dados ou se retornou array vazio
-      if (!response.success || !response.data || (Array.isArray(response.data) && response.data.length === 0)) {
-        return null
-      }
+  const getAccountByUserId = useCallback(async (userId: string): Promise<UserAccount | null> => {
+    const { api } = await import('../lib/api-client')
+    const response = await api.getAccountByUserId(userId)
+    if (!response.success) throw new Error((response as any).error || 'Erro ao buscar conta')
+    return response.data ? mapUserAccount(response.data) : null
+  }, [])
 
-      const cardData = response.data
-      console.log('card:', cardData);
-      return {
-        id: cardData.id,
-        userId: cardData.user_id || '',
-        userName: cardData.user_name || '',
-        cardNumber: cardData.card_number || '',
-        phoneNumber: cardData.phone_number || '',
-        balance: parseFloat(cardData.balance) || 0,
-        createdAt: cardData.created_at || '',
-        updatedAt: cardData.updated_at || ''
-      }
-    } catch (err) {
-      console.error('Erro ao buscar cartão:', err)
-      return null
-    }
-  }
-
-  // ✅ Agora usa Edge Function via api-client
-  const createCard = async (params: { name: string; cardNumber: string; cardCode: string; phoneNumber: string; initialBalance?: number }): Promise<Card> => {
-    try {
-      const { api } = await import('../lib/api-client')
-      const response = await api.updateBalance({
-        action: 'create',
-        name: params.name,
-        cardNumber: params.cardNumber,
-        cardCode: params.cardCode,
-        phoneNumber: params.phoneNumber,
-        initialBalance: params.initialBalance || 0,
-        description: params.initialBalance ? `Saldo inicial de R$ ${params.initialBalance.toFixed(2)}` : undefined
-      })
-
-      if (!response.success) {
-        throw new Error((response as any).error || 'Erro ao criar cartão')
-      }
-
-      await loadData()
-      const cardData = response.data.card || response.data
-      return {
-        id: cardData.id,
-        userId: cardData.user_id || '',
-        userName: cardData.user_name || '',
-        cardNumber: cardData.card_number || '',
-        phoneNumber: cardData.phone_number || '',
-        balance: parseFloat(cardData.balance) || 0,
-        createdAt: cardData.created_at || '',
-        updatedAt: cardData.updated_at || ''
-      } as Card
-    } catch (err: any) {
-      console.error('Erro ao criar cartão:', err)
-      
-      // Verificar se é erro de timeout
-      const isTimeout = err?.message?.includes('timeout') || 
-                       err?.message?.includes('aborted') || 
-                       err?.name === 'AbortError' ||
-                       err?.message?.includes('network') ||
-                       err?.message?.includes('fetch')
-      
-      if (isTimeout) {
-        throw new Error('Esta operação passou do limite de tempo para ser concluída. Por favor, tente novamente.')
-      }
-      
-      throw err
-    }
-  }
-
-  // Associação de cartão existente ao usuário atual
-  // ✅ Agora usa Edge Function via api-client
-  const associateCard = async (params: { cardNumber: string; cardCode: string }): Promise<Card> => {
-    try {
-      const { api } = await import('../lib/api-client')
-      const response = await api.associateCard(params)
-      
-      if (!response.success) {
-        throw new Error((response as any).error || 'Erro ao associar cartão')
-      }
-
-      // Transformar resposta para formato esperado
-      const cardData = response.data
-      const mappedCard: Card = {
-        id: cardData.id,
-        userId: cardData.user_id || '',
-        userName: cardData.user_name || '',
-        cardNumber: cardData.card_number || '',
-        phoneNumber: cardData.phone_number || '',
-        balance: parseFloat(cardData.balance) || 0,
-        createdAt: cardData.created_at || '',
-        updatedAt: cardData.updated_at || ''
-      }
-
-      // Não precisa chamar loadData() - a página MyCardPage usa getMyCardHistory()
-      return mappedCard
-    } catch (err: any) {
-      console.error('Erro ao associar cartão:', err)
-      throw err
-    }
-  }
-
-  // ✅ Agora usa Edge Function via api-client
-  const getCardByNumber = async (cardNumber: string): Promise<Card | null> => {
-    try {
-      const { api } = await import('../lib/api-client')
-      const response = await api.getCardByNumber(cardNumber)
-      
-      // Verifica se não tem dados ou se retornou array vazio
-      if (!response.success || !response.data || (Array.isArray(response.data) && response.data.length === 0)) {
-        return null
-      }
-
-      const cardData = response.data
-      console.log('card:', cardData);
-      return {
-        id: cardData.id,
-        userId: cardData.user_id || '',
-        userName: cardData.user_name || '',
-        cardNumber: cardData.card_number || '',
-        phoneNumber: cardData.phone_number || '',
-        balance: parseFloat(cardData.balance) || 0,
-        createdAt: cardData.created_at || '',
-        updatedAt: cardData.updated_at || ''
-      }
-    } catch (err) {
-      console.error('Erro ao buscar cartão:', err)
-      return null
-    }
-  }
-
-  // ✅ Buscar cartões por nome via Edge Function
-  const searchCardsByName = async (userName: string): Promise<Card[]> => {
-    try {
-      if (!userName || userName.trim().length < 2) {
-        return []
-      }
-
-      const { api } = await import('../lib/api-client')
-      const response = await api.searchCardsByName(userName.trim())
-      
-      if (!response.success || !response.data) {
-        return []
-      }
-
-      // Garantir que é um array
-      const cardsData = Array.isArray(response.data) ? response.data : [response.data]
-      
-      return cardsData.map((cardData: any) => ({
-        id: cardData.id,
-        userId: cardData.user_id || '',
-        userName: cardData.user_name || '',
-        cardNumber: cardData.card_number || '',
-        phoneNumber: cardData.phone_number || '',
-        balance: parseFloat(cardData.balance) || 0,
-        createdAt: cardData.created_at || '',
-        updatedAt: cardData.updated_at || ''
-      }))
-    } catch (err) {
-      console.error('Erro ao buscar cartões por nome:', err)
-      return []
-    }
+  const searchAccountsByName = async (name: string): Promise<UserAccount[]> => {
+    if (name.trim().length < 2) return []
+    const { api } = await import('../lib/api-client')
+    const response = await api.listAccounts(name.trim())
+    if (!response.success) throw new Error((response as any).error || 'Erro ao buscar contas')
+    if (!response.data) return []
+    return response.data.map(mapUserAccount)
   }
 
   // ✅ Buscar cupons via Edge Function
@@ -831,18 +631,13 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     }
   }
 
-  // ✅ Agora usa Edge Function via api-client
-  const updateCardBalance = async (cardId: string, amount: number, type: 'credit' | 'debit', description?: string): Promise<void> => {
+  const updateUserBalance = async (userId: string, amount: number, type: 'credit' | 'debit', description?: string): Promise<void> => {
     try {
-
-      console.log('cardId:', cardId)
-      console.log('amount:', amount)
-      console.log('type:', type)
       const { api } = await import('../lib/api-client')
       const response = await api.updateBalance({
-        cardId,
+        userId,
         amount,
-        type: type,
+        type,
         description: description || (type === 'credit' ? 'Crédito' : 'Débito'),
       })
 
@@ -877,13 +672,9 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   const loadSeedData = async () => {
     try {
-      // Verificar se já existem produtos
-      const { data: existingProducts } = await (supabase as any)
-        .from('products')
-        .select('id')
-        .limit(1)
-
-      if (existingProducts && existingProducts.length > 0) {
+      const { api } = await import('../lib/api-client')
+      const existingProducts = await api.listProducts()
+      if (existingProducts.success && existingProducts.data.length > 0) {
         return // Já tem dados
       }
 
@@ -900,11 +691,10 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         { name: 'Batata Frita', price: 8.00, category: 'lanchonete', description: 'Porção média', active: true }
       ]
 
-      const { error } = await (supabase as any)
-        .from('products')
-        .insert(seedProducts)
-
-      if (error) throw error
+      for (const product of seedProducts) {
+        const response = await api.manageProducts(product)
+        if (!response.success) throw new Error((response as any).error || 'Erro ao inserir produto')
+      }
       await loadData()
     } catch (err) {
       console.error('Erro ao carregar dados seed:', err)
@@ -926,15 +716,12 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
     makeSale,
     getCoupons,
     getSales,
-    getSalesByCardId,
+    getSalesByUserId,
     getOpenOrders,
     markAsDelivered,
-    getCardByUserId,
-    createCard,
-    associateCard,
-    getCardByNumber,
-    searchCardsByName,
-    updateCardBalance,
+    getAccountByUserId,
+    searchAccountsByName,
+    updateUserBalance,
     resetData,
     loadSeedData
   }

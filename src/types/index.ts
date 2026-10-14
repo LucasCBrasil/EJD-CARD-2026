@@ -47,10 +47,6 @@ export interface Sale {
   status: 'completed' | 'delivered'
   createdAt: string
   created_at?: string
-  card?: {
-    card_number?: string
-    user_name?: string
-  }
 }
 
 export interface Order {
@@ -65,15 +61,13 @@ export interface Order {
   deliveredAt?: string
 }
 
-export interface Card {
+export interface UserAccount {
   id: string
-  userId: string
-  userName: string
-  cardNumber: string
-  phoneNumber: string
+  email: string
+  name: string
+  role: string
   balance: number
   createdAt: string
-  updatedAt: string
 }
 
 export interface SapatinhoVelozOrderItem {

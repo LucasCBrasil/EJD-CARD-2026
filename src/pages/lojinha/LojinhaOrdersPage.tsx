@@ -148,7 +148,6 @@ const [isConfirming, setIsConfirming] = useState(false)
         title="Confirmar Entrega"
         variant="delivery-confirmation"
         message={selectedOrder ? `Deseja confirmar a entrega do pedido #${selectedOrder.saleNumber ? selectedOrder.saleNumber : selectedOrder.id} de ${selectedOrder.customerName}?` : ''}
-        card={null}
         amount={selectedOrder ? selectedOrder.total.toString() : '0'}
         formattedAmount={selectedOrder ? selectedOrder.total.toFixed(2).replace('.', ',') : '0,00'}
         description={selectedOrder ? `Pedido realizado por ${selectedOrder.customerName}` : ''}

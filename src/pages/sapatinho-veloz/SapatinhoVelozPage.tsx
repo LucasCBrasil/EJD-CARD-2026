@@ -25,7 +25,7 @@ const TEAMS = [
 
 const SapatinhoVelozPage: React.FC = () => {
   const { user } = useAuth()
-  const { getBalance, getCardByUserId } = useSupabaseData()
+  const { getAccountByUserId } = useSupabaseData()
   const { data: products = [], isLoading: isLoadingProducts, refetch: refetchProducts } = useProducts('sapatinho')
   const { showSuccess, showError } = useToastContext()
 
@@ -44,16 +44,22 @@ const SapatinhoVelozPage: React.FC = () => {
   }, [refetchProducts])
 
   useEffect(() => {
+    let active = true
     const fetchUserBalance = async () => {
       if (user?.id) {
-        const card = await getCardByUserId(user.id)
-        if (card) {
-          setUserBalance(card.balance)
+        try {
+          const account = await getAccountByUserId(user.id)
+          if (active) setUserBalance(account?.balance || 0)
+        } catch (error) {
+          if (active) {
+            showError('Erro ao carregar saldo', error instanceof Error ? error.message : 'Não foi possível carregar o saldo da conta.')
+          }
         }
       }
     }
-    fetchUserBalance()
-  }, [user?.id, getCardByUserId])
+    void fetchUserBalance()
+    return () => { active = false }
+  }, [user?.id, getAccountByUserId, showError])
 
   const handleProductToggle = (productId: string) => {
     setSelectedProducts(prev => {
@@ -214,8 +220,8 @@ const SapatinhoVelozPage: React.FC = () => {
       setSelectedProducts({})
 
       // Atualizar saldo e produtos
-      const newBalance = getBalance(user.id)
-      setUserBalance(newBalance)
+      const updatedAccount = await getAccountByUserId(user.id)
+      setUserBalance(updatedAccount?.balance || 0)
       
       // Recarregar produtos para atualizar estoque
       refetchProducts()
@@ -247,7 +253,7 @@ const SapatinhoVelozPage: React.FC = () => {
         </div>
         {userBalance > 0 && (
           <div className="bg-creme-200 border border-ferro-200 rounded-xl p-3 sm:p-4 mb-4 md:mb-5 flex items-center justify-between gap-3">
-            <span className="text-sm font-display uppercase tracking-wide text-ferro-700">💳 Saldo disponível</span>
+            <span className="text-sm font-display uppercase tracking-wide text-ferro-700">Saldo disponível</span>
             <span className="text-lg sm:text-xl font-slab text-ferro-900">R$ {userBalance.toFixed(2)}</span>
           </div>
         )}
@@ -471,4 +477,3 @@ const SapatinhoVelozPage: React.FC = () => {
 }
 
 export default SapatinhoVelozPage
-

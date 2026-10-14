@@ -8,11 +8,8 @@ export type UserRole =
   | 'encontrista'
 
 export interface RolePermissions {
-  // Cartões
-  canViewCards: boolean
-  canCreateCards: boolean
-  canEditCards: boolean
-  canDeleteCards: boolean
+  // Contas e saldos
+  canViewAccounts: boolean
   
   // Saldo
   canAddBalance: boolean
@@ -48,10 +45,7 @@ export interface RolePermissions {
 export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   // Admin - Acesso total
   admin: {
-    canViewCards: true,
-    canCreateCards: true,
-    canEditCards: true,
-    canDeleteCards: true,
+    canViewAccounts: true,
     canAddBalance: true,
     canViewOwnBalance: true,
     canViewAllBalances: true,
@@ -73,10 +67,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   
   // Lojinha - Acesso total à lojinha + sapatinho
   lojinha: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
+    canViewAccounts: true,
     canAddBalance: false,
     canViewOwnBalance: true,
     canViewAllBalances: false,
@@ -98,10 +89,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   
   // Lanchonete - Acesso total à lanchonete + pode vender sapatinho
   lanchonete: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
+    canViewAccounts: true,
     canAddBalance: false,
     canViewOwnBalance: true,
     canViewAllBalances: false,
@@ -121,12 +109,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewReports: false,
   },
   
-  // Comunicação - CRUD de cartões + saldo + pode vender sapatinho
+  // Comunicação - gestão de saldo + pode vender sapatinho
   comunicacao: {
-    canViewCards: true,
-    canCreateCards: true,
-    canEditCards: true,
-    canDeleteCards: false,
+    canViewAccounts: true,
     canAddBalance: true,
     canViewOwnBalance: true,
     canViewAllBalances: true,
@@ -146,12 +131,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewReports: false,
   },
   
-  // Serviço - Ver próprio cartão + pode fazer pedidos no Sapatinho
+  // Serviço - ver próprio saldo + pode fazer pedidos no Sapatinho
   servico: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
+    canViewAccounts: true,
     canAddBalance: false,
     canViewOwnBalance: true,
     canViewAllBalances: false,
@@ -171,12 +153,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewReports: false,
   },
   
-  // Encontrista - Ver próprio saldo e cartão (NÃO usa sapatinho)
+  // Encontrista - ver próprio saldo (NÃO usa sapatinho)
   encontrista: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
+    canViewAccounts: true,
     canAddBalance: false,
     canViewOwnBalance: true,
     canViewAllBalances: false,

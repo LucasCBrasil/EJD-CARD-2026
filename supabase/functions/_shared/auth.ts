@@ -55,7 +55,6 @@ export const getAuthUser = async (req: Request): Promise<AuthUser | null> => {
     return {
       id: user.id,
       email: user.email,
-      role: user.role
     }
   } catch (error) {
     console.error('Error validating auth:', error)
@@ -99,8 +98,8 @@ export const checkPermission = async (req: Request, permission: 'canAddBalance' 
 }
 
 /**
- * Verificar se pode adicionar saldo
- * Roles permitidos: admin, genios_card, comunicacao
+ * Verificar se pode adicionar saldo à conta
+ * Roles permitidos: admin, comunicacao
  */
 export const canAddBalance = async (req: Request): Promise<boolean> => {
   return await checkPermission(req, 'canAddBalance')
@@ -139,4 +138,3 @@ export const requireAuth = async (req: Request): Promise<AuthUser | Response> =>
 
   return user
 }
-

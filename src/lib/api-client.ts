@@ -156,53 +156,26 @@ export const api = {
       query: category ? { category } : undefined,
     }),
 
-  // Cards
-  listCards: () => 
-    request<{ success: boolean; data: any[] }>('list-cards', {
+  // User accounts and balances
+  listAccounts: (search?: string) =>
+    request<{ success: boolean; data: any[]; error?: string }>('list-accounts', {
       method: 'GET',
+      query: search ? { search } : undefined,
     }),
 
-  getCardByNumber: (cardNumber: string) =>
-    request<{ success: boolean; data: any }>('list-cards', {
-      method: 'GET',
-      query: { cardNumber },
-    }),
-
-  getCardByUserId: (userId: string) =>
-    request<{ success: boolean; data: any }>('list-cards', {
+  getAccountByUserId: (userId: string) =>
+    request<{ success: boolean; data: any; error?: string }>('list-accounts', {
       method: 'GET',
       query: { userId },
     }),
 
-  getCardById: (id: string) =>
-    request<{ success: boolean; data: any }>('list-cards', {
-      method: 'GET',
-      query: { id },
-    }),
-
-  searchCardsByName: (userName: string) =>
-    request<{ success: boolean; data: any[] }>('list-cards', {
-      method: 'GET',
-      query: { userName },
-    }),
-
-  associateCard: (params: { cardNumber: string; cardCode: string }) =>
-    request<{ success: boolean; data: any }>('update-balance', {
-      method: 'POST',
-      body: {
-        action: 'associate',
-        cardNumber: params.cardNumber,
-        cardCode: params.cardCode,
-      },
-    }),
-
   // Sales
-  listSales: (category?: string, cardId?: string, page?: number, limit?: number) =>
+  listSales: (category?: string, userId?: string, page?: number, limit?: number) =>
     request<{ success: boolean; data: any[]; total?: number }>('list-sales', {
       method: 'GET',
       query: {
         ...(category ? { category } : {}),
-        ...(cardId ? { cardId } : {}),
+        ...(userId ? { userId } : {}),
         ...(page ? { page: page.toString() } : {}),
         ...(limit ? { limit: limit.toString() } : {}),
       },
@@ -228,10 +201,10 @@ export const api = {
     }),
 
   // Transactions
-  listTransactions: (cardId?: string) =>
+  listTransactions: (userId?: string) =>
     request<{ success: boolean; data: any[]; error?: string }>('list-transactions', {
       method: 'GET',
-      query: cardId ? { cardId } : undefined,
+      query: userId ? { userId } : undefined,
     }),
 
   // Operações existentes via Edge Functions já criadas
@@ -242,7 +215,7 @@ export const api = {
     }),
 
   updateBalance: (data: any) =>
-    request<{ success: boolean; data: any }>('update-balance', {
+    request<{ success: boolean; data: any; error?: string }>('update-balance', {
       method: 'POST',
       body: data,
     }),
@@ -325,18 +298,18 @@ export const api = {
       body: { key, enabled },
     }),
 
-  // My Card History (para encontristas verem seu próprio histórico)
-  getMyCardHistory: () =>
+  // Own account history
+  getMyAccountHistory: () =>
     request<{ 
       success: boolean; 
+      error?: string;
       data: { 
-        card: any | null;
+        account: any | null;
         transactions: any[];
         sales: any[];
         sapatinhoSales: any[];
       } 
-    }>('my-card-history', {
+    }>('my-account-history', {
       method: 'GET',
     }),
 }
-

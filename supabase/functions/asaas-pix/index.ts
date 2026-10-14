@@ -1,11 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { roundMoney } from '../_shared/money.ts'
 
 // Edge Function: Asaas PIX Checkout
 // Cria cliente e pagamento PIX no Asaas e retorna copia-e-cola/QR
 // Variaveis de ambiente esperadas:
 // - ASAAS_API_KEY (obrigatoria)
 // - ASAAS_API_URL (opcional, default sandbox)
-// - SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY (opcional, para registrar em pix_payments)
+// - SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY (obrigatorias para vincular o pagamento à conta)
 
 const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY') || ''
 
@@ -47,9 +48,8 @@ interface InputPayload {
   cpfCnpj: string
   phone?: string
   amount: number // Valor total a ser cobrado no PIX (inclui taxa)
-  creditAmount?: number // Valor a ser creditado no cartão (sem taxa)
+  creditAmount?: number // Valor a ser creditado na conta (sem taxa)
   description?: string
-  cardId?: string
   userId?: string
 }
 
@@ -179,20 +179,62 @@ Deno.serve(async (req: Request): Promise<Response> => {
       name: body.name, 
       cpfCnpj: body.cpfCnpj?.substring(0, 3) + '***', 
       amount: body.amount,
-      cardId: body.cardId 
+      userId: body.userId
     })
 
     const name = (body.name || '').trim()
     const email = (body.email || '').trim().toLowerCase()
     const phone = (body.phone || '').trim()
     const amount = Number(body.amount || 0)
+    const userId = typeof body.userId === 'string' ? body.userId : ''
+    const amountToCredit = roundMoney(Number(body.creditAmount ?? amount))
     const cpfCnpj = String(body.cpfCnpj || '').replace(/\D/g, '')
 
     // Validações
-    if (!name || !cpfCnpj || !(cpfCnpj.length === 11 || cpfCnpj.length === 14) || amount <= 0) {
+    if (!name || !userId || !cpfCnpj || !(cpfCnpj.length === 11 || cpfCnpj.length === 14)
+      || !Number.isFinite(amount) || amount <= 0 || !Number.isFinite(amountToCredit)
+      || amountToCredit <= 0 || amountToCredit > amount) {
       console.error('[asaas-pix] Validação falhou:', { name: !!name, cpfCnpjLen: cpfCnpj.length, amount })
       return new Response(JSON.stringify({ error: 'Dados invalidos (nome, CPF/CNPJ e valor sao obrigatorios)' }), {
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ error: 'Supabase nao configurado para registrar o pagamento' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const authorization = req.headers.get('authorization')
+    if (authorization) {
+      const token = authorization.replace(/^Bearer\s+/i, '')
+      const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token)
+      if (authError || !authData.user) {
+        return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      if (authData.user.id !== userId) {
+        return new Response(JSON.stringify({ error: 'A conta informada não corresponde ao usuário autenticado' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
+
+    const { data: account, error: accountError } = await supabaseAdmin
+      .from('app_users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle()
+    if (accountError || !account) {
+      console.error('[asaas-pix] Account lookup failed:', accountError?.message || 'Account not found')
+      return new Response(JSON.stringify({ error: 'Conta não encontrada' }), {
+        status: accountError ? 500 : 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -246,39 +288,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
       hasQrCode: !!pixQrCodeImage 
     })
 
-    // 5. Salvar no banco (se configurado)
-    // IMPORTANTE: Salvamos o creditAmount (valor sem taxa) que será creditado no cartão
+    // 5. Salvar no banco
+    // IMPORTANTE: Salvamos o creditAmount (valor sem taxa) que será creditado na conta
     // O amount é o valor total cobrado no PIX (com taxa)
-    const amountToCredit = body.creditAmount || amount // Fallback para amount se creditAmount não vier
-    
-    if (supabaseAdmin && body.cardId) {
-      try {
-        console.log('[asaas-pix] Salvando no banco:', { 
-          card_id: body.cardId, 
-          external_id: payment.id,
-          amount_charged: amount,
-          amount_to_credit: amountToCredit 
-        })
-        const { error } = await supabaseAdmin.from('pix_payments').insert({
-          card_id: body.cardId,
-          amount: amountToCredit, // Valor que será creditado (sem taxa)
-          pix_code: pixCopyPasteKey || 'N/A',
-          qr_code_url: pixQrCodeImage || null,
-          status: (payment.status || 'pending').toLowerCase(),
-          payment_method: 'asaas',
-          external_id: payment.id,
-          webhook_data: { ...payment, amount_charged: amount, amount_to_credit: amountToCredit },
-        })
-        if (error) {
-          console.error('[asaas-pix] Erro ao salvar pix_payments:', error.message, error.details, error.hint)
-        } else {
-          console.log('[asaas-pix] Salvo em pix_payments com sucesso!')
-        }
-      } catch (e) {
-        console.error('[asaas-pix] Exception ao salvar:', (e as Error)?.message)
-      }
-    } else {
-      console.log('[asaas-pix] Não salvando no banco:', { hasSupabase: !!supabaseAdmin, cardId: body.cardId })
+    const { error: saveError } = await supabaseAdmin.from('pix_payments').insert({
+      user_id: userId,
+      amount: amountToCredit,
+      pix_code: pixCopyPasteKey || 'N/A',
+      qr_code_url: pixQrCodeImage || null,
+      status: 'pending',
+      payment_method: 'api',
+      external_id: payment.id,
+      webhook_data: { ...payment, amount_charged: amount, amount_to_credit: amountToCredit },
+    })
+    if (saveError) {
+      console.error('[asaas-pix] Erro ao salvar pix_payments:', saveError.message)
+      return new Response(JSON.stringify({ error: 'Erro ao registrar o pagamento PIX' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // 6. Retornar resposta

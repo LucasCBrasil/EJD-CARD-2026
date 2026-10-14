@@ -10,12 +10,13 @@
  */
 
 import { z } from 'zod'
-import { router, createProtectedProcedure } from '../trpc'
+import { router, protectedProcedure } from '../trpc'
 import { TRPCError } from '@trpc/server'
+import { hasPermission } from '../permissions'
 
 // Schema de validação para criar venda
 const createSaleSchema = z.object({
-  cardNumber: z.string().min(1, 'Número do cartão é obrigatório'),
+  userId: z.string().uuid('ID da conta inválido'),
   category: z.enum(['lojinha', 'lanchonete', 'sapatinho']),
   items: z.array(
     z.object({
@@ -37,16 +38,16 @@ export const salesRouter = router({
    * 5. Verificação de saldo
    * 6. Transação SQL atômica
    */
-  create: createProtectedProcedure(['sales:create_lojinha']) // Será verificado dinamicamente
+  create: protectedProcedure
     .input(createSaleSchema)
     .mutation(async ({ input, ctx }) => {
-      const { cardNumber, category, items } = input
+      const { userId, category, items } = input
       const { user, supabase } = ctx
 
       // 1. Verificar permissão específica para a categoria
-      const hasPermissionForCategory = ctx.user.role === 'admin' || 
-        (category === 'lojinha' && ['lojinha', 'servico'].includes(ctx.user.role)) ||
-        (category === 'lanchonete' && ['lanchonete', 'servico'].includes(ctx.user.role)) ||
+      const hasPermissionForCategory = ctx.user.role === 'admin' ||
+        (category === 'lojinha' && ctx.user.role === 'lojinha') ||
+        (category === 'lanchonete' && ctx.user.role === 'lanchonete') ||
         (category === 'sapatinho' && ['admin', 'lojinha', 'lanchonete', 'comunicacao'].includes(ctx.user.role))
 
       if (!hasPermissionForCategory) {
@@ -60,22 +61,22 @@ export const salesRouter = router({
         userId: user.id,
         role: user.role,
         category,
-        cardNumber,
+        accountId: userId,
         itemCount: items.length,
         timestamp: new Date().toISOString(),
       })
 
-      // 2. Buscar cartão
-      const { data: card, error: cardError } = await (supabase as any)
-        .from('cards')
-        .select('id, balance, user_name')
-        .eq('card_number', cardNumber)
+      // 2. Buscar conta
+      const { data: account, error: accountError } = await (supabase as any)
+        .from('app_users')
+        .select('id, balance, name')
+        .eq('id', userId)
         .single()
 
-      if (cardError || !card) {
+      if (accountError || !account) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'Cartão não encontrado',
+          message: 'Conta não encontrada',
         })
       }
 
@@ -145,10 +146,10 @@ export const salesRouter = router({
       })
 
       // 5. Verificar saldo
-      if (card.balance < total) {
+      if (Number(account.balance) < total) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Saldo insuficiente. Necessário: R$ ${total.toFixed(2)}, Disponível: R$ ${card.balance.toFixed(2)}`,
+          message: `Saldo insuficiente. Necessário: R$ ${total.toFixed(2)}, Disponível: R$ ${Number(account.balance).toFixed(2)}`,
         })
       }
 
@@ -158,19 +159,18 @@ export const salesRouter = router({
         const salesTable = category === 'sapatinho' ? 'sapatinho_sales' : 'sales'
         const saleData = category === 'sapatinho'
           ? {
-              seller_id: user.id,
-              card_id: card.id,
-              total,
-              status: 'completed',
-            }
+            user_id: userId,
+            seller_id: user.id,
+            total,
+            status: 'completed',
+          }
           : {
-              seller_id: user.id,
-              card_id: card.id,
-              category,
-              total,
-              status: 'completed',
-              sale_id: crypto.randomUUID(),
-            }
+            user_id: userId,
+            seller_id: user.id,
+            category,
+            total,
+            status: 'completed',
+          }
 
         const { data: sale, error: saleError } = await (supabase as any)
           .from(salesTable)
@@ -215,31 +215,19 @@ export const salesRouter = router({
           }
         }
 
-        // 6.4 Debitar saldo
+        // 6.4 Debitar conta e registrar transação atomicamente
         const { error: balanceError } = await (supabase as any)
-          .from('cards')
-          .update({
-            balance: card.balance - total,
-            updated_at: new Date().toISOString(),
+          .rpc('adjust_account_balance', {
+            p_user_id: userId,
+            p_amount: total,
+            p_type: 'debit',
+            p_description: `Compra na ${category}`,
+            p_created_by: user.id,
           })
-          .eq('id', card.id)
 
         if (balanceError) throw balanceError
 
-        // 6.5 Criar transação
-        const { error: transactionError } = await (supabase as any)
-          .from('transactions')
-          .insert({
-            card_id: card.id,
-            amount: -total,
-            type: 'debit',
-            description: `Compra na ${category}`,
-            created_by: user.id,
-          })
-
-        if (transactionError) throw transactionError
-
-        // 6.6 Se lojinha, criar pedido
+        // 6.5 Se lojinha, criar pedido
         if (category === 'lojinha') {
           // Gerar código sequencial de 5 dígitos
           const { data: lastOrder } = await (supabase as any)
@@ -263,8 +251,8 @@ export const salesRouter = router({
             .from('orders')
             .insert({
               sale_id: sale.id,
-              card_id: card.id,
-              customer_name: card.user_name,
+              user_id: userId,
+              customer_name: account.name,
               total,
               status: 'completed',
               order_code: orderCode
@@ -278,7 +266,7 @@ export const salesRouter = router({
           saleId: sale.id,
           total,
           userId: user.id,
-          cardNumber,
+          accountId: userId,
           category,
         })
 
@@ -286,7 +274,7 @@ export const salesRouter = router({
           success: true,
           saleId: sale.id,
           total,
-          newBalance: card.balance - total,
+          newBalance: Number(account.balance) - total,
           message: `Venda realizada com sucesso! Total: R$ ${total.toFixed(2)}`,
         }
 
@@ -302,38 +290,35 @@ export const salesRouter = router({
   /**
    * Listar histórico de vendas
    * ⚠️ IMPORTANTE: Apenas admin, lojinha e lanchonete podem ver histórico geral
-   * Usuários normais devem usar a Edge Function list-sales com cardId
+   * Usuários normais devem consultar apenas vendas vinculadas à própria conta.
    */
-  list: createProtectedProcedure(['sales:view_history_lojinha'])
+  list: protectedProcedure
     .input(
       z.object({
         category: z.enum(['lojinha', 'lanchonete', 'sapatinho']).optional(),
-        cardId: z.string().uuid().optional(), // Permite filtrar por cartão específico
+        userId: z.string().uuid().optional(),
       })
     )
     .query(async ({ input, ctx }) => {
-      const { category, cardId } = input
+      const { category, userId } = input
       const { supabase, user } = ctx
 
-      // REGRA: Se cardId foi passado, verificar se usuário pode ver esse cartão
-      if (cardId) {
-        // Verificar se o cartão pertence ao usuário (exceto se for admin/lojinha/lanchonete)
-        if (!['admin', 'lojinha', 'lanchonete'].includes(user.role)) {
-          const { data: card } = await (supabase as any)
-            .from('cards')
-            .select('user_id')
-            .eq('id', cardId)
-            .single()
-          
-          if (!card || card.user_id !== user.id) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: 'Você só pode ver vendas do seu próprio cartão',
-            })
-          }
+      const canViewAllSales = ['admin', 'lojinha', 'lanchonete'].includes(user.role)
+      if (userId) {
+        if (userId !== user.id && !canViewAllSales) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Você só pode consultar vendas da sua própria conta',
+          })
+        }
+        if (userId === user.id && !canViewAllSales && !hasPermission(user.role, 'sales:view_own')) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Você não tem permissão para consultar seu histórico de vendas',
+          })
         }
       } else {
-        // Sem cardId - está pedindo histórico geral
+        // Sem userId - está pedindo histórico geral
         // Apenas admin, lojinha ou lanchonete podem ver histórico geral
         if (!['admin', 'lojinha', 'lanchonete'].includes(user.role)) {
           throw new TRPCError({
@@ -376,8 +361,8 @@ export const salesRouter = router({
         `)
         .order('created_at', { ascending: false })
 
-      if (cardId) {
-        query = query.eq('card_id', cardId)
+      if (userId) {
+        query = query.eq('user_id', userId)
       }
 
       if (category && category !== 'sapatinho') {
@@ -396,4 +381,3 @@ export const salesRouter = router({
       return data || []
     }),
 })
-

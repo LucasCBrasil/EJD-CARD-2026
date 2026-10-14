@@ -15,7 +15,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredPermission,
   requiredRole,
-  fallbackPath = '/cards',
+  fallbackPath = '/accounts',
   showAccessDenied = false
 }) => {
   const navigate = useNavigate()
@@ -109,4 +109,3 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   return <>{children}</>
 }
-

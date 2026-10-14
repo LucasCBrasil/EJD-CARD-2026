@@ -4,14 +4,25 @@ import { api } from '../../lib/api-client'
 
 interface Transaction {
   id: string
-  card_id: string
+  user_id: string
   amount: string
   type: 'credit' | 'debit'
   description: string
   created_by: string | null
   created_at: string
   user_name: string | null
-  card_number: string | null
+  email?: string | null
+}
+
+interface AccountData {
+  id: string
+  user_id?: string
+  name?: string | null
+  user_name?: string | null
+  email: string
+  balance: string | number
+  created_at?: string
+  createdAt?: string
 }
 
 // Formatar tempo relativo
@@ -38,7 +49,7 @@ function formatCurrency(value: string | number, hidden: boolean = false): string
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-type TabType = 'transactions' | 'cards'
+type TabType = 'transactions' | 'accounts'
 
 // Componente de Heartbeat animado
 const Heartbeat: React.FC<{ isActive: boolean }> = ({ isActive }) => (
@@ -82,18 +93,10 @@ const BoardStat: React.FC<{ label: React.ReactNode; value: React.ReactNode; tone
   </div>
 )
 
-interface CardData {
-  id: string
-  user_name: string | null
-  card_number: string
-  balance: string
-  created_at: string
-}
-
 const MonitoringPage: React.FC = () => {
   const { canManageUsers } = usePermissions()
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [todayCards, setTodayCards] = useState<CardData[]>([])
+  const [todayAccounts, setTodayAccounts] = useState<AccountData[]>([])
   const [loading, setLoading] = useState(true)
   const [isFetching, setIsFetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -144,9 +147,9 @@ const MonitoringPage: React.FC = () => {
     }
   }, [transactions])
 
-  // Estatísticas dos cartões cadastrados hoje
-  const cardStats = useMemo(() => {
-    if (todayCards.length === 0) {
+  // Estatísticas das contas cadastradas hoje.
+  const accountStats = useMemo(() => {
+    if (todayAccounts.length === 0) {
       return { 
         count: 0, 
         totalBalance: 0, 
@@ -164,8 +167,8 @@ const MonitoringPage: React.FC = () => {
     let maxBalance = 0
     let minBalance = Infinity
 
-    todayCards.forEach(card => {
-      const balance = parseFloat(card.balance) || 0
+    todayAccounts.forEach(account => {
+      const balance = Number(account.balance) || 0
       totalBalance += balance
       if (balance > 0) {
         withBalance++
@@ -177,23 +180,23 @@ const MonitoringPage: React.FC = () => {
     })
 
     return {
-      count: todayCards.length,
+      count: todayAccounts.length,
       totalBalance,
-      avgBalance: todayCards.length > 0 ? totalBalance / todayCards.length : 0,
+      avgBalance: todayAccounts.length > 0 ? totalBalance / todayAccounts.length : 0,
       withBalance,
       withoutBalance,
       maxBalance,
       minBalance: minBalance === Infinity ? 0 : minBalance
     }
-  }, [todayCards])
+  }, [todayAccounts])
 
   const fetchTransactions = async () => {
     setIsFetching(true)
     try {
-      // Buscar transações e cartões em paralelo
-      const [transactionsResponse, cardsResponse] = await Promise.all([
+      // Buscar transações e contas em paralelo.
+      const [transactionsResponse, accountsResponse] = await Promise.all([
         api.listTransactions(),
-        api.listCards()
+        api.listAccounts()
       ])
 
       // Processar transações
@@ -219,19 +222,21 @@ const MonitoringPage: React.FC = () => {
         setTransactions(newData)
       }
 
-      // Processar cartões - filtrar apenas os cadastrados hoje
-      if (cardsResponse.success && cardsResponse.data) {
-        const allCards = cardsResponse.data as CardData[]
+      // Processar contas - filtrar apenas as cadastradas hoje.
+      if (accountsResponse.success && accountsResponse.data) {
+        const allAccounts = accountsResponse.data as AccountData[]
         const today = new Date()
         today.setHours(0, 0, 0, 0)
         
-        const cardsToday = allCards.filter(card => {
-          const cardDate = new Date(card.created_at)
-          cardDate.setHours(0, 0, 0, 0)
-          return cardDate.getTime() === today.getTime()
+        const accountsToday = allAccounts.filter(account => {
+          const createdAt = account.created_at || account.createdAt
+          if (!createdAt) return false
+          const createdDate = new Date(createdAt)
+          createdDate.setHours(0, 0, 0, 0)
+          return createdDate.getTime() === today.getTime()
         })
         
-        setTodayCards(cardsToday)
+        setTodayAccounts(accountsToday)
       }
 
       setLastUpdate(new Date())
@@ -364,18 +369,18 @@ const MonitoringPage: React.FC = () => {
             </span>
           </button>
           <button
-            onClick={() => setActiveTab('cards')}
+            onClick={() => setActiveTab('accounts')}
             className={`!px-4 !py-2 shrink-0 flex items-center gap-2 rounded-lg font-display uppercase tracking-wide text-sm transition-all ${
-              activeTab === 'cards'
+              activeTab === 'accounts'
                 ? 'bg-latao-400 text-ferro-900 shadow-md'
                 : 'bg-creme-200/10 text-creme-200 hover:bg-creme-200/20'
             }`}
           >
-            <span>Cartões Hoje</span>
+            <span>Contas Hoje</span>
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-ticket ${
-              activeTab === 'cards' ? 'bg-ferro-900 text-latao-300' : 'bg-creme-200/15'
+              activeTab === 'accounts' ? 'bg-ferro-900 text-latao-300' : 'bg-creme-200/15'
             }`}>
-              {cardStats.count}
+              {accountStats.count}
             </span>
           </button>
         </div>
@@ -401,38 +406,38 @@ const MonitoringPage: React.FC = () => {
           </div>
         )}
 
-        {/* Stats - Cartões Hoje */}
-        {activeTab === 'cards' && (
+        {/* Stats - Contas Hoje */}
+        {activeTab === 'accounts' && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-            <BoardStat label="Total" value={cardStats.count} />
-            <BoardStat label="Com Saldo" value={cardStats.withBalance} tone="text-green-400" />
-            <BoardStat label="Sem Saldo" value={cardStats.withoutBalance} tone="text-fumaca-200" />
-            <BoardStat label="Soma Saldos" value={formatCurrency(cardStats.totalBalance, !showValues)} small />
-            <BoardStat label="Média" value={formatCurrency(cardStats.avgBalance, !showValues)} small />
-            <BoardStat label="Maior Saldo" value={formatCurrency(cardStats.maxBalance, !showValues)} small />
+            <BoardStat label="Total" value={accountStats.count} />
+            <BoardStat label="Com Saldo" value={accountStats.withBalance} tone="text-green-400" />
+            <BoardStat label="Sem Saldo" value={accountStats.withoutBalance} tone="text-fumaca-200" />
+            <BoardStat label="Soma Saldos" value={formatCurrency(accountStats.totalBalance, !showValues)} small />
+            <BoardStat label="Média" value={formatCurrency(accountStats.avgBalance, !showValues)} small />
+            <BoardStat label="Maior Saldo" value={formatCurrency(accountStats.maxBalance, !showValues)} small />
           </div>
         )}
       </div>
 
-      {/* Lista de Cartões Hoje */}
-      {activeTab === 'cards' && cardStats.count > 0 && (
+      {/* Lista de contas criadas hoje */}
+      {activeTab === 'accounts' && accountStats.count > 0 && (
         <div className="painel p-4 sm:p-6">
           <div className="flex items-center justify-between gap-2 mb-4">
-            <h3 className="font-display font-semibold uppercase tracking-wide text-ferro-800">Cartões Cadastrados Hoje</h3>
-            <span className="text-sm text-ferro-500 shrink-0">{cardStats.count} cartões</span>
+            <h3 className="font-display font-semibold uppercase tracking-wide text-ferro-800">Contas Criadas Hoje</h3>
+            <span className="text-sm text-ferro-500 shrink-0">{accountStats.count} contas</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-96 overflow-y-auto">
-            {todayCards.map(card => (
+            {todayAccounts.map(account => (
               <div 
-                key={card.id} 
+                key={account.id}
                 className="flex items-center justify-between gap-2 bg-creme-100 rounded-lg px-3 py-2 text-sm border border-ferro-200"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-ticket font-bold text-ferro-500">#{card.card_number}</span>
-                  <span className="text-ferro-900 truncate">{card.user_name || 'Sem nome'}</span>
+                  <span className="text-ferro-900 truncate">{account.name || account.user_name || 'Sem nome'}</span>
+                  <span className="text-xs text-ferro-500 truncate">{account.email}</span>
                 </div>
-                <span className={`font-semibold tabular-nums shrink-0 ${parseFloat(card.balance) > 0 ? 'text-green-700' : 'text-fumaca-500'}`}>
-                  {formatCurrency(card.balance, !showValues)}
+                <span className={`font-semibold tabular-nums shrink-0 ${Number(account.balance) > 0 ? 'text-green-700' : 'text-fumaca-500'}`}>
+                  {formatCurrency(Number(account.balance), !showValues)}
                 </span>
               </div>
             ))}
@@ -499,7 +504,6 @@ const MonitoringPage: React.FC = () => {
                   <tr className="bg-ferro-800 text-creme-200 font-display uppercase tracking-wider text-xs">
                     <th className="px-3 py-2.5 text-left font-semibold">Tempo</th>
                     <th className="px-3 py-2.5 text-left font-semibold">Tipo</th>
-                    <th className="px-3 py-2.5 text-left font-semibold">Cartão</th>
                     <th className="px-3 py-2.5 text-left font-semibold">Usuário</th>
                     <th className="px-3 py-2.5 text-right font-semibold">Valor</th>
                     <th className="px-3 py-2.5 text-left font-semibold">Descrição</th>
@@ -538,11 +542,6 @@ const MonitoringPage: React.FC = () => {
                             }`}
                           >
                             {isCredit ? '↑ Crédito' : '↓ Débito'}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className="inline-flex rounded-md bg-creme-200 border border-ferro-200 px-2 py-0.5 font-ticket text-xs text-ferro-800">
-                            #{t.card_number || '---'}
                           </span>
                         </td>
                         <td className="px-3 py-2 text-ferro-900">

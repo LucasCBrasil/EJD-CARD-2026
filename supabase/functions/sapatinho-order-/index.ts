@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { roundMoney, safeSubtractMoney, hasSufficientBalance } from '../_shared/money.ts';
+import { roundMoney, hasSufficientBalance } from '../_shared/money.ts';
 
 // ==================== SUPABASE CLIENT ====================
 
@@ -128,17 +128,17 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createSupabaseClient();
 
-    // 5. BUSCAR CARTÃO DO USUÁRIO
-    const { data: card, error: cardError } = await supabase
-      .from('cards')
-      .select('id, balance, user_name')
-      .eq('user_id', user.id)
+    // 5. BUSCAR CONTA DO USUÁRIO
+    const { data: account, error: accountError } = await supabase
+      .from('app_users')
+      .select('id, balance, name')
+      .eq('id', user.id)
       .single();
 
-    if (cardError || !card) {
+    if (accountError || !account) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Cartão não encontrado'
+        error: 'Conta não encontrada'
       }), {
         status: 404,
         headers: {
@@ -252,10 +252,23 @@ Deno.serve(async (req: Request) => {
     }
 
     // ⚠️ Operações monetárias seguras
-    const safeBalance = roundMoney(card.balance)
+    const safeBalance = roundMoney(account.balance)
     const safeTotal = roundMoney(calculatedTotal)
     
     console.log(`Validação OK. Total calculado: R$ ${safeTotal.toFixed(2)}`);
+
+    if (safeTotal <= 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'O total do pedido deve ser maior que zero'
+      }), {
+        status: 400,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    }
 
     // 6. VALIDAR SALDO (usando operações monetárias seguras)
     if (!hasSufficientBalance(safeBalance, safeTotal)) {
@@ -275,7 +288,7 @@ Deno.serve(async (req: Request) => {
     const { data: saleData, error: saleError } = await supabase
       .from('sapatinho_sales')
       .insert({
-        card_id: card.id,
+        user_id: user.id,
         seller_id: user.id,
         total: roundMoney(safeTotal),
         status: 'completed'
@@ -335,14 +348,14 @@ Deno.serve(async (req: Request) => {
           ? { product, item } 
           : null;
       })
-      .filter((p): p is { product: any; item: any } => p !== null);
+      .filter((p: { product: any; item: any } | null): p is { product: any; item: any } => p !== null);
 
     // Variável para armazenar os updates de estoque (para possível reversão)
     let stockUpdates: Array<{ id: string; newStock: number; oldStock: number; name: string }> = [];
 
     if (productsWithStock.length > 0) {
       // Buscar estoques atuais de todos os produtos de uma vez (para evitar race conditions)
-      const productIdsToUpdate = productsWithStock.map(p => p.product.id);
+      const productIdsToUpdate = productsWithStock.map((p: { product: any; item: any }) => p.product.id);
       const { data: currentProducts, error: fetchError } = await supabase
         .from('sapatinho_products')
         .select('id, stock, name')
@@ -443,7 +456,7 @@ Deno.serve(async (req: Request) => {
       .insert({
         sale_id: saleId,
         sender_user_id: user.id,
-        sender_name: isAnonymous ? null : card.user_name,
+        sender_name: isAnonymous ? null : account.name,
         sender_team: senderTeam,
         recipient_name: recipientName,
         recipient_address: recipientAddress,
@@ -540,57 +553,7 @@ Deno.serve(async (req: Request) => {
       console.log('✅ Itens criados:', JSON.stringify(insertedOrderItems, null, 2));
     }
 
-    // 12. ATUALIZAR SALDO DO CARTÃO (usando operações monetárias seguras)
-    const newBalance = safeSubtractMoney(safeBalance, safeTotal)
-    const { error: balanceError } = await supabase
-      .from('cards')
-      .update({
-        balance: roundMoney(newBalance)
-      })
-      .eq('id', card.id);
-
-    if (balanceError) {
-      console.error('Balance update error:', balanceError);
-      // Tentar deletar tudo e reverter estoque
-      if (productsWithStock.length > 0 && stockUpdates.length > 0) {
-        for (const stockUpdate of stockUpdates) {
-          await supabase
-            .from('sapatinho_products')
-            .update({ stock: stockUpdate.oldStock })
-            .eq('id', stockUpdate.id);
-        }
-      }
-      await supabase.from('sapatinho_veloz_order_items').delete().eq('order_id', orderId);
-      await supabase.from('sapatinho_veloz_orders').delete().eq('id', orderId);
-      await supabase.from('sapatinho_sale_items').delete().eq('sale_id', saleId);
-      await supabase.from('sapatinho_sales').delete().eq('id', saleId);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Erro ao atualizar saldo'
-      }), {
-        status: 500,
-        headers: {
-          ...getCorsHeaders(origin),
-          'Content-Type': 'application/json'
-        }
-      });
-    }
-
-    // 13. CRIAR TRANSAÇÃO (valor arredondado)
-    const { error: transactionError } = await supabase.from('transactions').insert({
-      card_id: card.id,
-      amount: roundMoney(-safeTotal),
-      type: 'debit',
-      description: `Pedido Sapatinho Veloz - ${items.length} itens`
-    });
-
-    if (transactionError) {
-      console.error('Transaction creation error:', transactionError);
-      // Não falhar o pedido por causa da transação, mas logar o erro
-      // O saldo já foi atualizado, então o pedido está válido
-    }
-
-    // 14. VERIFICAR SE TUDO FOI CRIADO CORRETAMENTE
+    // 12. VERIFICAR SE TUDO FOI CRIADO CORRETAMENTE
     // Fazer uma verificação final para garantir que o pedido existe
     const { data: verifyOrder, error: verifyError } = await supabase
       .from('sapatinho_veloz_orders')
@@ -613,13 +576,7 @@ Deno.serve(async (req: Request) => {
       await supabase.from('sapatinho_veloz_orders').delete().eq('id', orderId);
       await supabase.from('sapatinho_sale_items').delete().eq('sale_id', saleId);
       await supabase.from('sapatinho_sales').delete().eq('id', saleId);
-      
-      // Reverter saldo
-      await supabase
-        .from('cards')
-        .update({ balance: card.balance })
-        .eq('id', card.id);
-      
+
       return new Response(JSON.stringify({
         success: false,
         error: 'Erro ao verificar pedido criado. O pedido foi cancelado.'
@@ -632,7 +589,53 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 15. SUCESSO! Tudo foi criado e verificado
+    // 13. DEBITAR A CONTA E REGISTRAR A TRANSAÇÃO ATOMICAMENTE
+    const { error: balanceError } = await supabase.rpc('adjust_account_balance', {
+      p_user_id: user.id,
+      p_amount: safeTotal,
+      p_type: 'debit',
+      p_description: `Pedido Sapatinho Veloz - ${items.length} itens`,
+      p_created_by: user.id,
+    });
+
+    if (balanceError) {
+      console.error('Account balance update error:', balanceError);
+      if (productsWithStock.length > 0 && stockUpdates.length > 0) {
+        for (const stockUpdate of stockUpdates) {
+          const { error: restoreError } = await supabase
+            .from('sapatinho_products')
+            .update({ stock: stockUpdate.oldStock })
+            .eq('id', stockUpdate.id)
+            .eq('stock', stockUpdate.newStock);
+          if (restoreError) {
+            console.error('Failed to restore Sapatinho stock after debit failure:', {
+              productId: stockUpdate.id,
+              error: restoreError.message,
+            });
+          }
+        }
+      }
+      await supabase.from('sapatinho_veloz_order_items').delete().eq('order_id', orderId);
+      await supabase.from('sapatinho_veloz_orders').delete().eq('id', orderId);
+      await supabase.from('sapatinho_sale_items').delete().eq('sale_id', saleId);
+      await supabase.from('sapatinho_sales').delete().eq('id', saleId);
+
+      const insufficientBalance = balanceError.message.includes('INSUFFICIENT_BALANCE');
+      return new Response(JSON.stringify({
+        success: false,
+        error: insufficientBalance
+          ? `Saldo insuficiente. Saldo: R$ ${safeBalance.toFixed(2)}, Total: R$ ${safeTotal.toFixed(2)}`
+          : 'Erro ao atualizar saldo da conta'
+      }), {
+        status: insufficientBalance ? 400 : 500,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    // 14. SUCESSO! Tudo foi criado e verificado
     return new Response(JSON.stringify({
       success: true,
       data: {
@@ -663,4 +666,3 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
-

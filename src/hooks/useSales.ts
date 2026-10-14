@@ -40,7 +40,7 @@ export function useCreateSale() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: saleKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: ['cards'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       showSuccess('Sucesso', 'Venda realizada com sucesso')
     },
@@ -49,7 +49,6 @@ export function useCreateSale() {
     },
   })
 }
-
 
 
 

@@ -31,7 +31,7 @@ export function toReais(cents: number): number {
  * safeSumMoney(10.50, 5.30) -> 15.80
  */
 export function safeSumMoney(...values: (number | string)[]): number {
-  const totalCents = values.reduce((sum, val) => {
+  const totalCents = values.reduce<number>((sum, val) => {
     return sum + toCents(val)
   }, 0)
   return toReais(totalCents)
@@ -92,4 +92,3 @@ export function compareMoney(a: number | string, b: number | string): -1 | 0 | 1
 export function hasSufficientBalance(balance: number | string, debit: number | string): boolean {
   return toCents(balance) >= toCents(debit)
 }
-

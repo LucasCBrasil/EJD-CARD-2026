@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { roundMoney, safeSubtractMoney, hasSufficientBalance } from '../_shared/money.ts';
+import { roundMoney, hasSufficientBalance } from '../_shared/money.ts';
+import { type UserRole, hasPermission } from '../_shared/roles.ts';
 
 const createSupabaseClient = () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -101,13 +102,28 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .single();
 
-    const userRole = (appUser?.role as string) || 'encontrista';
+    const userRole = (appUser?.role as UserRole) || 'encontrista';
 
-    // Encontrista não pode fazer vendas
-    if (userRole === 'encontrista') {
+    const { userId, items, category, coupon, discountedTotal } = await req.json();
+
+    if (!['lojinha', 'lanchonete'].includes(category)) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Acesso negado: encontristas não podem realizar vendas'
+        error: 'Categoria de venda inválida'
+      }), {
+        status: 400,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    const salePermission = category === 'lojinha' ? 'canSellLojinha' : 'canSellLanchonete';
+    if (!hasPermission(userRole, salePermission)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Acesso negado: usuário sem permissão para esta categoria de venda'
       }), {
         status: 403,
         headers: {
@@ -117,14 +133,11 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 3. EXTRAIR DADOS DA REQUISIÇÃO
-    const { cardId, items, category, coupon, discountedTotal } = await req.json();
-
     // 4. VALIDAÇÕES BÁSICAS
-    if (!cardId || !items || items.length === 0 || !category) {
+    if (!userId || !items || items.length === 0) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Dados inválidos: cardId, items e category são obrigatórios'
+        error: 'Dados inválidos: userId, items e category são obrigatórios'
       }), {
         status: 400,
         headers: {
@@ -137,18 +150,18 @@ Deno.serve(async (req: Request) => {
     // 5. CRIAR CLIENTE SUPABASE
     const supabase = createSupabaseClient();
 
-    // 6. BUSCAR CARTÃO
-    const { data: card, error: cardError } = await supabase
-      .from('cards')
-      .select('id, balance, user_id, user_name')
-      .eq('id', cardId)
+    // 6. BUSCAR CONTA
+    const { data: account, error: accountError } = await supabase
+      .from('app_users')
+      .select('id, balance, name')
+      .eq('id', userId)
       .single();
 
-    if (cardError || !card) {
-      console.error('Card not found:', cardError);
+    if (accountError || !account) {
+      console.error('Account not found:', accountError);
       return new Response(JSON.stringify({
         success: false,
-        error: 'Cartão não encontrado'
+        error: 'Conta não encontrada'
       }), {
         status: 404,
         headers: {
@@ -348,8 +361,21 @@ Deno.serve(async (req: Request) => {
     }
 
     // 7. VALIDAR SALDO (usando operações monetárias seguras)
-    const safeBalance = roundMoney(card.balance)
+    const safeBalance = roundMoney(account.balance)
     const safeFinalTotal = roundMoney(finalTotal)
+
+    if (safeFinalTotal <= 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'O total da venda deve ser maior que zero'
+      }), {
+        status: 400,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    }
     
     if (!hasSufficientBalance(safeBalance, safeFinalTotal)) {
       return new Response(JSON.stringify({
@@ -369,7 +395,7 @@ Deno.serve(async (req: Request) => {
     const { data: saleData, error: saleError } = await supabase
       .from('sales')
       .insert({
-        card_id: cardId,
+        user_id: userId,
         seller_id: user.id,
         category: category,
         total: finalTotal,
@@ -424,17 +450,18 @@ Deno.serve(async (req: Request) => {
 
     // 11. DIMINUIR ESTOQUE DOS PRODUTOS (otimizado - busca todos de uma vez)
     const productsWithStock = items
-      .map(item => {
+      .map((item: any) => {
         const product = products.find((p: any) => p.id === item.productId);
         return product && product.stock !== null && product.stock !== undefined 
           ? { product, item } 
           : null;
       })
-      .filter((p): p is { product: any; item: any } => p !== null);
+      .filter((p: { product: any; item: any } | null): p is { product: any; item: any } => p !== null);
 
+    const stockUpdates: Array<{ id: string; newStock: number; oldStock: number; name: string }> = [];
     if (productsWithStock.length > 0) {
       // Buscar estoques atuais de todos os produtos de uma vez
-      const productIdsToUpdate = productsWithStock.map(p => p.product.id);
+      const productIdsToUpdate = productsWithStock.map((p: { product: any; item: any }) => p.product.id);
       const { data: currentProducts, error: fetchError } = await supabase
         .from('products')
         .select('id, stock, name')
@@ -457,7 +484,6 @@ Deno.serve(async (req: Request) => {
       }
 
       // Verificar estoque e preparar updates
-      const stockUpdates: Array<{ id: string; newStock: number; oldStock: number; name: string }> = [];
       for (const { product, item } of productsWithStock) {
         const currentProduct = currentProducts.find((p: any) => p.id === product.id);
         if (!currentProduct) {
@@ -529,22 +555,37 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 12. ATUALIZAR SALDO (usando operações monetárias seguras)
-    const newBalance = safeSubtractMoney(safeBalance, safeFinalTotal)
-    const { error: balanceError } = await supabase
-      .from('cards')
-      .update({
-        balance: roundMoney(newBalance)
-      })
-      .eq('id', cardId);
+    // 12. DEBITAR A CONTA E REGISTRAR A TRANSAÇÃO ATOMICAMENTE
+    const { error: balanceError } = await supabase.rpc('adjust_account_balance', {
+      p_user_id: userId,
+      p_amount: safeFinalTotal,
+      p_type: 'debit',
+      p_description: `Venda ${category} - ${items.length} itens`,
+      p_created_by: user.id,
+    });
 
     if (balanceError) {
       console.error('Balance update error:', balanceError);
+      for (const stockUpdate of stockUpdates) {
+        const { error: restoreError } = await supabase
+          .from('products')
+          .update({ stock: stockUpdate.oldStock })
+          .eq('id', stockUpdate.id)
+          .eq('stock', stockUpdate.newStock);
+        if (restoreError) {
+          console.error('Failed to restore product stock after debit failure:', {
+            productId: stockUpdate.id,
+            error: restoreError.message,
+          });
+        }
+      }
       await supabase.from('sale_items').delete().eq('sale_id', saleId);
       await supabase.from('sales').delete().eq('id', saleId);
       return new Response(JSON.stringify({
         success: false,
-        error: `Erro ao atualizar saldo: ${balanceError.message}`
+        error: balanceError.message.includes('INSUFFICIENT_BALANCE')
+          ? `Saldo insuficiente. Saldo: R$ ${safeBalance.toFixed(2)}, Total: R$ ${safeFinalTotal.toFixed(2)}`
+          : 'Erro ao atualizar saldo da conta'
       }), {
         status: 500,
         headers: {
@@ -554,20 +595,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 13. CRIAR TRANSAÇÃO (valor arredondado)
-    const { error: transactionError } = await supabase.from('transactions').insert({
-      card_id: cardId,
-      amount: roundMoney(-safeFinalTotal),
-      type: 'debit',
-      description: `Venda ${category} - ${items.length} itens`
-    });
-
-    if (transactionError) {
-      console.error('Transaction creation error (não crítico):', transactionError);
-      // Não falhar a venda se a transação não for criada, apenas logar
-    }
-
-    // 14. CRIAR PEDIDO SE FOR LOJINHA
+    // 13. CRIAR PEDIDO SE FOR LOJINHA
     if (category === 'lojinha') {
       // Buscar o último código de pedido para gerar o próximo
       const { data: lastOrder } = await supabase
@@ -591,8 +619,8 @@ Deno.serve(async (req: Request) => {
         .from('orders')
         .insert({
           sale_id: saleId,
-          card_id: cardId,
-          customer_name: card.user_name || 'Cliente',
+          user_id: userId,
+          customer_name: account.name || 'Cliente',
           total: finalTotal,
           status: 'completed',
           order_code: orderCode,
@@ -616,7 +644,7 @@ Deno.serve(async (req: Request) => {
     }), {
       status: 200,
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(origin),
         'Content-Type': 'application/json'
       }
     });
@@ -633,7 +661,7 @@ Deno.serve(async (req: Request) => {
     }), {
       status: 500,
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(origin),
         'Content-Type': 'application/json'
       }
     });

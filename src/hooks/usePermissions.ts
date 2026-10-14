@@ -20,10 +20,7 @@ export const usePermissions = () => {
     hasAllPermissions: (permissions: (keyof RolePermissions)[]) => hasAllPermissions(userRole, permissions),
     
     // Verificações específicas comuns
-    canViewCards: hasPermission(userRole, 'canViewCards'),
-    canCreateCards: hasPermission(userRole, 'canCreateCards'),
-    canEditCards: hasPermission(userRole, 'canEditCards'),
-    canDeleteCards: hasPermission(userRole, 'canDeleteCards'),
+    canViewAccounts: hasPermission(userRole, 'canViewAccounts'),
     
     // Saldo
     canAddBalance: hasPermission(userRole, 'canAddBalance'),

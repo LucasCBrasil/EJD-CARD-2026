@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { usePermissions } from '../hooks/usePermissions'
 import { useAuth } from '../contexts/AuthContext'
-import { useCardByUserId } from '../hooks/useCards'
 
 interface MainCard {
   id: string
@@ -27,7 +26,7 @@ const HomePage: React.FC = () => {
   const { logout } = useAuth()
   const {
     userRole,
-    canViewCards,
+    canViewAccounts,
     canViewAdmin,
     canSellLojinha,
     canSellLanchonete,
@@ -43,12 +42,6 @@ const HomePage: React.FC = () => {
 
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   
-  // Verificar se o usuário tem um cartão associado
-  const { user } = useAuth()
-  const { data: userCard, isLoading: isLoadingCard } = useCardByUserId(user?.id || '', !!user?.id)
-  // Verificar se realmente há um cartão válido (não apenas truthy)
-  const hasAssociatedCard = !isLoadingCard && !!userCard && userCard.id && userCard.card_number
-
   const handleLogout = async () => {
     try {
       await logout()
@@ -60,21 +53,21 @@ const HomePage: React.FC = () => {
   // Definir os cards principais
   const mainCards: MainCard[] = [
     {
-      id: 'meu-cartao',
-      title: 'MEU CARTÃO',
-      icon: '💳',
+      id: 'minha-conta',
+      title: 'MINHA CONTA',
+      icon: '👤',
       description: 'Consulte seu saldo e histórico de compras',
       accent: 'bg-anil-700',
-      path: '/mycard',
+      path: '/account',
       canAccess: true
     },
     {
       id: 'comunicacao',
       title: 'COMUNICAÇÃO',
       icon: '📢',
-      description: 'Gerenciar cartões, criar e adicionar saldo',
+      description: 'Gerenciar contas e saldos dos usuários',
       accent: 'bg-ferro-800',
-      path: '/cards',
+      path: '/accounts',
       canAccess: userRole === 'admin' || userRole === 'comunicacao'
     },
     {
@@ -118,13 +111,13 @@ const HomePage: React.FC = () => {
   // Função para obter os sub-menus de cada card
   const getSubMenus = (cardId: string): SubMenuItem[] => {
     switch (cardId) {
-      case 'meu-cartao':
+      case 'minha-conta':
         return [
           {
-            icon: '💳',
-            title: 'Meu Cartão',
+            icon: '👤',
+            title: 'Minha Conta',
             description: 'Ver saldo e histórico',
-            path: '/mycard',
+            path: '/account',
             canAccess: true
           }
         ]
@@ -132,32 +125,25 @@ const HomePage: React.FC = () => {
       case 'comunicacao':
         return [
           {
-            icon: '➕',
-            title: 'Criar Cartão',
-            description: 'Cadastrar novo encontrista',
-            path: '/cards/create',
-            canAccess: canViewCards
-          },
-          {
             icon: '💰',
             title: 'Adicionar Saldo',
-            description: 'Creditar valores em cartões',
-            path: '/cards/add',
-            canAccess: canViewCards
+            description: 'Creditar valores diretamente nas contas',
+            path: '/accounts/add',
+            canAccess: canViewAccounts
           },
           {
             icon: '🔍',
             title: 'Consultar Saldo',
-            description: 'Ver saldo disponível',
-            path: '/cards/balance',
-            canAccess: canViewCards
+            description: 'Ver saldo disponível nas contas',
+            path: '/accounts/balance',
+            canAccess: canViewAccounts
           },
           {
             icon: '💸',
             title: 'Débito Manual',
-            description: 'Debitar valores de cartões',
-            path: '/cards/debit',
-            canAccess: canViewCards
+            description: 'Debitar valores diretamente das contas',
+            path: '/accounts/debit',
+            canAccess: canViewAccounts
           }
         ]
       
@@ -317,8 +303,8 @@ const HomePage: React.FC = () => {
           },
           {
             icon: '💳',
-            title: 'Cartões em Débito',
-            description: 'Ver cartões com saldo negativo',
+            title: 'Contas com Saldo Negativo',
+            description: 'Ver contas com saldo negativo',
             path: '/admin-debitos',
             canAccess: canViewAdmin
           },
@@ -495,5 +481,3 @@ const HomePage: React.FC = () => {
 }
 
 export default HomePage
-
-
