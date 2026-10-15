@@ -13,7 +13,7 @@ Eles faziam chamadas diretas ao Supabase usando a API key exposta no frontend, o
 
 - ✅ `sales.api.ts` - **REMOVIDO** → Use `api.listSales()` do `api-client.ts`
 - ✅ `orders.api.ts` - **REMOVIDO** → Use `api.listOrders()`, `api.getOpenOrders()` do `api-client.ts`
-- ⚠️ `sapatinho-veloz.api.ts` - **PARCIALMENTE REMOVIDO** → Métodos inseguros removidos, apenas `create()` permanece (já usa Edge Function)
+- ✅ `sapatinho-veloz.api.ts` - **REMOVIDO** junto com a funcionalidade
 
 ## Por que foram removidos?
 
@@ -50,10 +50,6 @@ api.markOrderAsDelivered(orderId)
 // Transactions
 api.listTransactions(cardId?)
 
-// Sapatinho
-api.createSapatinhoOrder(data)
-
 // Products (admin)
 api.manageProducts(data, method)
 ```
-

@@ -12,14 +12,14 @@ type HistoryItem = {
   date: string
   label: string
   amount: number
-  type: 'lojinha' | 'lanchonete' | 'sapatinho' | 'credit' | 'debit'
+  type: 'lojinha' | 'lanchonete' | 'credit' | 'debit'
 }
 
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
 
 const iconFor = (type: HistoryItem['type']) =>
-  type === 'lojinha' ? '🏪' : type === 'lanchonete' ? '🍔' : type === 'sapatinho' ? '💌' : type === 'credit' ? '💰' : '💸'
+  type === 'lojinha' ? '🏪' : type === 'lanchonete' ? '🍔' : type === 'credit' ? '💰' : '💸'
 
 const AccountContent: React.FC<{ account: UserAccount; history: HistoryItem[]; pixEnabled: boolean }> = ({
   account,
@@ -83,7 +83,7 @@ const AccountContent: React.FC<{ account: UserAccount; history: HistoryItem[]; p
           <div className="space-y-3">
             {history.map((item) => (
               <div key={item.id} className="flex items-stretch overflow-hidden rounded-xl bg-creme-100 border border-ferro-200">
-                <div className={`${item.type === 'debit' || item.type === 'sapatinho' ? 'bg-vagao-600' : 'bg-ferro-600'} w-1.5 shrink-0`} />
+                <div className={`${item.type === 'debit' ? 'bg-vagao-600' : 'bg-ferro-600'} w-1.5 shrink-0`} />
                 <div className="flex flex-1 items-start justify-between gap-3 px-4 py-3 min-w-0">
                   <div className="flex items-start gap-3 min-w-0">
                     <span className="text-2xl leading-none mt-0.5">{iconFor(item.type)}</span>
@@ -93,7 +93,7 @@ const AccountContent: React.FC<{ account: UserAccount; history: HistoryItem[]; p
                     </div>
                   </div>
                   <p className="font-slab text-base text-ferro-900 shrink-0 whitespace-nowrap">
-                    {item.type === 'credit' ? '+' : item.type === 'debit' || item.type === 'sapatinho' ? '−' : ''}
+                    {item.type === 'credit' ? '+' : item.type === 'debit' ? '−' : ''}
                     {' '}R$ {item.amount.toFixed(2).replace('.', ',')}
                   </p>
                 </div>
@@ -156,16 +156,12 @@ const AccountPage: React.FC = () => {
           createdAt: accountData.created_at || '',
         })
 
-        const sales = [
-          ...(response.data.sales || []).map((sale: any) => ({ ...sale, type: sale.category })),
-          ...(response.data.sapatinhoSales || []).map((sale: any) => ({ ...sale, type: 'sapatinho' })),
-        ]
-        const saleHistory: HistoryItem[] = sales.map((sale: any) => ({
+        const saleHistory: HistoryItem[] = (response.data.sales || []).map((sale: any) => ({
           id: sale.id,
           date: sale.created_at || sale.createdAt,
-          label: ((sale.sale_items || sale.sapatinho_sale_items || []).map((item: any) => item.product_name).filter(Boolean).join(', ')) || 'Compra',
+          label: (sale.sale_items || []).map((item: any) => item.product_name).filter(Boolean).join(', ') || 'Compra',
           amount: Number(sale.total) || 0,
-          type: sale.type || 'lojinha',
+          type: sale.category || 'lojinha',
         }))
         const transactions: HistoryItem[] = (response.data.transactions || []).map((transaction: any) => ({
           id: transaction.id,

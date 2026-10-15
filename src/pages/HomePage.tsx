@@ -34,10 +34,7 @@ const HomePage: React.FC = () => {
     canManageProductsLanchonete,
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
-    canViewSalesHistorySapatinho,
     canViewOpenOrders,
-    canPlaceOrderSapatinho,
-    canSellSapatinho
   } = usePermissions()
 
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
@@ -174,34 +171,6 @@ const HomePage: React.FC = () => {
             description: 'Ver pedidos pendentes',
             path: '/pedidos-lojinha',
             canAccess: canViewOpenOrders
-          },
-          {
-            icon: '💌',
-            title: 'Cadastrar Produto Sapatinho',
-            description: 'Adicionar novo produto do sapatinho',
-            path: '/sapatinho-veloz/products/create',
-            canAccess: userRole === 'admin' || userRole === 'lojinha'
-          },
-          {
-            icon: '📋',
-            title: 'Listar Produtos Sapatinho',
-            description: 'Gerenciar produtos do sapatinho',
-            path: '/sapatinho-veloz/products',
-            canAccess: userRole === 'admin' || userRole === 'lojinha'
-          },
-          {
-            icon: '📦',
-            title: 'Pedidos Sapatinho',
-            description: 'Ver pedidos pendentes do sapatinho',
-            path: '/pedidos-sapatinho-veloz',
-            canAccess: canViewOpenOrders && (userRole === 'admin' || userRole === 'lojinha')
-          },
-          {
-            icon: '📊',
-            title: 'Histórico Sapatinho',
-            description: 'Consultar vendas do sapatinho',
-            path: '/historico/sapatinho',
-            canAccess: canViewSalesHistorySapatinho || userRole === 'admin' || userRole === 'lojinha'
           }
         ]
       
@@ -315,14 +284,8 @@ const HomePage: React.FC = () => {
             const hasMultipleSubMenus = subMenus.length > 1
             const hasSingleSubMenu = subMenus.length === 1
 
-            // Cards especiais que devem navegar diretamente para sua página principal
-            const directNavigationCards = ['sapatinho']
-            const shouldNavigateDirectly = directNavigationCards.includes(card.id)
-
             const handleClick = () => {
-              if (shouldNavigateDirectly) {
-                handleSubCardClick(card.path)
-              } else if (hasSingleSubMenu) {
+              if (hasSingleSubMenu) {
                 handleSubCardClick(subMenus[0].path)
               } else if (hasMultipleSubMenus) {
                 handleCardClick(card.id)
@@ -357,7 +320,7 @@ const HomePage: React.FC = () => {
                     <p className="text-sm text-ferro-700 leading-snug mt-1">
                       {card.description}
                     </p>
-                    {hasMultipleSubMenus && !shouldNavigateDirectly && (
+                    {hasMultipleSubMenus && (
                       <span className="mt-3 font-display text-xs tracking-widest uppercase text-vagao-600">
                         {isExpanded ? '▾ Fechar opções' : '▸ Ver opções'}
                       </span>

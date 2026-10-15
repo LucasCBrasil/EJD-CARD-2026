@@ -226,27 +226,6 @@ export const api = {
       body: data,
     }),
 
-  manageSapatinhoProducts: (data: any, method: 'POST' | 'PUT' | 'DELETE' = 'POST') => {
-    // Para DELETE, a Edge Function espera o ID como query parameter
-    if (method === 'DELETE' && data?.id) {
-      return request<{ success: boolean; data: any }>('manage-sapatinho-products', {
-        method,
-        query: { id: data.id },
-      })
-    }
-    // Para POST e PUT, enviar no body
-    return request<{ success: boolean; data: any }>('manage-sapatinho-products', {
-      method,
-      body: data,
-    })
-  },
-    
-  createSapatinhoOrder: (data: any) =>
-    request<{ success: boolean; data: any }>('sapatinho-order-', {
-      method: 'POST',
-      body: data,
-    }),
-
   // Coupons
   listCoupons: (category?: string) =>
     request<{ success: boolean; data: Array<{ name: string; discountAmount?: number }> }>('list-coupons', {
@@ -307,7 +286,6 @@ export const api = {
         account: any | null;
         transactions: any[];
         sales: any[];
-        sapatinhoSales: any[];
       } 
     }>('my-account-history', {
       method: 'GET',

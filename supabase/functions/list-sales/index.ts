@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const userRole = await getUserRole(authResult.id)
     const supabase = createSupabaseClient()
     const url = new URL(req.url)
-    const category = url.searchParams.get('category') as 'lojinha' | 'lanchonete' | 'sapatinho' | null
+    const category = url.searchParams.get('category') as 'lojinha' | 'lanchonete' | null
     const userId = url.searchParams.get('userId')
     const pageParam = url.searchParams.get('page')
     const limitParam = url.searchParams.get('limit')
@@ -103,100 +103,42 @@ Deno.serve(async (req) => {
         )
       }
 
-      if (category === 'sapatinho' && !['admin', 'lojinha'].includes(userRole)) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Acesso negado'
-          } as ApiResponse),
-          {
-            status: 403,
-            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-          }
-        )
-      }
     }
 
     // Buscar vendas
-    if (category === 'sapatinho') {
-      // Vendas do Sapatinho
-      let query = supabase
-        .from('sapatinho_sales')
-        .select(`
-          *,
-          sapatinho_sale_items (*),
-          user:app_users!sapatinho_sales_user_id_fkey (name, email)
-        `)
-        .order('created_at', { ascending: false })
+    // Primeiro buscar o total para paginação
+    let countQuery = supabase
+      .from('sales')
+      .select('*', { count: 'exact', head: true })
 
-      if (userId) {
-        query = query.eq('user_id', userId)
-      }
+    if (userId) {
+      countQuery = countQuery.eq('user_id', userId)
+    }
 
-      const { data: sales, error } = await query
+    // Se categoria foi especificada, filtrar por categoria
+    if (category) {
+      countQuery = countQuery.eq('category', category)
+    }
 
-      if (error) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Erro ao buscar vendas'
-          } as ApiResponse),
-          {
-            status: 500,
-            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-          }
-        )
-      }
+    const { count, error: countError } = await countQuery
 
+    if (countError) {
       return new Response(
         JSON.stringify({
-          success: true,
-          data: (sales || []).map((sale) => ({
-            ...sale,
-            user_name: sale.user?.name || null,
-            user_email: sale.user?.email || null,
-          }))
+          success: false,
+          error: 'Erro ao contar vendas'
         } as ApiResponse),
         {
-          status: 200,
+          status: 500,
           headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
         }
       )
-    } else {
-      // Vendas normais (lojinha/lanchonete)
-      // Primeiro buscar o total para paginação
-      let countQuery = supabase
-        .from('sales')
-        .select('*', { count: 'exact', head: true })
+    }
 
-      if (userId) {
-        countQuery = countQuery.eq('user_id', userId)
-      }
-      
-      // Se categoria foi especificada, filtrar por categoria
-      if (category) {
-        countQuery = countQuery.eq('category', category)
-      }
-
-      const { count, error: countError } = await countQuery
-
-      if (countError) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Erro ao contar vendas'
-          } as ApiResponse),
-          {
-            status: 500,
-            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-          }
-        )
-      }
-
-      // Agora buscar os dados com paginação
-      let query = supabase
-        .from('sales')
-        .select(`
+    // Agora buscar os dados com paginação
+    let query = supabase
+      .from('sales')
+      .select(`
           *,
           sale_items (*),
           seller:app_users!sales_seller_id_fkey (
@@ -209,51 +151,50 @@ Deno.serve(async (req) => {
             name,
             email
           )
-        `)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1)
+      `)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
-      if (userId) {
-        query = query.eq('user_id', userId)
-      }
-      
-      // Se categoria foi especificada, filtrar por categoria
-      if (category) {
-        query = query.eq('category', category)
-      }
+    if (userId) {
+      query = query.eq('user_id', userId)
+    }
 
-      const { data: sales, error } = await query
+    // Se categoria foi especificada, filtrar por categoria
+    if (category) {
+      query = query.eq('category', category)
+    }
 
-      if (error) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Erro ao buscar vendas'
-          } as ApiResponse),
-          {
-            status: 500,
-            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-          }
-        )
-      }
+    const { data: sales, error } = await query
 
-      // Retornar vendas paginadas com total
+    if (error) {
       return new Response(
         JSON.stringify({
-          success: true,
-          data: (sales || []).map((sale) => ({
-            ...sale,
-            user_name: sale.user?.name || null,
-            user_email: sale.user?.email || null,
-          })),
-          total: count || 0
+          success: false,
+          error: 'Erro ao buscar vendas'
         } as ApiResponse),
         {
-          status: 200,
+          status: 500,
           headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
         }
       )
     }
+
+    // Retornar vendas paginadas com total
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: (sales || []).map((sale) => ({
+          ...sale,
+          user_name: sale.user?.name || null,
+          user_email: sale.user?.email || null,
+        })),
+        total: count || 0
+      } as ApiResponse),
+      {
+        status: 200,
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+      }
+    )
   } catch (error) {
     console.error('Error in list-sales:', error)
     return new Response(

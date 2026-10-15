@@ -38,7 +38,7 @@ export interface Sale {
   userId: string
   sellerId: string
   saleId?: string
-  category: 'lojinha' | 'lanchonete' | 'sapatinho'
+  category: 'lojinha' | 'lanchonete'
   customerName?: string
   customerEmail?: string
   items: SaleItem[]
@@ -97,7 +97,7 @@ interface SupabaseDataContextType {
   
   // Funções de vendas
   makeSale: (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => Promise<string>
-  getSales: (category?: 'lojinha' | 'lanchonete' | 'sapatinho', limit?: number) => Promise<Sale[]>
+  getSales: (category?: 'lojinha' | 'lanchonete', limit?: number) => Promise<Sale[]>
   getSalesByUserId: (userId: string, limit?: number) => Promise<Sale[]>
   
   // Funções de pedidos
@@ -428,7 +428,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
 
   // ⚠️ DEPRECATED: Use api.listSales() do api-client.ts em vez disso
   // Mantido apenas para compatibilidade com código legado
-  const getSales = async (category?: 'lojinha' | 'lanchonete' | 'sapatinho', limit: number = 100): Promise<Sale[]> => {
+  const getSales = async (category?: 'lojinha' | 'lanchonete', limit: number = 100): Promise<Sale[]> => {
     console.warn('⚠️ SupabaseDataContext.getSales() está DEPRECATED. Use api.listSales() do api-client.ts')
     
     try {
@@ -453,7 +453,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
           sellerId: sale.seller_id,
           saleId: sale.sale_number || sale.id,
           category: sale.category || category || 'lojinha',
-          items: ((sale.sale_items || sale.sapatinho_sale_items) || []).map((item: any) => ({
+          items: (sale.sale_items || []).map((item: any) => ({
             id: item.id,
             productId: item.product_id || '',
             productName: item.product_name,
@@ -501,7 +501,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
           sellerId: sale.seller_id,
           saleId: sale.sale_number || sale.id,
           category: sale.category || 'lojinha',
-          items: ((sale.sale_items || sale.sapatinho_sale_items) || []).map((item: any) => ({
+          items: (sale.sale_items || []).map((item: any) => ({
             id: item.id,
             productId: item.product_id || '',
             productName: item.product_name,

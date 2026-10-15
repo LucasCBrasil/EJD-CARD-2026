@@ -34,15 +34,10 @@ export const usePermissions = () => {
     // Vendas
     canSellLojinha: hasPermission(userRole, 'canSellLojinha'),
     canSellLanchonete: hasPermission(userRole, 'canSellLanchonete'),
-    canSellSapatinho: hasPermission(userRole, 'canSellSapatinho'),
     
     // Histórico
     canViewSalesHistoryLojinha: hasPermission(userRole, 'canViewSalesHistoryLojinha'),
     canViewSalesHistoryLanchonete: hasPermission(userRole, 'canViewSalesHistoryLanchonete'),
-    canViewSalesHistorySapatinho: hasPermission(userRole, 'canViewSalesHistorySapatinho'),
-    
-    // Pedidos Sapatinho
-    canPlaceOrderSapatinho: hasPermission(userRole, 'canPlaceOrderSapatinho'),
     
     // Entregas
     canViewOpenOrders: hasPermission(userRole, 'canViewOpenOrders'),

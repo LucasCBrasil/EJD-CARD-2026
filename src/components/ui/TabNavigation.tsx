@@ -3,8 +3,8 @@ import { useRouter } from '@tanstack/react-router'
 import { usePermissions } from '../../hooks/usePermissions'
 
 interface TabNavigationProps {
-  activeTab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'historicoSapatinho' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'sapatinho-veloz' | 'pedidos-sapatinho-veloz' | 'sapatinho-veloz-products-create' | 'sapatinho-veloz-products'
-  onTabChange: (tab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'historicoSapatinho' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'sapatinho-veloz' | 'pedidos-sapatinho-veloz' | 'sapatinho-veloz-products-create' | 'sapatinho-veloz-products') => void
+  activeTab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard'
+  onTabChange: (tab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard') => void
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange }) => {

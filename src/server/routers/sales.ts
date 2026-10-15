@@ -17,7 +17,7 @@ import { hasPermission } from '../permissions'
 // Schema de validação para criar venda
 const createSaleSchema = z.object({
   userId: z.string().uuid('ID da conta inválido'),
-  category: z.enum(['lojinha', 'lanchonete', 'sapatinho']),
+  category: z.enum(['lojinha', 'lanchonete']),
   items: z.array(
     z.object({
       productId: z.string().uuid('ID do produto inválido'),
@@ -47,8 +47,7 @@ export const salesRouter = router({
       // 1. Verificar permissão específica para a categoria
       const hasPermissionForCategory = ctx.user.role === 'admin' ||
         (category === 'lojinha' && ctx.user.role === 'lojinha') ||
-        (category === 'lanchonete' && ctx.user.role === 'lanchonete') ||
-        (category === 'sapatinho' && ['admin', 'lojinha', 'lanchonete', 'comunicacao'].includes(ctx.user.role))
+        (category === 'lanchonete' && ctx.user.role === 'lanchonete')
 
       if (!hasPermissionForCategory) {
         throw new TRPCError({
@@ -83,16 +82,11 @@ export const salesRouter = router({
       // 3. Buscar produtos do BANCO (NÃO confiar no frontend!)
       const productIds = items.map(item => item.productId)
       
-      const productTable = category === 'sapatinho' ? 'sapatinho_products' : 'products'
       let productsQuery = (supabase as any)
-        .from(productTable)
+        .from('products')
         .select('id, name, price, active, stock')
         .in('id', productIds)
-
-      // Adicionar filtro de categoria se não for sapatinho
-      if (category !== 'sapatinho') {
-        productsQuery = productsQuery.eq('category', category)
-      }
+        .eq('category', category)
 
       const { data: products, error: productsError } = await productsQuery
 
@@ -156,24 +150,16 @@ export const salesRouter = router({
       // 6. TRANSAÇÃO ATÔMICA - Criar venda completa
       try {
         // 6.1 Criar venda
-        const salesTable = category === 'sapatinho' ? 'sapatinho_sales' : 'sales'
-        const saleData = category === 'sapatinho'
-          ? {
-            user_id: userId,
-            seller_id: user.id,
-            total,
-            status: 'completed',
-          }
-          : {
-            user_id: userId,
-            seller_id: user.id,
-            category,
-            total,
-            status: 'completed',
-          }
+        const saleData = {
+          user_id: userId,
+          seller_id: user.id,
+          category,
+          total,
+          status: 'completed',
+        }
 
         const { data: sale, error: saleError } = await (supabase as any)
-          .from(salesTable)
+          .from('sales')
           .insert(saleData)
           .select()
           .single()
@@ -181,7 +167,6 @@ export const salesRouter = router({
         if (saleError) throw saleError
 
         // 6.2 Criar itens da venda
-        const itemsTable = category === 'sapatinho' ? 'sapatinho_sale_items' : 'sale_items'
         const itemsData = saleItems.map(item => ({
           sale_id: sale.id,
           product_id: item.productId,
@@ -191,7 +176,7 @@ export const salesRouter = router({
         }))
 
         const { error: itemsError } = await (supabase as any)
-          .from(itemsTable)
+          .from('sale_items')
           .insert(itemsData)
 
         if (itemsError) throw itemsError
@@ -295,7 +280,7 @@ export const salesRouter = router({
   list: protectedProcedure
     .input(
       z.object({
-        category: z.enum(['lojinha', 'lanchonete', 'sapatinho']).optional(),
+        category: z.enum(['lojinha', 'lanchonete']).optional(),
         userId: z.string().uuid().optional(),
       })
     )
@@ -342,22 +327,13 @@ export const salesRouter = router({
           })
         }
 
-        if (category === 'sapatinho' && !['admin', 'lojinha'].includes(user.role)) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Você não tem permissão para ver vendas de: sapatinho',
-          })
-        }
       }
 
-      const table = category === 'sapatinho' ? 'sapatinho_sales' : 'sales'
-      const itemsTable = category === 'sapatinho' ? 'sapatinho_sale_items' : 'sale_items'
-
       let query = (supabase as any)
-        .from(table)
+        .from('sales')
         .select(`
           *,
-          ${itemsTable} (*)
+          sale_items (*)
         `)
         .order('created_at', { ascending: false })
 
@@ -365,7 +341,7 @@ export const salesRouter = router({
         query = query.eq('user_id', userId)
       }
 
-      if (category && category !== 'sapatinho') {
+      if (category) {
         query = query.eq('category', category)
       }
 

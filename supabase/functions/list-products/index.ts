@@ -44,78 +44,42 @@ Deno.serve(async (req) => {
 
     const supabase = createSupabaseClient()
     const url = new URL(req.url)
-    const category = url.searchParams.get('category') as 'lojinha' | 'lanchonete' | 'sapatinho' | null
+    const category = url.searchParams.get('category') as 'lojinha' | 'lanchonete' | null
+    let query = supabase
+      .from('products')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false })
 
-    // Listar produtos
-    if (category === 'sapatinho') {
-      // Produtos do Sapatinho
-      const { data: products, error } = await supabase
-        .from('sapatinho_products')
-        .select('*')
-        .eq('active', true)
-        .order('created_at', { ascending: false })
+    if (category) {
+      query = query.eq('category', category)
+    }
 
-      if (error) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Erro ao buscar produtos'
-          } as ApiResponse),
-          {
-            status: 500,
-            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-          }
-        )
-      }
+    const { data: products, error } = await query
 
+    if (error) {
       return new Response(
         JSON.stringify({
-          success: true,
-          data: products || []
+          success: false,
+          error: 'Erro ao buscar produtos'
         } as ApiResponse),
         {
-          status: 200,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-        }
-      )
-    } else {
-      // Produtos normais (lojinha/lanchonete)
-      let query = supabase
-        .from('products')
-        .select('*')
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-
-      if (category) {
-        query = query.eq('category', category)
-      }
-
-      const { data: products, error } = await query
-
-      if (error) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Erro ao buscar produtos'
-          } as ApiResponse),
-          {
-            status: 500,
-            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-          }
-        )
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: products || []
-        } as ApiResponse),
-        {
-          status: 200,
+          status: 500,
           headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
         }
       )
     }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: products || []
+      } as ApiResponse),
+      {
+        status: 200,
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+      }
+    )
   } catch (error) {
     console.error('Error in list-products:', error)
     return new Response(
@@ -130,4 +94,3 @@ Deno.serve(async (req) => {
     )
   }
 })
-

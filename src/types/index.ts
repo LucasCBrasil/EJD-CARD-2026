@@ -11,7 +11,7 @@ export interface Transaction {
   createdAt: string
 }
 
-export type ProductCategory = 'lojinha' | 'lanchonete' | 'sapatinho'
+export type ProductCategory = 'lojinha' | 'lanchonete'
 
 export interface Product {
   id: string
@@ -68,31 +68,4 @@ export interface UserAccount {
   role: string
   balance: number
   createdAt: string
-}
-
-export interface SapatinhoVelozOrderItem {
-  id: string
-  orderId: string
-  productId: string
-  productName: string
-  quantity: number
-  price: number
-  createdAt: string
-}
-
-export interface SapatinhoVelozOrder {
-  id: string
-  saleId: string
-  senderUserId: string
-  senderName?: string | null
-  senderTeam?: string | null
-  recipientName: string
-  recipientAddress: string
-  message?: string | null
-  isAnonymous?: boolean
-  items: SapatinhoVelozOrderItem[]
-  total: number
-  status: 'pending' | 'completed' | 'delivered'
-  createdAt: string
-  deliveredAt?: string
 }

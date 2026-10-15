@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createSupabaseClient()
-    const [accountResult, transactionsResult, salesResult, sapatinhoResult] = await Promise.all([
+    const [accountResult, transactionsResult, salesResult] = await Promise.all([
       supabase
         .from('app_users')
         .select('id, email, name, role, balance, created_at')
@@ -45,15 +45,9 @@ Deno.serve(async (req) => {
         .eq('user_id', authResult.id)
         .order('created_at', { ascending: false })
         .limit(30),
-      supabase
-        .from('sapatinho_sales')
-        .select('*, sapatinho_sale_items (*)')
-        .eq('user_id', authResult.id)
-        .order('created_at', { ascending: false })
-        .limit(30),
     ])
 
-    const queryError = accountResult.error || transactionsResult.error || salesResult.error || sapatinhoResult.error
+    const queryError = accountResult.error || transactionsResult.error || salesResult.error
     if (queryError) {
       console.error('Error loading account history:', queryError.message)
       return new Response(JSON.stringify({ success: false, error: 'Erro ao buscar histórico da conta' } as ApiResponse), {
@@ -75,7 +69,6 @@ Deno.serve(async (req) => {
         account: accountResult.data,
         transactions: transactionsResult.data || [],
         sales: salesResult.data || [],
-        sapatinhoSales: sapatinhoResult.data || [],
       },
     } as ApiResponse), {
       status: 200,

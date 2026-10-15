@@ -74,21 +74,6 @@ CREATE TABLE public.products (
 CREATE INDEX idx_products_category ON public.products(category);
 CREATE INDEX idx_products_active ON public.products(active);
 
-CREATE TABLE public.sapatinho_products (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  price NUMERIC(10, 2) NOT NULL CHECK (price > 0),
-  description TEXT,
-  stock INTEGER CHECK (stock IS NULL OR stock >= 0),
-  image_url TEXT,
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_sapatinho_products_active ON public.sapatinho_products(active);
-CREATE INDEX idx_sapatinho_products_name ON public.sapatinho_products(name);
-
 -- ---------------------------------------------------------------------------
 -- Vendas, itens e pedidos da lojinha/lanchonete
 -- ---------------------------------------------------------------------------
@@ -165,71 +150,6 @@ CREATE INDEX idx_orders_sale_id ON public.orders(sale_id);
 CREATE INDEX idx_orders_user_id ON public.orders(user_id);
 CREATE INDEX idx_orders_status ON public.orders(status);
 CREATE INDEX idx_orders_created_at ON public.orders(created_at);
-
--- ---------------------------------------------------------------------------
--- Vendas e pedidos do Sapatinho
--- ---------------------------------------------------------------------------
-
-CREATE TABLE public.sapatinho_sales (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES public.app_users(id) ON DELETE SET NULL,
-  seller_id UUID REFERENCES public.app_users(id) ON DELETE SET NULL,
-  total NUMERIC(10, 2) NOT NULL CHECK (total > 0),
-  status TEXT NOT NULL CHECK (status IN ('completed', 'delivered')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_sapatinho_sales_user_id ON public.sapatinho_sales(user_id);
-CREATE INDEX idx_sapatinho_sales_seller_id ON public.sapatinho_sales(seller_id);
-CREATE INDEX idx_sapatinho_sales_created_at ON public.sapatinho_sales(created_at);
-
-CREATE TABLE public.sapatinho_sale_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sale_id UUID NOT NULL REFERENCES public.sapatinho_sales(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES public.sapatinho_products(id),
-  product_name TEXT NOT NULL,
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
-  price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_sapatinho_sale_items_sale_id ON public.sapatinho_sale_items(sale_id);
-CREATE INDEX idx_sapatinho_sale_items_product_id ON public.sapatinho_sale_items(product_id);
-
-CREATE TABLE public.sapatinho_veloz_orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sale_id UUID NOT NULL REFERENCES public.sapatinho_sales(id) ON DELETE CASCADE,
-  sender_user_id UUID REFERENCES public.app_users(id) ON DELETE SET NULL,
-  sender_name TEXT,
-  sender_team TEXT,
-  recipient_name TEXT NOT NULL,
-  recipient_address TEXT NOT NULL,
-  message TEXT,
-  total NUMERIC(10, 2) NOT NULL CHECK (total > 0),
-  status TEXT NOT NULL CHECK (status IN ('pending', 'completed', 'delivered')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  delivered_at TIMESTAMPTZ
-);
-
-CREATE INDEX idx_sapatinho_veloz_orders_sale_id ON public.sapatinho_veloz_orders(sale_id);
-CREATE INDEX idx_sapatinho_veloz_orders_sender_user_id ON public.sapatinho_veloz_orders(sender_user_id);
-CREATE INDEX idx_sapatinho_veloz_orders_status ON public.sapatinho_veloz_orders(status);
-CREATE INDEX idx_sapatinho_veloz_orders_created_at ON public.sapatinho_veloz_orders(created_at);
-
-CREATE TABLE public.sapatinho_veloz_order_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES public.sapatinho_veloz_orders(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES public.sapatinho_products(id),
-  product_name TEXT NOT NULL,
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
-  price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_sapatinho_veloz_order_items_order_id
-  ON public.sapatinho_veloz_order_items(order_id);
-CREATE INDEX idx_sapatinho_veloz_order_items_product_id
-  ON public.sapatinho_veloz_order_items(product_id);
 
 -- ---------------------------------------------------------------------------
 -- Movimentacoes de saldo, pagamentos PIX, cupons e configuracoes
@@ -326,10 +246,6 @@ FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 CREATE TRIGGER update_products_updated_at
 BEFORE UPDATE ON public.products
-FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_sapatinho_products_updated_at
-BEFORE UPDATE ON public.sapatinho_products
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 CREATE TRIGGER update_pix_payments_updated_at
@@ -475,14 +391,9 @@ DECLARE
   app_tables TEXT[] := ARRAY[
     'app_users',
     'products',
-    'sapatinho_products',
     'sales',
     'sale_items',
     'orders',
-    'sapatinho_sales',
-    'sapatinho_sale_items',
-    'sapatinho_veloz_orders',
-    'sapatinho_veloz_order_items',
     'transactions',
     'pix_payments',
     'coupons',

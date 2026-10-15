@@ -23,25 +23,19 @@ export type Permission =
   | 'products:view'
   | 'products:create_lojinha'
   | 'products:create_lanchonete'
-  | 'products:create_sapatinho'
   | 'products:update_lojinha'
   | 'products:update_lanchonete'
-  | 'products:update_sapatinho'
   | 'products:delete_lojinha'
   | 'products:delete_lanchonete'
-  | 'products:delete_sapatinho'
   // Vendas
   | 'sales:create_lojinha'
   | 'sales:create_lanchonete'
-  | 'sales:create_sapatinho'
   | 'sales:view_history_lojinha'
   | 'sales:view_history_lanchonete'
-  | 'sales:view_history_sapatinho'
   | 'sales:view_own'
   // Pedidos
   | 'orders:view'
   | 'orders:mark_delivered'
-  | 'orders:place_sapatinho'  // Fazer pedidos no Sapatinho
   // Admin
   | 'admin:manage_users'
   | 'admin:view_reports'
@@ -49,12 +43,12 @@ export type Permission =
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
     'accounts:view_all', 'accounts:view_own', 'accounts:adjust_balance', 'accounts:debit_balance',
-    'products:view', 'products:create_lojinha', 'products:create_lanchonete', 'products:create_sapatinho',
-    'products:update_lojinha', 'products:update_lanchonete', 'products:update_sapatinho',
-    'products:delete_lojinha', 'products:delete_lanchonete', 'products:delete_sapatinho',
-    'sales:create_lojinha', 'sales:create_lanchonete', 'sales:create_sapatinho',
-    'sales:view_history_lojinha', 'sales:view_history_lanchonete', 'sales:view_history_sapatinho',
-    'orders:view', 'orders:mark_delivered', 'orders:place_sapatinho',
+    'products:view', 'products:create_lojinha', 'products:create_lanchonete',
+    'products:update_lojinha', 'products:update_lanchonete',
+    'products:delete_lojinha', 'products:delete_lanchonete',
+    'sales:create_lojinha', 'sales:create_lanchonete',
+    'sales:view_history_lojinha', 'sales:view_history_lanchonete',
+    'orders:view', 'orders:mark_delivered',
     'admin:manage_users', 'admin:view_reports'
   ],
   
@@ -62,25 +56,21 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'accounts:view_all', 'accounts:view_own',
     'products:view', 'products:create_lojinha', 'products:update_lojinha', 'products:delete_lojinha',
     'sales:create_lojinha', 'sales:view_history_lojinha',
-    'orders:place_sapatinho',
   ],
   
   lanchonete: [
     'accounts:view_all', 'accounts:view_own',
     'products:view', 'products:create_lanchonete', 'products:update_lanchonete', 'products:delete_lanchonete',
     'sales:create_lanchonete', 'sales:view_history_lanchonete',
-    'orders:place_sapatinho',
   ],
   
   comunicacao: [
     'accounts:view_all', 'accounts:view_own', 'accounts:adjust_balance', 'accounts:debit_balance',
-    'orders:place_sapatinho',
   ],
   
   servico: [
     'accounts:view_own',
     'sales:view_own',
-    'orders:place_sapatinho',  // ✅ Pode fazer pedidos no sapatinho
   ],
   
   encontrista: [
