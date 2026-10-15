@@ -17,12 +17,9 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
     canViewAdmin,
     canSellLojinha,
     canSellLanchonete,
-    canSellSapatinho,
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
-    canViewSalesHistorySapatinho,
     canViewOpenOrders,
-    canPlaceOrderSapatinho
   } = usePermissions()
   
   const tabClass = (active: boolean) =>
@@ -89,56 +86,12 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
               📊 Histórico Lanchonete
             </button>
           )}
-          {canViewSalesHistorySapatinho && (
-            <button
-              onClick={() => {
-                onTabChange('historicoSapatinho')
-                safeNavigate('/historico/sapatinho')}
-              }
-              className={tabClass(activeTab === 'historicoSapatinho')}
-            >
-              📊 Histórico Sapatinho
-            </button>
-          )}
-          {userRole === 'admin' && (
-            <button
-              onClick={() => safeNavigate('/sapatinho-veloz')}
-              className={tabClass(activeTab === 'sapatinho-veloz')}
-            >
-              💌 Sapatinho Veloz
-            </button>
-          )}
-          {/* Produtos Sapatinho - Cadastrar e Listar - APENAS admin e lojinha podem gerenciar */}
-          {(userRole === 'admin' || userRole === 'lojinha') && (
-            <>
-              <button
-                onClick={() => safeNavigate('/sapatinho-veloz/products/create')}
-                className={tabClass(activeTab === 'sapatinho-veloz-products-create')}
-              >
-                💌 Cadastrar Itens Sapatinho
-              </button>
-              <button
-                onClick={() => safeNavigate('/sapatinho-veloz/products')}
-                className={tabClass(activeTab === 'sapatinho-veloz-products')}
-              >
-                📋 Listar Itens Sapatinho
-              </button>
-            </>
-          )}
           {canViewOpenOrders && (
             <button
               onClick={() => safeNavigate('/pedidos-lojinha')}
               className={tabClass(activeTab === 'lojinhaPedidos')}
             >
               📦 Pedidos Lojinha
-            </button>
-          )}
-          {canViewOpenOrders && (
-            <button
-              onClick={() => safeNavigate('/pedidos-sapatinho-veloz')}
-              className={tabClass(activeTab === 'pedidos-sapatinho-veloz')}
-            >
-              📦 Pedidos Sapatinho Veloz
             </button>
           )}
           {canViewAdmin && (

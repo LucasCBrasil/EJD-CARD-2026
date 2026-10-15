@@ -89,15 +89,6 @@ const HomePage: React.FC = () => {
       canAccess: canSellLanchonete || canManageProductsLanchonete || canViewSalesHistoryLanchonete
     },
     {
-      id: 'sapatinho',
-      title: 'SAPATINHO VELOZ',
-      icon: '💌',
-      description: 'Torne o dia de alguém ainda mais especial',
-      accent: 'bg-ferro-500',
-      path: '/sapatinho-veloz',
-      canAccess: canViewAdmin
-    },
-    {
       id: 'adm',
       title: 'ADM',
       icon: '👥',
@@ -243,52 +234,6 @@ const HomePage: React.FC = () => {
             description: 'Gerenciar cardápio',
             path: '/lanchonete/products',
             canAccess: canManageProductsLanchonete
-          }
-        ]
-      
-      case 'sapatinho':
-        return [
-          {
-            icon: '🛍️',
-            title: 'Realizar Venda',
-            description: 'Processar vendas',
-            path: '/sapatinho-veloz/sales',
-            canAccess: canSellSapatinho
-          },
-          {
-            icon: '🛒',
-            title: 'Fazer Pedido',
-            description: 'Solicitar produto',
-            path: '/sapatinho-veloz/select',
-            canAccess: canPlaceOrderSapatinho
-          },
-          {
-            icon: '📊',
-            title: 'Histórico de Vendas',
-            description: 'Consultar vendas realizadas',
-            path: '/historico/sapatinho',
-            canAccess: canViewSalesHistorySapatinho
-          },
-          {
-            icon: '📥',
-            title: 'Pedidos Abertos',
-            description: 'Ver pedidos pendentes',
-            path: '/pedidos-sapatinho-veloz',
-            canAccess: canViewOpenOrders && (userRole === 'admin' || userRole === 'lojinha')
-          },
-          {
-            icon: '💌',
-            title: 'Cadastrar Produto',
-            description: 'Adicionar novo produto',
-            path: '/sapatinho-veloz/products/create',
-            canAccess: userRole === 'admin' || userRole === 'lojinha'
-          },
-          {
-            icon: '📋',
-            title: 'Listar Produtos',
-            description: 'Gerenciar produtos',
-            path: '/sapatinho-veloz/products',
-            canAccess: userRole === 'admin' || userRole === 'lojinha'
           }
         ]
       
