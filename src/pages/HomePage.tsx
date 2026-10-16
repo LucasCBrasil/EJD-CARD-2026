@@ -377,7 +377,7 @@ const HomePage: React.FC = () => {
         {/* Rodapé */}
         <div className="mt-14 flex justify-center">
           <div className="inline-flex items-center gap-3 pl-2 pr-5 py-2 rounded-full bg-caldeira shadow-bilhete">
-            <img src="/logos/web/trenzinho-creme.webp" alt="EJD 25 anos" className="w-10 h-10" />
+            <img src="/logos/web/trenzinho-creme.webp" alt="EJD 25 anos" className="w-6 h-10 ml-2" />
             <p className="font-display text-sm tracking-wider uppercase text-creme-200">
               Sistema de Gestão · Encontrão EJD 25 Anos
             </p>

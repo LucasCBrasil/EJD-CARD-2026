@@ -108,7 +108,7 @@ const Login: React.FC = () => {
                 {isLogin ? 'Bem-vindo a bordo' : 'Nova passagem'}
               </h1>
             </div>
-            <img src="/logos/web/trenzinho-creme.webp" alt="EJD 25 anos" className="w-12 h-12 opacity-90" />
+            <img src="/logos/web/trenzinho-creme.webp" alt="EJD 25 anos" className="w-8 h-12 opacity-90" />
           </div>
           <div className="trilho mx-6 mt-4" />
 
