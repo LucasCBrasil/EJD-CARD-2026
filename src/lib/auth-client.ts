@@ -135,7 +135,7 @@ export const auth = {
     // Em produção, sempre redireciona para o domínio principal
     const redirectUrl = isDev 
       ? window.location.origin 
-      : 'https://www.ejdcard.com.br'
+      : 'https://ejd-card-2026.vercel.app'
     return client.auth.signInWithOAuth({
       provider: 'google',
       options: {

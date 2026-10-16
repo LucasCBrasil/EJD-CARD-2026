@@ -8,11 +8,8 @@ export type UserRole =
   | 'encontrista'
 
 export interface RolePermissions {
-  // Cartões
-  canViewCards: boolean
-  canCreateCards: boolean
-  canEditCards: boolean
-  canDeleteCards: boolean
+  // Contas e saldos
+  canViewAccounts: boolean
   
   // Saldo
   canAddBalance: boolean
@@ -26,16 +23,13 @@ export interface RolePermissions {
   // Vendas (realizar vendas)
   canSellLojinha: boolean
   canSellLanchonete: boolean
-  canSellSapatinho: boolean  // Vender produtos do sapatinho
   
   // Histórico de vendas (ver relatórios)
   canViewSalesHistoryLojinha: boolean
   canViewSalesHistoryLanchonete: boolean
-  canViewSalesHistorySapatinho: boolean
   
-  // Pedidos Sapatinho
-  canPlaceOrderSapatinho: boolean  // FAZER pedido no sapatinho (como cliente)
-  canViewOpenOrders: boolean       // Ver pedidos abertos (lojinha + sapatinho)
+  // Pedidos
+  canViewOpenOrders: boolean
   canMarkAsDelivered: boolean      // Marcar pedidos como entregue
   
   // Admin
@@ -48,10 +42,7 @@ export interface RolePermissions {
 export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   // Admin - Acesso total
   admin: {
-    canViewCards: true,
-    canCreateCards: true,
-    canEditCards: true,
-    canDeleteCards: true,
+    canViewAccounts: true,
     canAddBalance: true,
     canViewOwnBalance: true,
     canViewAllBalances: true,
@@ -59,24 +50,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canManageProductsLanchonete: true,
     canSellLojinha: true,
     canSellLanchonete: true,
-    canSellSapatinho: true,              // ✅ Pode vender
     canViewSalesHistoryLojinha: true,
     canViewSalesHistoryLanchonete: true,
-    canViewSalesHistorySapatinho: true,  // ✅ Vê histórico
-    canPlaceOrderSapatinho: true,        // ✅ Pode fazer pedidos
-    canViewOpenOrders: true,             // ✅ Vê pedidos
+    canViewOpenOrders: true,
     canMarkAsDelivered: true,
     canManageUsers: true,
     canViewAdmin: true,
     canViewReports: true,
   },
   
-  // Lojinha - Acesso total à lojinha + sapatinho
+  // Lojinha
   lojinha: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
+    canViewAccounts: true,
     canAddBalance: false,
     canViewOwnBalance: true,
     canViewAllBalances: false,
@@ -84,24 +69,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canManageProductsLanchonete: false,
     canSellLojinha: true,
     canSellLanchonete: false,
-    canSellSapatinho: true,              // ✅ Pode vender
     canViewSalesHistoryLojinha: true,
     canViewSalesHistoryLanchonete: false,
-    canViewSalesHistorySapatinho: true,  // ✅ Vê histórico
-    canPlaceOrderSapatinho: true,        // ✅ Pode fazer pedidos
-    canViewOpenOrders: true,              // ✅ Vê pedidos (lojinha + sapatinho)
-    canMarkAsDelivered: true,             // ✅ Marca entregue
+    canViewOpenOrders: true,
+    canMarkAsDelivered: true,
     canManageUsers: false,
     canViewAdmin: false,
     canViewReports: false,
   },
   
-  // Lanchonete - Acesso total à lanchonete + pode vender sapatinho
+  // Lanchonete
   lanchonete: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
+    canViewAccounts: true,
     canAddBalance: false,
     canViewOwnBalance: true,
     canViewAllBalances: false,
@@ -109,61 +88,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canManageProductsLanchonete: true,
     canSellLojinha: false,
     canSellLanchonete: true,
-    canSellSapatinho: true,              // ✅ Pode vender
     canViewSalesHistoryLojinha: false,
     canViewSalesHistoryLanchonete: true,
-    canViewSalesHistorySapatinho: false, // ❌ NÃO vê histórico
-    canPlaceOrderSapatinho: true,        // ✅ Pode fazer pedidos
-    canViewOpenOrders: false,             // ❌ NÃO vê pedidos
-    canMarkAsDelivered: false,
-    canManageUsers: false,
-    canViewAdmin: false,
-    canViewReports: false,
-  },
-  
-  // Comunicação - CRUD de cartões + saldo + pode vender sapatinho
-  comunicacao: {
-    canViewCards: true,
-    canCreateCards: true,
-    canEditCards: true,
-    canDeleteCards: false,
-    canAddBalance: true,
-    canViewOwnBalance: true,
-    canViewAllBalances: true,
-    canManageProductsLojinha: false,
-    canManageProductsLanchonete: false,
-    canSellLojinha: false,
-    canSellLanchonete: false,
-    canSellSapatinho: true,              // ✅ Pode vender
-    canViewSalesHistoryLojinha: false,
-    canViewSalesHistoryLanchonete: false,
-    canViewSalesHistorySapatinho: false, // ❌ NÃO vê histórico
-    canPlaceOrderSapatinho: true,        // ✅ Pode fazer pedidos
-    canViewOpenOrders: false,             // ❌ NÃO vê pedidos
-    canMarkAsDelivered: false,
-    canManageUsers: false,
-    canViewAdmin: false,
-    canViewReports: false,
-  },
-  
-  // Serviço - Ver próprio cartão + pode fazer pedidos no Sapatinho
-  servico: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
-    canAddBalance: false,
-    canViewOwnBalance: true,
-    canViewAllBalances: false,
-    canManageProductsLojinha: false,
-    canManageProductsLanchonete: false,
-    canSellLojinha: false,
-    canSellLanchonete: false,
-    canSellSapatinho: false,             // ❌ NÃO vende
-    canViewSalesHistoryLojinha: false,
-    canViewSalesHistoryLanchonete: false,
-    canViewSalesHistorySapatinho: false,
-    canPlaceOrderSapatinho: true,        // ✅ PODE fazer pedidos
     canViewOpenOrders: false,
     canMarkAsDelivered: false,
     canManageUsers: false,
@@ -171,12 +97,28 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewReports: false,
   },
   
-  // Encontrista - Ver próprio saldo e cartão (NÃO usa sapatinho)
-  encontrista: {
-    canViewCards: true,
-    canCreateCards: false,
-    canEditCards: false,
-    canDeleteCards: false,
+  // Comunicação - gestão de saldo
+  comunicacao: {
+    canViewAccounts: true,
+    canAddBalance: true,
+    canViewOwnBalance: true,
+    canViewAllBalances: true,
+    canManageProductsLojinha: false,
+    canManageProductsLanchonete: false,
+    canSellLojinha: false,
+    canSellLanchonete: false,
+    canViewSalesHistoryLojinha: false,
+    canViewSalesHistoryLanchonete: false,
+    canViewOpenOrders: false,
+    canMarkAsDelivered: false,
+    canManageUsers: false,
+    canViewAdmin: false,
+    canViewReports: false,
+  },
+  
+  // Serviço - ver o próprio saldo
+  servico: {
+    canViewAccounts: true,
     canAddBalance: false,
     canViewOwnBalance: true,
     canViewAllBalances: false,
@@ -184,11 +126,27 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canManageProductsLanchonete: false,
     canSellLojinha: false,
     canSellLanchonete: false,
-    canSellSapatinho: false,             // ❌ NÃO pode vender
     canViewSalesHistoryLojinha: false,
     canViewSalesHistoryLanchonete: false,
-    canViewSalesHistorySapatinho: false,
-    canPlaceOrderSapatinho: false,       // ❌ NÃO faz pedidos
+    canViewOpenOrders: false,
+    canMarkAsDelivered: false,
+    canManageUsers: false,
+    canViewAdmin: false,
+    canViewReports: false,
+  },
+  
+  // Encontrista - ver o próprio saldo
+  encontrista: {
+    canViewAccounts: true,
+    canAddBalance: false,
+    canViewOwnBalance: true,
+    canViewAllBalances: false,
+    canManageProductsLojinha: false,
+    canManageProductsLanchonete: false,
+    canSellLojinha: false,
+    canSellLanchonete: false,
+    canViewSalesHistoryLojinha: false,
+    canViewSalesHistoryLanchonete: false,
     canViewOpenOrders: false,
     canMarkAsDelivered: false,
     canManageUsers: false,

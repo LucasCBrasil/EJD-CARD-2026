@@ -637,7 +637,7 @@ class TestRunner {
 
   async testCategoriaLojinha() {
     const categoria = 'lojinha'
-    const categoriasValidas = ['lojinha', 'lanchonete', 'sapatinho']
+    const categoriasValidas = ['lojinha', 'lanchonete']
     if (categoriasValidas.includes(categoria)) {
       return // OK
     }
@@ -646,25 +646,25 @@ class TestRunner {
 
   async testCategoriaLanchonete() {
     const categoria = 'lanchonete'
-    const categoriasValidas = ['lojinha', 'lanchonete', 'sapatinho']
+    const categoriasValidas = ['lojinha', 'lanchonete']
     if (categoriasValidas.includes(categoria)) {
       return // OK
     }
     throw new Error('Categoria lanchonete não reconhecida')
   }
 
-  async testCategoriaSapatinho() {
+  async testCategoriaLegadaNaoSuportada() {
     const categoria = 'sapatinho'
-    const categoriasValidas = ['lojinha', 'lanchonete', 'sapatinho']
-    if (categoriasValidas.includes(categoria)) {
-      return // OK
+    const categoriasValidas = ['lojinha', 'lanchonete']
+    if (!categoriasValidas.includes(categoria)) {
+      return // OK - categorias removidas devem ser rejeitadas
     }
-    throw new Error('Categoria sapatinho não reconhecida')
+    throw new Error('Categoria legada foi aceita')
   }
 
   async testCategoriaInvalida() {
     const categoria = 'invalida'
-    const categoriasValidas = ['lojinha', 'lanchonete', 'sapatinho']
+    const categoriasValidas = ['lojinha', 'lanchonete']
     if (!categoriasValidas.includes(categoria)) {
       return // OK - deve rejeitar
     }
@@ -762,7 +762,7 @@ class TestRunner {
     console.log(`\n${colors.magenta}🏷️  Testes de Categorias${colors.reset}`)
     await this.test('Validação de Categoria Lojinha', () => this.testCategoriaLojinha())
     await this.test('Validação de Categoria Lanchonete', () => this.testCategoriaLanchonete())
-    await this.test('Validação de Categoria Sapatinho', () => this.testCategoriaSapatinho())
+    await this.test('Rejeição de Categoria Legada', () => this.testCategoriaLegadaNaoSuportada())
     await this.test('Validação de Categoria Inválida', () => this.testCategoriaInvalida())
 
     this.printSummary()

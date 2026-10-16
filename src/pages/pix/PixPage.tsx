@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { Button, CurrencyInput, CpfCnpjInput, isValidCpfCnpj, TrainLoader } from '../../components/shared'
 import { useAuth } from '../../contexts/AuthContext'
-import { isSupabaseConfigured } from '../../lib/auth-client'
 
 // ============================================
 // Constantes
@@ -16,8 +15,6 @@ const MIN_AMOUNT = 5.00 // Valor mínimo permitido pelo Asaas
 interface PixFormData {
   amount: number // Valor numérico em reais
   cpfCnpj: string // Apenas dígitos
-  cardId: string
-  cardName: string
 }
 
 interface PixPaymentData {
@@ -54,12 +51,9 @@ export const PixPage: React.FC = () => {
   const [formData, setFormData] = useState<PixFormData>({
     amount: 0,
     cpfCnpj: '',
-    cardId: '',
-    cardName: '',
   })
   const [paymentData, setPaymentData] = useState<PixPaymentData | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [card, setCard] = useState<any>(null)
   const [pixEnabled, setPixEnabled] = useState<boolean | null>(null) // null = carregando
   const [isLoadingFlags, setIsLoadingFlags] = useState(true)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
@@ -69,17 +63,12 @@ export const PixPage: React.FC = () => {
   const totalWithFee = amountValue + PIX_FEE
   const isValidAmount = amountValue >= MIN_AMOUNT
   const cpfCnpjValidation = isValidCpfCnpj(formData.cpfCnpj)
-  const isFormValid = isValidAmount && cpfCnpjValidation.valid && formData.cardId
+  const isFormValid = isValidAmount && cpfCnpjValidation.valid && !!user?.id
 
   // Carregar feature flag do PIX
   useEffect(() => {
     loadPixFlag()
   }, [])
-
-  // Carregar cartão do usuário
-  useEffect(() => {
-    loadUserCard()
-  }, [user?.id])
 
   const loadPixFlag = async () => {
     setIsLoadingFlags(true)
@@ -121,26 +110,6 @@ export const PixPage: React.FC = () => {
       }
     }
   }, [])
-
-  const loadUserCard = async () => {
-    if (!user?.id || !isSupabaseConfigured()) return
-
-    try {
-      const { api } = await import('../../lib/api-client')
-      const response = await api.getCardByUserId(user.id)
-      
-      if (response.success && response.data) {
-        setCard(response.data)
-        setFormData(prev => ({
-          ...prev,
-          cardId: response.data.id,
-          cardName: response.data.user_name || 'Meu Cartão',
-        }))
-      }
-    } catch (err) {
-      console.error('Erro ao carregar cartão:', err)
-    }
-  }
 
   const loadPaymentStatus = async (paymentId: string) => {
     setPageState('payment')
@@ -205,8 +174,8 @@ export const PixPage: React.FC = () => {
       return
     }
 
-    if (!formData.cardId) {
-      setError('Nenhum cartão encontrado')
+    if (!user?.id) {
+      setError('É necessário estar autenticado para adicionar saldo')
       setPageState('form')
       return
     }
@@ -222,20 +191,19 @@ export const PixPage: React.FC = () => {
 
       // IMPORTANTE: O valor cobrado no PIX inclui a taxa
       // O usuário paga: valor desejado + taxa
-      // O valor creditado no cartão será: valor desejado (a taxa fica com o Asaas)
+      // O valor creditado na conta será o valor desejado (a taxa fica com o Asaas).
       const pixAmount = totalWithFee
 
       const res = await fetch(`${functionsBase}/asaas-pix`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          name: formData.cardName || 'Cliente EJD Card',
+          name: user?.name || 'Cliente EJD',
           email: user?.email,
           cpfCnpj: cpf,
           amount: pixAmount, // Valor total com taxa
-          creditAmount: amountValue, // Valor que será creditado no cartão
-          description: `Abastecimento via PIX (R$ ${amountValue.toFixed(2)} + R$ ${PIX_FEE.toFixed(2)} taxa)`,
-          cardId: formData.cardId,
+          creditAmount: amountValue,
+          description: `Crédito via PIX (R$ ${amountValue.toFixed(2)} + R$ ${PIX_FEE.toFixed(2)} taxa)`,
           userId: user?.id,
         }),
       })
@@ -316,7 +284,7 @@ export const PixPage: React.FC = () => {
 
   const goBack = () => {
     stopPolling()
-    navigate({ to: '/mycard' })
+    navigate({ to: '/account' })
   }
 
   // ============================================
@@ -338,7 +306,7 @@ export const PixPage: React.FC = () => {
 
     // PIX desabilitado - redireciona silenciosamente
     if (pixEnabled === false) {
-      navigate({ to: '/mycard' })
+      navigate({ to: '/account' })
       return null
     }
 
@@ -347,9 +315,9 @@ export const PixPage: React.FC = () => {
         <div className="painel p-5 sm:p-6 text-ferro-900">
           <div className="text-center mb-5">
             <div className="text-5xl mb-2">⛽</div>
-            <p className="text-xs font-display uppercase tracking-[0.2em] text-vagao-600">Guichê de abastecimento</p>
+            <p className="text-xs font-display uppercase tracking-[0.2em] text-vagao-600">Crédito na conta</p>
             <h1 className="text-2xl font-display font-semibold uppercase tracking-wide text-ferro-900">
-              Abastecer via PIX
+              Adicionar saldo via PIX
             </h1>
             <p className="text-ferro-600 text-sm mt-1">
               Gere um código PIX para adicionar créditos
@@ -357,26 +325,18 @@ export const PixPage: React.FC = () => {
             <div className="trilho w-full mt-4" />
           </div>
 
-          {!card ? (
-            <div className="text-center py-8">
-              <p className="text-ferro-700 mb-4">Você precisa ter um cartão associado.</p>
-              <Button onClick={() => navigate({ to: '/cards/associate' })}>
-                Associar Cartão
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Info do Cartão */}
+          <div className="space-y-4">
+              {/* Conta que receberá o crédito */}
               <div className="bilhete px-5 py-4">
-                <p className="text-xs font-display uppercase tracking-[0.2em] text-ferro-500">Cartão selecionado</p>
-                <p className="font-bold text-lg text-ferro-900">{card.user_name || 'Meu Cartão'}</p>
-                <p className="text-sm text-ferro-700 font-ticket tracking-wider">{card.card_number}</p>
+                <p className="text-xs font-display uppercase tracking-[0.2em] text-ferro-500">Conta que receberá o crédito</p>
+                <p className="font-bold text-lg text-ferro-900">{user?.name || 'Minha Conta'}</p>
+                <p className="text-sm text-ferro-700">{user?.email}</p>
               </div>
 
               {/* Campo Valor */}
               <div>
                 <label className="block text-sm font-semibold text-ferro-900 mb-2">
-                  Quanto quer adicionar ao cartão?
+                  Quanto quer adicionar à sua conta?
                 </label>
                 <CurrencyInput
                   value={formData.amount}
@@ -395,7 +355,7 @@ export const PixPage: React.FC = () => {
                 <div className="bg-creme-200 rounded-xl p-4 border border-ferro-200">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-ferro-700">Valor para o cartão:</span>
+                      <span className="text-ferro-700">Valor para sua conta:</span>
                       <span className="font-semibold text-ferro-900">
                         R$ {amountValue.toFixed(2).replace('.', ',')}
                       </span>
@@ -458,7 +418,7 @@ export const PixPage: React.FC = () => {
                   onClick={generatePix}
                   size="lg"
                   className="w-full !bg-vagao-600 hover:!bg-vagao-700 !text-creme-50 !border-vagao-600 uppercase"
-                  disabled={!isValidAmount}
+                  disabled={!isFormValid}
                 >
                   {isValidAmount 
                     ? `Gerar PIX de R$ ${totalWithFee.toFixed(2).replace('.', ',')}`
@@ -478,8 +438,7 @@ export const PixPage: React.FC = () => {
               <p className="text-xs text-center text-ferro-500">
                 A taxa de R$ {PIX_FEE.toFixed(2).replace('.', ',')} é cobrada pela plataforma de pagamentos (Asaas).
               </p>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     )
@@ -514,7 +473,7 @@ export const PixPage: React.FC = () => {
                 R$ {paymentTotal.toFixed(2).replace('.', ',')}
               </p>
               <p className="text-xs text-ferro-600 mt-2">
-                (R$ {paymentData.amount.toFixed(2).replace('.', ',')} para o cartão + R$ {PIX_FEE.toFixed(2).replace('.', ',')} taxa)
+                (R$ {paymentData.amount.toFixed(2).replace('.', ',')} para sua conta + R$ {PIX_FEE.toFixed(2).replace('.', ',')} taxa)
               </p>
             </div>
           </div>
@@ -606,7 +565,7 @@ export const PixPage: React.FC = () => {
             size="lg"
             className="w-full"
           >
-            ✓ Voltar para Meu Cartão
+            ✓ Voltar para Minha Conta
           </Button>
         </div>
       </div>
@@ -654,4 +613,3 @@ export const PixPage: React.FC = () => {
 }
 
 export default PixPage
-

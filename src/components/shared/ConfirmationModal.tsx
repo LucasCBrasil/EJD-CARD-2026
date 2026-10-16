@@ -1,13 +1,10 @@
 
 import React from 'react'
 
-interface Card {
+interface Account {
   id: string
   name?: string
-  userName?: string
-  user_name?: string
-  cardNumber?: string
-  card_number?: string
+  email?: string
   balance: number
 }
 
@@ -26,13 +23,13 @@ interface ConfirmationModalProps {
   onConfirm: () => void
   title: string
   icon: string
-  card?: Card | null
+  account?: Account | null
   transactionType?: 'credit' | 'debit'
   amount?: string
   formattedAmount?: string
   description?: string
   message?: string
-  variant?: 'card-transaction' | 'delete-product' | 'delivery-confirmation'
+  variant?: 'account-transaction' | 'delete-product' | 'delivery-confirmation'
   // Props para exclusão de produto
   product?: Product | null
   // Estado de carregamento
@@ -47,7 +44,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   icon,
   message,
   variant,
-  card,
+  account,
   transactionType,
   amount,
   formattedAmount,
@@ -58,29 +55,24 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   if (!isOpen) return null
 
   // Inferir variante quando não informada
-  const computedVariant: 'card-transaction' | 'delete-product' | 'delivery-confirmation' | undefined = variant
+  const computedVariant: 'account-transaction' | 'delete-product' | 'delivery-confirmation' | undefined = variant
     ? variant
     : product
       ? 'delete-product'
-      : card
-        ? 'card-transaction'
+      : account
+        ? 'account-transaction'
         : undefined
 
-  if (computedVariant === 'card-transaction' && !card) return null
+  if (computedVariant === 'account-transaction' && !account) return null
   if (computedVariant === 'delete-product' && !product) return null
-
-  const formatCardNumber = (number: string) => {
-    if (!number) return ''
-    return number.replace(/(\d{4})(?=\d)/g, '$1 ')
-  }
 
   const formatPrice = (price: number): string => {
     return price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
   const getNewBalance = () => {
-    if (!card || !amount) return 0
-    const currentBalance = card.balance
+    if (!account || !amount) return 0
+    const currentBalance = account.balance
     const transactionAmount = parseFloat(amount || '0')
     
     if (transactionType === 'credit') {
@@ -101,7 +93,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     else if (computedVariant === 'delivery-confirmation') {
       return 'bg-ferro-800 hover:bg-ferro-700 border-ferro-800 text-creme-200'
     }
-    if (transactionType === 'credit' || computedVariant === 'card-transaction') {
+    if (transactionType === 'credit' || computedVariant === 'account-transaction') {
       return 'bg-ferro-800 hover:bg-ferro-700 border-ferro-800 text-creme-200'
     }
     return 'bg-vagao-600 hover:bg-vagao-700 border-vagao-600 text-creme-50'
@@ -135,22 +127,19 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         </div>
 
         {/* Conteúdo específico por variante */}
-        {(computedVariant === 'card-transaction' || (!!card && !computedVariant)) && card && (
+        {(computedVariant === 'account-transaction' || (!!account && !computedVariant)) && account && (
           <>
-            {/* Dados do Cartão */}
             <div className="card-data rounded-xl border border-ferro-200 p-4 mb-4">
               <div className="flex items-center justify-between gap-3 mb-2">
-                <h4 className="font-display text-sm uppercase tracking-wider text-ferro-700">🎫 Dados do Cartão</h4>
-                <span className="font-ticket font-bold text-ferro-900">
-                  Nº {formatCardNumber(card.cardNumber || card.card_number || '')}
-                </span>
+                <h4 className="font-display text-sm uppercase tracking-wider text-ferro-700">Conta</h4>
+                <span className="text-sm text-ferro-600">{account.email}</span>
               </div>
               <p className="text-ferro-900 font-semibold font-body">
-                {card.userName || card.user_name}
+                {account.name}
               </p>
               <div className="flex justify-between items-baseline mt-1">
                 <span className="text-sm text-ferro-600">Saldo atual</span>
-                <span className="font-slab text-ferro-900">R$ {card.balance.toFixed(2).replace('.', ',')}</span>
+                <span className="font-slab text-ferro-900">R$ {account.balance.toFixed(2).replace('.', ',')}</span>
               </div>
             </div>
 

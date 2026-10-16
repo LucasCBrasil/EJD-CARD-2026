@@ -8,13 +8,11 @@ const QuickAccessCards: React.FC = () => {
   const routerState = useRouterState()
   const { 
     userRole,
-    canViewCards,
     canViewAdmin,
     canSellLojinha,
     canSellLanchonete,
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
-    canViewSalesHistorySapatinho,
     canViewOpenOrders
   } = usePermissions()
 
@@ -27,21 +25,21 @@ const QuickAccessCards: React.FC = () => {
 
   const cards = []
 
-  // Card: Meu Cartão (sempre visível)
+  // Conta pessoal (sempre visível)
   cards.push({
-    title: '💳 Meu Cartão',
-    description: 'Ver seu cartão e saldo',
-    path: '/mycard',
+    title: '👤 Minha Conta',
+    description: 'Ver seu saldo e histórico',
+    path: '/account',
     color: 'bg-anil-700',
     buttonColor: 'bg-anil-700 hover:bg-anil-800'
   })
 
-  // Card: Comunicação (apenas admin e comunicacao)
+  // Gestão de contas (apenas admin e comunicação)
   if (userRole === 'admin' || userRole === 'comunicacao') {
     cards.push({
-      title: '💳 Comunicação',
-      description: 'Gerenciar cartões',
-      path: '/cards',
+      title: '💰 Contas e Saldos',
+      description: 'Gerenciar saldos de usuários',
+      path: '/accounts',
       color: 'bg-ferro-800',
       buttonColor: 'bg-ferro-800 hover:bg-ferro-700'
     })
@@ -88,17 +86,6 @@ const QuickAccessCards: React.FC = () => {
       path: '/historico/lanchonete',
       color: 'bg-latao-600',
       buttonColor: 'bg-latao-600 hover:bg-latao-700'
-    })
-  }
-
-  // Card: Histórico Sapatinho (se tiver permissão)
-  if (canViewSalesHistorySapatinho) {
-    cards.push({
-      title: '💌 Histórico Sapatinho',
-      description: 'Ver histórico de vendas',
-      path: '/historico/sapatinho',
-      color: 'bg-ferro-500',
-      buttonColor: 'bg-ferro-500 hover:bg-ferro-600'
     })
   }
 
@@ -160,4 +147,3 @@ const QuickAccessCards: React.FC = () => {
 }
 
 export default QuickAccessCards
-

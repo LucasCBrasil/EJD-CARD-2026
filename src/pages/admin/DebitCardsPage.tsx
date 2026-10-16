@@ -1,33 +1,30 @@
 import React, { useState, useMemo } from 'react'
-import { useNavigate, Link } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { usePermissions } from '../../hooks/usePermissions'
-import { useCards } from '../../hooks/useCards'
+import { useAccounts } from '../../hooks/useAccounts'
 import { LoadingSpinner, BackButton } from '../../components/shared'
 
-interface Card {
+interface Account {
   id: string
-  card_number: string
-  user_name: string
+  email: string
+  name: string
   balance: number
-  phone_number?: string
-  is_associated: boolean
-  created_at: string
 }
 
 const DebitCardsPage: React.FC = () => {
   const navigate = useNavigate()
   const { canManageUsers } = usePermissions()
-  const { data: allCards, isLoading, error, refetch } = useCards()
-  const [sortBy, setSortBy] = useState<'balance' | 'name' | 'number'>('balance')
+  const { data: allAccounts, isLoading, error, refetch } = useAccounts()
+  const [sortBy, setSortBy] = useState<'balance' | 'name' | 'email'>('balance')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
-  // Filtrar apenas cartões com saldo negativo
+  // Filtrar apenas contas com saldo negativo.
   const debitCards = useMemo(() => {
-    if (!allCards) return []
-    return (allCards as Card[]).filter(card => parseFloat(card.balance?.toString() || '0') < 0)
-  }, [allCards])
+    if (!allAccounts) return []
+    return (allAccounts as Account[]).filter(account => account.balance < 0)
+  }, [allAccounts])
 
-  // Ordenar cartões
+  // Ordenar contas.
   const sortedCards = useMemo(() => {
     const sorted = [...debitCards].sort((a, b) => {
       let comparison = 0
@@ -36,10 +33,10 @@ const DebitCardsPage: React.FC = () => {
           comparison = parseFloat(a.balance?.toString() || '0') - parseFloat(b.balance?.toString() || '0')
           break
         case 'name':
-          comparison = (a.user_name || '').localeCompare(b.user_name || '')
+          comparison = (a.name || '').localeCompare(b.name || '')
           break
-        case 'number':
-          comparison = (a.card_number || '').localeCompare(b.card_number || '')
+        case 'email':
+          comparison = (a.email || '').localeCompare(b.email || '')
           break
       }
       return sortOrder === 'asc' ? comparison : -comparison
@@ -56,7 +53,7 @@ const DebitCardsPage: React.FC = () => {
     const mediaDebito = debitCards.length > 0 ? totalDebito / debitCards.length : 0
     
     return {
-      totalCartoes: debitCards.length,
+      totalContas: debitCards.length,
       totalDebito,
       maiorDebito,
       mediaDebito
@@ -67,7 +64,7 @@ const DebitCardsPage: React.FC = () => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
   }
 
-  const toggleSort = (field: 'balance' | 'name' | 'number') => {
+  const toggleSort = (field: 'balance' | 'name' | 'email') => {
     if (sortBy === field) {
       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
     } else {
@@ -90,7 +87,7 @@ const DebitCardsPage: React.FC = () => {
     return (
       <div className="painel p-8 text-center">
         <LoadingSpinner size="lg" />
-        <p className="mt-4 text-ferro-500">Carregando cartões...</p>
+        <p className="mt-4 text-ferro-500">Carregando contas...</p>
       </div>
     )
   }
@@ -120,10 +117,10 @@ const DebitCardsPage: React.FC = () => {
             <BackButton onClick={() => navigate({ to: '/admin' })} />
             <div className="min-w-0">
               <h1 className="text-2xl font-display font-semibold uppercase text-ferro-900 leading-tight">
-                Cartões em Débito
+                Contas com Saldo Negativo
               </h1>
               <p className="text-sm text-ferro-500">
-                Cartões com saldo negativo que precisam ser regularizados
+                Contas com saldo negativo que precisam ser regularizadas
               </p>
             </div>
           </div>
@@ -140,8 +137,8 @@ const DebitCardsPage: React.FC = () => {
         {/* Cards de estatísticas */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-creme-100 border border-ferro-200 rounded-xl p-3 sm:p-4 text-center">
-            <div className="text-3xl font-slab text-vagao-600 tabular-nums">{stats.totalCartoes}</div>
-            <div className="text-xs font-display uppercase tracking-wider text-ferro-500 mt-1">Cartões em Débito</div>
+            <div className="text-3xl font-slab text-vagao-600 tabular-nums">{stats.totalContas}</div>
+            <div className="text-xs font-display uppercase tracking-wider text-ferro-500 mt-1">Contas em Débito</div>
           </div>
           <div className="bg-creme-100 border border-ferro-200 rounded-xl p-3 sm:p-4 text-center">
             <div className="text-lg sm:text-xl font-slab text-vagao-600 tabular-nums break-words">{formatMoney(stats.totalDebito)}</div>
@@ -153,18 +150,18 @@ const DebitCardsPage: React.FC = () => {
           </div>
           <div className="bg-creme-100 border border-ferro-200 rounded-xl p-3 sm:p-4 text-center">
             <div className="text-lg sm:text-xl font-slab text-ferro-700 tabular-nums break-words">{formatMoney(stats.mediaDebito)}</div>
-            <div className="text-xs font-display uppercase tracking-wider text-ferro-500 mt-1">Média por Cartão</div>
+            <div className="text-xs font-display uppercase tracking-wider text-ferro-500 mt-1">Média por Conta</div>
           </div>
         </div>
       </div>
 
-      {/* Lista de cartões */}
+      {/* Lista de contas */}
       <div className="painel overflow-hidden">
         {debitCards.length === 0 ? (
           <div className="p-10 text-center">
             <div className="text-5xl mb-4">🎉</div>
-            <h3 className="text-xl font-display font-semibold uppercase text-green-700 mb-2">Nenhum cartão em débito!</h3>
-            <p className="text-ferro-500">Todos os cartões estão com saldo positivo ou zerado.</p>
+            <h3 className="text-xl font-display font-semibold uppercase text-green-700 mb-2">Nenhuma conta em débito!</h3>
+            <p className="text-ferro-500">Todas as contas estão com saldo positivo ou zerado.</p>
           </div>
         ) : (
           <>
@@ -173,11 +170,11 @@ const DebitCardsPage: React.FC = () => {
                 {/* Cabeçalho da tabela */}
                 <div className="bg-ferro-800 text-creme-200 px-4 py-2.5 grid grid-cols-12 gap-3 text-xs font-display uppercase tracking-wider">
                   <button
-                    onClick={() => toggleSort('number')}
+                    onClick={() => toggleSort('email')}
                     className="!p-0 col-span-2 flex items-center gap-1 text-xs font-display uppercase tracking-wider text-creme-200 hover:text-latao-300 transition-colors"
                   >
-                    Cartão
-                    {sortBy === 'number' && (sortOrder === 'asc' ? '↑' : '↓')}
+                    Email
+                    {sortBy === 'email' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </button>
                   <button
                     onClick={() => toggleSort('name')}
@@ -196,7 +193,7 @@ const DebitCardsPage: React.FC = () => {
                   <div className="col-span-2 text-right">Ação</div>
                 </div>
 
-                {/* Lista de cartões */}
+                {/* Lista de contas */}
                 <div className="divide-y divide-ferro-200">
                   {sortedCards.map((card, index) => {
                     const balance = parseFloat(card.balance?.toString() || '0')
@@ -209,26 +206,14 @@ const DebitCardsPage: React.FC = () => {
                           index % 2 === 0 ? 'bg-creme-50' : 'bg-creme-100'
                         }`}
                       >
-                        {/* Número do cartão */}
+                        {/* Identificação da conta */}
                         <div className="col-span-2">
-                          <span className="inline-flex items-center px-2 py-1 bg-creme-200 border border-ferro-200 text-ferro-800 rounded-md font-ticket font-bold text-sm">
-                            #{card.card_number}
-                          </span>
+                          <span className="text-xs text-ferro-700 break-all">{card.email}</span>
                         </div>
 
                         {/* Nome */}
                         <div className="col-span-5 min-w-0">
-                          <div className="font-medium text-ferro-900 truncate">{card.user_name || 'Sem nome'}</div>
-                          <div className="text-xs text-ferro-500 flex flex-wrap items-center gap-x-2">
-                            {card.is_associated ? (
-                              <span className="text-green-700">✓ Associado</span>
-                            ) : (
-                              <span className="text-fumaca-500">○ Não associado</span>
-                            )}
-                            {card.phone_number && (
-                              <span>• {card.phone_number}</span>
-                            )}
-                          </div>
+                          <div className="font-medium text-ferro-900 truncate">{card.name || 'Sem nome'}</div>
                         </div>
 
                         {/* Débito */}
@@ -240,13 +225,12 @@ const DebitCardsPage: React.FC = () => {
 
                         {/* Ações */}
                         <div className="col-span-2 text-right">
-                          <Link
-                            to="/cards/add"
-                            search={{ cardNumber: card.card_number }}
+                          <button
+                            onClick={() => navigate({ to: '/accounts/add' })}
                             className="inline-flex items-center px-3 py-1.5 bg-ferro-800 hover:bg-ferro-700 text-creme-200 rounded-lg text-xs font-display uppercase tracking-wide transition-colors whitespace-nowrap"
                           >
                             Creditar
-                          </Link>
+                          </button>
                         </div>
                       </div>
                     )
@@ -259,7 +243,7 @@ const DebitCardsPage: React.FC = () => {
             <div className="bg-creme-200 border-t border-ferro-200 px-4 py-3 text-sm text-ferro-700">
               <div className="flex flex-wrap justify-between items-center gap-2">
                 <span>
-                  Mostrando {sortedCards.length} cartão{sortedCards.length !== 1 ? 's' : ''} em débito
+                  Mostrando {sortedCards.length} conta{sortedCards.length !== 1 ? 's' : ''} em débito
                 </span>
                 <span className="font-slab text-vagao-600">
                   Total: {formatMoney(stats.totalDebito)}
@@ -273,13 +257,13 @@ const DebitCardsPage: React.FC = () => {
       {/* Informação adicional */}
       <div className="rounded-xl border border-anil-200 bg-anil-100/60 p-4">
         <h3 className="font-display font-semibold uppercase tracking-wide text-anil-800 mb-2 flex items-center gap-2">
-          ℹ️ Sobre os cartões em débito
+          ℹ️ Sobre contas com saldo negativo
         </h3>
         <ul className="text-sm text-anil-800 space-y-1">
-          <li>• Estes cartões receberam R$100 de crédito emprestado no início do encontro</li>
+          <li>• O saldo negativo representa valores usados e que precisam ser regularizados</li>
           <li>• O saldo negativo representa o valor gasto que precisa ser quitado</li>
           <li>• Para regularizar, a pessoa deve adicionar crédito via PIX ou com a coordenação</li>
-          <li>• Cartões em débito não podem realizar novas compras até regularização</li>
+          <li>• Contas com saldo negativo não podem realizar novas compras até regularização</li>
         </ul>
       </div>
     </div>
@@ -287,4 +271,3 @@ const DebitCardsPage: React.FC = () => {
 }
 
 export default DebitCardsPage
-

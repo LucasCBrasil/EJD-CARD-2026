@@ -1,90 +1,77 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createSupabaseClient } from '../_shared/supabase.ts'
+import { requireAuth, getUserRole } from '../_shared/auth.ts'
+import { getUserPermissions } from '../_shared/roles.ts'
+import type { ApiResponse } from '../_shared/types.ts'
+import { getCorsHeaders } from '../_shared/cors.ts'
 
-// Edge Function: Get PIX Payment Status
-// Retorna o status de um pagamento PIX pelo external_id (Asaas payment ID)
-
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-
-const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
-  : null
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-Deno.serve(async (req: Request): Promise<Response> => {
-  console.log('[get-pix-status] Request:', req.method, req.url)
+Deno.serve(async (req) => {
+  const origin = req.headers.get('origin')
 
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { status: 200, headers: corsHeaders })
-  }
-
-  if (req.method !== 'GET') {
-    return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
-
-  if (!supabaseAdmin) {
-    return new Response(JSON.stringify({ success: false, error: 'Supabase not configured' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response('ok', { headers: getCorsHeaders(origin) })
   }
 
   try {
-    const url = new URL(req.url)
-    const paymentId = url.searchParams.get('paymentId')
-
-    if (!paymentId) {
-      return new Response(JSON.stringify({ success: false, error: 'paymentId required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const authResult = await requireAuth(req)
+    if (authResult instanceof Response) {
+      return new Response(authResult.body, {
+        status: authResult.status,
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
       })
     }
 
-    console.log('[get-pix-status] Buscando payment:', paymentId)
+    if (req.method !== 'GET') {
+      return new Response(JSON.stringify({ success: false, error: 'Método não permitido' } as ApiResponse), {
+        status: 405,
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
+      })
+    }
 
-    const { data, error } = await supabaseAdmin
+    const paymentId = new URL(req.url).searchParams.get('paymentId')
+    if (!paymentId) {
+      return new Response(JSON.stringify({ success: false, error: 'paymentId obrigatório' } as ApiResponse), {
+        status: 400,
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
+      })
+    }
+
+    const role = await getUserRole(authResult.id)
+    const canReadAll = getUserPermissions(role).canViewAllBalances
+    const supabase = createSupabaseClient()
+    let query = supabase
       .from('pix_payments')
-      .select('id, status, amount, confirmed_at, card_id')
+      .select('id, status, amount, confirmed_at')
       .eq('external_id', paymentId)
-      .maybeSingle()
 
+    if (!canReadAll) {
+      query = query.eq('user_id', authResult.id)
+    }
+
+    const { data, error } = await query.maybeSingle()
     if (error) {
-      console.error('[get-pix-status] Erro:', error.message)
-      return new Response(JSON.stringify({ success: false, error: error.message }), {
+      console.error('Error loading PIX payment status:', error.message)
+      return new Response(JSON.stringify({ success: false, error: 'Erro ao buscar pagamento PIX' } as ApiResponse), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
       })
     }
 
     if (!data) {
-      return new Response(JSON.stringify({ success: false, error: 'Payment not found' }), {
+      return new Response(JSON.stringify({ success: false, error: 'Pagamento não encontrado' } as ApiResponse), {
         status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
       })
     }
 
-    console.log('[get-pix-status] Status:', data.status)
-
-    return new Response(JSON.stringify({ success: true, data }), {
+    return new Response(JSON.stringify({ success: true, data } as ApiResponse), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
     })
-  } catch (error: any) {
-    console.error('[get-pix-status] Erro:', error?.message)
-    return new Response(JSON.stringify({ success: false, error: error?.message || 'Erro inesperado' }), {
+  } catch (error) {
+    console.error('Error in get-pix-status:', error)
+    return new Response(JSON.stringify({ success: false, error: 'Erro interno do servidor' } as ApiResponse), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
     })
   }
 })
-

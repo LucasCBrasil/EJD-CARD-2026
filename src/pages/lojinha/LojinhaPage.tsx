@@ -4,12 +4,10 @@ import { usePermissions } from '../../hooks/usePermissions'
 
 const LojinhaPage = () => {
   const {
-    userRole,
     canSellLojinha,
     canManageProductsLojinha,
     canViewSalesHistoryLojinha,
-    canViewOpenOrders,
-    canSellSapatinho
+    canViewOpenOrders
   } = usePermissions()
 
   const cards = [
@@ -57,24 +55,6 @@ const LojinhaPage = () => {
       color: 'from-fumaca-500 to-fumaca-700',
       gradient: 'border-fumaca-300',
       canAccess: canViewOpenOrders
-    },
-    {
-      icon: '💌',
-      title: 'Cadastrar Item Sapatinho Veloz',
-      description: 'Adicionar novo item do Sapatinho Veloz',
-      path: '/sapatinho-veloz/products/create',
-      color: 'from-ferro-400 to-ferro-600',
-      gradient: 'border-ferro-300',
-      canAccess: userRole === 'admin' || userRole === 'lojinha'
-    },
-    {
-      icon: '📋',
-      title: 'Listar Itens Sapatinho Veloz',
-      description: 'Gerenciar itens do Sapatinho Veloz',
-      path: '/sapatinho-veloz/products',
-      color: 'from-ferro-400 to-ferro-600',
-      gradient: 'border-ferro-300',
-      canAccess: userRole === 'admin' || userRole === 'lojinha'
     }
   ]
 

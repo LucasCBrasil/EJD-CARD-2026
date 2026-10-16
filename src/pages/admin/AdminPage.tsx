@@ -42,8 +42,8 @@ const AdminPage: React.FC = () => {
           >
             <div className="flex items-center justify-center w-16 shrink-0 bg-vagao-600 text-3xl">💳</div>
             <div className="picote-vertical flex-1 px-4 py-3">
-              <div className="font-display font-semibold uppercase tracking-wide text-ferro-900">Cartões em Débito</div>
-              <div className="text-sm text-ferro-500">Ver cartões com saldo negativo</div>
+              <div className="font-display font-semibold uppercase tracking-wide text-ferro-900">Contas com Saldo Negativo</div>
+              <div className="text-sm text-ferro-500">Ver contas que precisam regularizar o saldo</div>
             </div>
           </Link>
 

@@ -4,7 +4,6 @@ import { useNavigate, useLocation, useParams } from '@tanstack/react-router'
 import { Button, Header } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { productService } from '../../services'
-import { usePermissions } from '../../hooks/usePermissions'
 import type { ProductCategory } from '../../types'
 
 const CreateProductPage = () => {
@@ -12,22 +11,11 @@ const CreateProductPage = () => {
   const location = useLocation()
   const { id } = useParams({ strict: false }) as { id?: string }
   const { showSuccess, showError, showWarning } = useToastContext()
-  const { userRole } = usePermissions()
   
-  const context: ProductCategory = location.pathname.startsWith('/sapatinho-veloz')
-    ? 'sapatinho'
-    : location.pathname.startsWith('/lanchonete')
-      ? 'lanchonete'
-      : 'lojinha'
-  const basePath = context === 'sapatinho' ? '/sapatinho-veloz' : `/${context}`
-  
-  // Proteção: apenas admin e lojinha podem gerenciar produtos de Sapatinho
-  useEffect(() => {
-    if (context === 'sapatinho' && userRole !== 'admin' && userRole !== 'lojinha') {
-      showError('Acesso Negado', 'Você não tem permissão para gerenciar produtos de Sapatinho.')
-      navigate({ to: '/' as any, replace: true })
-    }
-  }, [context, userRole, navigate, showError])
+  const context: ProductCategory = location.pathname.startsWith('/lanchonete')
+    ? 'lanchonete'
+    : 'lojinha'
+  const basePath = `/${context}`
   const isEditing = !!id // mantenha esta linha
   const [existingUrl, setExistingUrl] = useState<string | null>(null)
   
@@ -106,13 +94,6 @@ const CreateProductPage = () => {
       nameLabel: 'Nome do Item',
       namePlaceholder: 'Ex: Hambúrguer da Estação',
       successMessage: isEditing ? 'Item atualizado com sucesso!' : 'Item cadastrado com sucesso!'
-    },
-    sapatinho: {
-      title: isEditing ? 'Editar Item do Sapatinho' : 'Cadastrar Item do Sapatinho',
-      subtitle: isEditing ? 'Atualize as informações do item' : 'Adicione um novo item especial para o Sapatinho Veloz',
-      nameLabel: 'Nome do Item',
-      namePlaceholder: 'Ex: Bilhete Especial',
-      successMessage: isEditing ? 'Item do Sapatinho atualizado!' : 'Item do Sapatinho cadastrado!'
     }
   }
   
@@ -195,35 +176,19 @@ const CreateProductPage = () => {
     setIsLoading(true)
 
     try {
-      let savedProduct = null;
-      if (context !== 'sapatinho') {
-        savedProduct = await productService.saveProduct(
-          context,
-          {
-            id: id ? id : null,
-            name: formData.name,
-            price: parseFloat(formData.price.replace(',', '.')),
-            stock: parseInt(formData.stock, 10),
-            category: context,
-            description: formData.name,
-          },
-          formData.image instanceof File ? formData.image : null,
-          existingUrl
-        )
-      } else {
-        savedProduct = await productService.saveSapatinhoProduct(
-          {
-            id: id ? id : null,
-            name: formData.name,
-            price: parseFloat(formData.price.replace(',', '.')),
-            stock: parseInt(formData.stock, 10),
-            category: context,
-            description: formData.name,
-          },
-          formData.image instanceof File ? formData.image : null,
-          existingUrl
-        )
-      }
+      const savedProduct = await productService.saveProduct(
+        context,
+        {
+          id: id ? id : null,
+          name: formData.name,
+          price: parseFloat(formData.price.replace(',', '.')),
+          stock: parseInt(formData.stock, 10),
+          category: context,
+          description: formData.name,
+        },
+        formData.image instanceof File ? formData.image : null,
+        existingUrl
+      )
 
       // Verificar se realmente foi salvo
       if (!savedProduct || !savedProduct.id) {

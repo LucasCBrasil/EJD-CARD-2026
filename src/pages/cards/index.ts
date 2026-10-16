@@ -1,5 +1,0 @@
-export { default as CreateCard } from './CreateCard'
-export { default as CheckBalance } from './CheckBalance'
-export { default as AddValue } from './AddValue'
-export { default as DebitCard } from './DebitCard'
-export { default as CardsPage } from './CardsPage'

@@ -15,12 +15,6 @@ export type Product = {
   [key: string]: any
 }
 
-const TABLE_BY_CATEGORY: Record<ProductCategory, { table: string; hasCategoryColumn: boolean }> = {
-  lojinha: { table: 'products', hasCategoryColumn: true },
-  lanchonete: { table: 'products', hasCategoryColumn: true },
-  sapatinho: { table: 'sapatinho_products', hasCategoryColumn: false }
-}
-
 export const productService = {
   // ✅ Agora usa Edge Function via api-client
   getProducts: async (category: ProductCategory): Promise<Product[]> => {
@@ -57,21 +51,6 @@ export const productService = {
   // ✅ Agora usa Edge Function via api-client
   deleteProduct: async (category: ProductCategory, id: string): Promise<boolean> => {
     try {
-      // Produtos do sapatinho usam uma Edge Function diferente
-      if (category === 'sapatinho') {
-        const response = await api.manageSapatinhoProducts(
-          { id },
-          'DELETE'
-        )
-
-        if (!response.success) {
-          console.error('productService.deleteProduct (sapatinho) error:', (response as any).error)
-          return false
-        }
-        return true
-      }
-
-      // Produtos normais (lojinha/lanchonete)
       const response = await api.manageProducts(
         {
           action: 'delete',
@@ -234,55 +213,4 @@ export const productService = {
       throw error;
     }
   },
-  
-  async saveSapatinhoProduct(product: Product, newImageFile: File | null, existingImageUrl: string | null | undefined): Promise<Product | null> {
-    try {
-      // Handle image upload if file exists
-      let imageUrl = existingImageUrl;
-      if (newImageFile instanceof File) {
-        imageUrl = await this.uploadProductImage(newImageFile);
-        if (!imageUrl) {
-          throw new Error('Falha ao fazer upload da imagem. Por favor, tente novamente.');
-        }
-      }
-
-
-      const productData = {
-        name: product.name,
-        price: product.price,
-        stock: product.stock,
-        description: product.description || null,
-        image_url: imageUrl || product.image || null,
-        active: product.id ? (typeof product.active === 'boolean' ? product.active : true) : true,
-      }
-
-      const method = product.id ? 'PUT' : 'POST'
-      const actionData = product.id 
-        ? { id: product.id, ...productData }
-        : { ...productData }
-
-      const response = await api.manageSapatinhoProducts(actionData, method)
-
-      if (!response.success) {
-        throw new Error((response as any).error || 'Erro ao salvar produto')
-      }
-
-      // Transformar resposta para formato esperado
-      const savedProduct = response.data
-      return {
-        id: savedProduct.id,
-        name: savedProduct.name,
-        price: parseFloat(savedProduct.price) || 0,
-        description: savedProduct.description || null,
-        stock: savedProduct.stock || 0,
-        active: savedProduct.active !== false,
-        createdAt: savedProduct.created_at,
-        image_url: savedProduct.image_url || savedProduct.image || null,
-        image: savedProduct.image_url || savedProduct.image || null,
-      } as Product
-    } catch (error: any) {
-      console.error('Product save failed:', error);
-      throw error;
-    }
-  } 
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-type OptimizedContext = 'lojinha' | 'lanchonete' | 'sapatinho'
+type OptimizedContext = 'lojinha' | 'lanchonete'
 
 interface OptimizedImageProps {
   src: string | null;
@@ -56,29 +56,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({ src, alt, className, co
         </text>
 ${rail}
       </svg>`
-      : context === 'sapatinho'
-        ? `
-      <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
-        <rect width="400" height="400" fill="#fcf0d8"/>
-        <circle cx="200" cy="170" r="110" fill="#a83024" opacity="0.12"/>
-
-        <!-- Carta / envelope -->
-        <g transform="translate(200,175) rotate(-6)">
-          <rect x="-95" y="-60" width="190" height="125" rx="8" fill="#fffdf8" stroke="#48240c" stroke-width="4"/>
-          <path d="M -95 -60 L 0 15 L 95 -60" fill="none" stroke="#48240c" stroke-width="4" stroke-linejoin="round"/>
-          <circle cx="0" cy="10" r="20" fill="#a83024" stroke="#6f1f18" stroke-width="3"/>
-          <path d="M -8 8 C -8 0, 0 0, 0 7 C 0 0, 8 0, 8 8 C 8 14, 0 18, 0 20 C 0 18, -8 14, -8 8 Z" fill="#fcf0d8"/>
-        </g>
-
-        <text x="200" y="308" font-size="20" text-anchor="middle" fill="#a83024" font-family="Arial" font-weight="bold">
-          Encomenda do Sapatinho
-        </text>
-        <text x="200" y="334" font-size="15" text-anchor="middle" fill="#9c6048" font-family="Arial">
-          Imagem não disponível
-        </text>
-${rail}
-      </svg>`
-        : `
+      : `
       <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
         <rect width="400" height="400" fill="#fcf0d8"/>
         <circle cx="200" cy="170" r="110" fill="#004878" opacity="0.12"/>
