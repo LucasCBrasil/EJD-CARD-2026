@@ -13,7 +13,6 @@ import { salesRouter } from './sales'
  * Para adicionar mais routers:
  * export const appRouter = router({
  *   sales: salesRouter,
- *   cards: cardsRouter,
  *   products: productsRouter,
  * })
  */
@@ -24,4 +23,3 @@ export const appRouter = router({
 
 // Exportar tipo do router para o cliente
 export type AppRouter = typeof appRouter
-

@@ -20,10 +20,7 @@ export const usePermissions = () => {
     hasAllPermissions: (permissions: (keyof RolePermissions)[]) => hasAllPermissions(userRole, permissions),
     
     // Verificações específicas comuns
-    canViewCards: hasPermission(userRole, 'canViewCards'),
-    canCreateCards: hasPermission(userRole, 'canCreateCards'),
-    canEditCards: hasPermission(userRole, 'canEditCards'),
-    canDeleteCards: hasPermission(userRole, 'canDeleteCards'),
+    canViewAccounts: hasPermission(userRole, 'canViewAccounts'),
     
     // Saldo
     canAddBalance: hasPermission(userRole, 'canAddBalance'),
@@ -37,15 +34,10 @@ export const usePermissions = () => {
     // Vendas
     canSellLojinha: hasPermission(userRole, 'canSellLojinha'),
     canSellLanchonete: hasPermission(userRole, 'canSellLanchonete'),
-    canSellSapatinho: hasPermission(userRole, 'canSellSapatinho'),
     
     // Histórico
     canViewSalesHistoryLojinha: hasPermission(userRole, 'canViewSalesHistoryLojinha'),
     canViewSalesHistoryLanchonete: hasPermission(userRole, 'canViewSalesHistoryLanchonete'),
-    canViewSalesHistorySapatinho: hasPermission(userRole, 'canViewSalesHistorySapatinho'),
-    
-    // Pedidos Sapatinho
-    canPlaceOrderSapatinho: hasPermission(userRole, 'canPlaceOrderSapatinho'),
     
     // Entregas
     canViewOpenOrders: hasPermission(userRole, 'canViewOpenOrders'),

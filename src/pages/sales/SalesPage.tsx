@@ -4,14 +4,14 @@ import { ConfirmationModal, TrainLoader } from '../../components/shared'
 import { productService, Product } from '../../services/productService'
 import type { SaleItem } from '../../types'
 import { useToastContext } from '../../contexts/ToastContext'
-import { cardService } from '../../services/cardService'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
+import { UserAccount } from '../../types'
 import OptimizedImage from '../../components/ui/OptimizedImage'
 
 type ContextType = 'lojinha' | 'lanchonete'
 
 const SalesPage: React.FC = () => {
-  const { getCardByNumber, makeSale, getCoupons } = useSupabaseData()
+  const { searchAccountsByName, makeSale, getCoupons } = useSupabaseData()
   const location = useLocation()
   const { showSuccess, showError, showWarning } = useToastContext()
 
@@ -21,8 +21,9 @@ const SalesPage: React.FC = () => {
   const [coupons, setCoupons] = useState<Array<{ name: string; discountAmount?: number }>>([])
   const [cartItems, setCartItems] = useState<Record<string, number>>({})
   const [isSaving] = useState(false)
-  const [cardNumber, setCardNumber] = useState('')
-  const [selectedCard, setSelectedCard] = useState<any | null>(null)
+  const [accountSearch, setAccountSearch] = useState('')
+  const [searchResults, setSearchResults] = useState<UserAccount[]>([])
+  const [selectedAccount, setSelectedAccount] = useState<UserAccount | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [searchFilter, setSearchFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -38,9 +39,9 @@ const SalesPage: React.FC = () => {
     loadProducts()
     loadCoupons()
     setCartItems({})
-    cardService.initializeMockCards()
-    setCardNumber('')
-    setSelectedCard(null)
+    setAccountSearch('')
+    setSearchResults([])
+    setSelectedAccount(null)
     setSearchFilter('')
     setCurrentPage(1)
     
@@ -201,9 +202,10 @@ const SalesPage: React.FC = () => {
   const lastSearchRef = React.useRef<string>('')
   const currentInputRef = React.useRef<string>('')
 
-  const handleCardNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAccountSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.trim();
-    setCardNumber(value);
+    setAccountSearch(value);
+    setSelectedAccount(null)
     currentInputRef.current = value; // Atualizar ref com valor atual
     
     // Limpar timeout anterior
@@ -212,7 +214,8 @@ const SalesPage: React.FC = () => {
     }
     
     if (!value) {
-      setSelectedCard(null);
+      setSelectedAccount(null);
+      setSearchResults([])
       setError(null);
       lastSearchRef.current = '';
       return;
@@ -227,7 +230,7 @@ const SalesPage: React.FC = () => {
         return;
       }
 
-      // Evitar buscar o mesmo número novamente
+      // Evitar repetir a mesma busca.
       if (searchValue === lastSearchRef.current) {
         return;
       }
@@ -238,30 +241,37 @@ const SalesPage: React.FC = () => {
         // Não usar isLoading aqui - só durante a venda
         setError(null);
         
-        const card = await getCardByNumber(searchValue);
+        const accounts = await searchAccountsByName(searchValue);
         
         // Verificar novamente se o valor ainda é o mesmo quando a resposta chega
         if (currentInputRef.current.trim() !== searchValue) {
           return;
         }
 
-        if (card) {
-          setSelectedCard(card);
+        if (accounts.length > 0) {
+          setSearchResults(accounts);
           setError(null);
         } else {
-          setSelectedCard(null);
-          setError('Cartão não encontrado');
+          setSearchResults([]);
+          setError('Nenhuma conta encontrada');
         }
       } catch (err: any) {
         // Verificar novamente se o valor ainda é o mesmo
         if (currentInputRef.current.trim() !== searchValue) {
           return;
         }
-        console.error('Erro ao buscar cartão:', err);
-        setError(err?.message || 'Erro ao buscar cartão');
-        setSelectedCard(null);
+        console.error('Erro ao buscar contas:', err);
+        setError(err instanceof Error ? err.message : 'Erro ao buscar contas');
+        setSearchResults([]);
       }
     }, 500); // 500ms de debounce
+  }
+
+  const handleSelectAccount = (account: UserAccount) => {
+    setSelectedAccount(account)
+    setAccountSearch(account.name || account.email)
+    setSearchResults([])
+    setError(null)
   }
 
   const handleConfirmSale = async () => {
@@ -329,18 +339,16 @@ const SalesPage: React.FC = () => {
     setIsLoading(true)
     try {
       // Validar que temos todos os dados necessários
-      if (!selectedCard || !selectedCard.id) {
-        throw new Error('Cartão não selecionado')
+      if (!selectedAccount || !selectedAccount.id) {
+        throw new Error('Conta não selecionada')
       }
       
       if (!items || items.length === 0) {
         throw new Error('Nenhum item no carrinho')
       }
       
-      // Usar o cardId diretamente do selectedCard, não o userId
-      // Na tela de vendas, já temos o cartão selecionado com seu ID
       await makeSale(
-        selectedCard.id, // Passar cardId diretamente
+        selectedAccount.id,
         items,
         context,
         couponCode,
@@ -352,10 +360,11 @@ const SalesPage: React.FC = () => {
       
       showSuccess(
         'Venda realizada!',
-        `Venda de R$ ${total.toFixed(2)} para cartão ${selectedCard.cardNumber || 'N/A'} de ${selectedCard.userName || 'N/A'} foi realizada com sucesso.`
+        `Venda de R$ ${total.toFixed(2)} para ${selectedAccount.name || selectedAccount.email} foi realizada com sucesso.`
       )
-      setCardNumber('')
-      setSelectedCard(null)
+      setAccountSearch('')
+      setSearchResults([])
+      setSelectedAccount(null)
       handleClearCart()
     } catch (err: any) {
       const errorMessage = err?.message || 'Erro ao realizar venda'
@@ -372,12 +381,12 @@ const SalesPage: React.FC = () => {
       showWarning('Carrinho vazio', 'Adicione ao menos um item para finalizar a venda.')
       return
     }
-    if (!selectedCard) {
-      showWarning('Cartão não selecionado', 'Informe um cartão válido para realizar a venda.')
+    if (!selectedAccount) {
+      showWarning('Conta não selecionada', 'Selecione uma conta para realizar a venda.')
       return
     }
-    if (discountedTotal > selectedCard.balance) {
-      showError('Saldo insuficiente', 'O saldo do cartão é insuficiente para concluir a compra.')
+    if (discountedTotal > selectedAccount.balance) {
+      showError('Saldo insuficiente', 'O saldo da conta é insuficiente para concluir a compra.')
       return
     }
     setShowConfirmation(true)
@@ -519,36 +528,46 @@ const SalesPage: React.FC = () => {
               <span className="font-ticket text-xs text-ferro-500">PASSAGEM</span>
             </div>
 
-            {/* Campo de cartão */}
+            {/* Conta a debitar */}
             <div className="mb-3 space-y-2">
-              <label className="block text-sm font-semibold text-ferro-700 mb-1">Número do Cartão</label>
+              <label className="block text-sm font-semibold text-ferro-700 mb-1">Conta do cliente</label>
               <input
                 type="text"
-                inputMode="numeric"
-                value={cardNumber}
-                onChange={handleCardNumberChange}
-                className="w-full font-ticket tracking-widest"
-                placeholder="001"
-                maxLength={16}
+                value={accountSearch}
+                onChange={handleAccountSearchChange}
+                className="w-full"
+                placeholder="Buscar por nome ou email"
               />
 
-              {selectedCard ? (
+              {searchResults.length > 0 && (
+                <div className="rounded-lg border border-ferro-200 bg-creme-50">
+                  {searchResults.map((account) => (
+                    <button key={account.id} type="button" onClick={() => handleSelectAccount(account)}
+                      className="flex w-full justify-between gap-3 border-b border-ferro-100 px-3 py-2 text-left last:border-0 hover:bg-creme-200">
+                      <span><strong>{account.name || 'Sem nome'}</strong><span className="block text-xs text-ferro-600">{account.email}</span></span>
+                      <span className="font-slab">R$ {account.balance.toFixed(2)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {selectedAccount ? (
                 <div className="bg-creme-200 rounded-lg p-3 border border-ferro-200 space-y-0.5">
                   <p className="text-sm text-ferro-900">
-                    <span className="text-ferro-500">Nome:</span> <strong>{selectedCard.userName}</strong>
+                    <span className="text-ferro-500">Nome:</span> <strong>{selectedAccount.name}</strong>
                   </p>
                   <p className="text-sm text-ferro-900">
-                    <span className="text-ferro-500">Saldo:</span> <span className="font-slab">R$ {selectedCard.balance.toFixed(2)}</span>
+                    <span className="text-ferro-500">Saldo:</span> <span className="font-slab">R$ {selectedAccount.balance.toFixed(2)}</span>
                   </p>
                   <p className={`text-sm font-semibold ${
-                    discountedTotal > selectedCard.balance ? 'text-vagao-600' : 'text-green-700'
+                    discountedTotal > selectedAccount.balance ? 'text-vagao-600' : 'text-green-700'
                   }`}>
-                    <span className="text-ferro-500 font-normal">Após:</span> <span className="font-slab">R$ {(selectedCard.balance - discountedTotal).toFixed(2)}</span>
+                    <span className="text-ferro-500 font-normal">Após:</span> <span className="font-slab">R$ {(selectedAccount.balance - discountedTotal).toFixed(2)}</span>
                   </p>
                 </div>
               ) : (
                 <p className={`text-sm ${error ? 'text-vagao-600' : 'text-ferro-500'}`}>
-                  {error || 'Informe um cartão'}
+                  {error || 'Busque e selecione uma conta'}
                 </p>
               )}
             </div>
@@ -718,7 +737,8 @@ const SalesPage: React.FC = () => {
         onConfirm={() => { setShowConfirmation(false); handleConfirmSale() }}
         title={context === 'lojinha' ? 'Confirmar Venda' : 'Confirmar Pedido'}
         icon={config.icon}
-        card={selectedCard}
+        account={selectedAccount}
+        variant="account-transaction"
         transactionType="debit"
         amount={discountedTotal.toFixed(2)}
         formattedAmount={discountedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

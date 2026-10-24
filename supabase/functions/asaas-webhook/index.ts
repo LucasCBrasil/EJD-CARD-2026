@@ -1,10 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { roundMoney, safeSumMoney } from '../_shared/money.ts'
 
 // Edge Function: Asaas Webhook
 // Recebe notificações do Asaas sobre pagamentos e atualiza o banco
 // Variaveis de ambiente esperadas:
-// - ASAAS_WEBHOOK_SECRET (opcional, para validar assinatura)
+// - ASAAS_WEBHOOK_SECRET (obrigatoria para validar a assinatura)
 // - SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY (obrigatorias)
 
 const ASAAS_WEBHOOK_SECRET = Deno.env.get('ASAAS_WEBHOOK_SECRET') || ''
@@ -49,7 +48,7 @@ interface AsaasWebhookPayload {
 }
 
 async function verifyWebhookSignature(rawBody: string, signature: string | null): Promise<boolean> {
-  if (!ASAAS_WEBHOOK_SECRET) return true // Se não configurou secret, aceita tudo
+  if (!ASAAS_WEBHOOK_SECRET) return false
   if (!signature) return false
 
   const encoder = new TextEncoder()
@@ -86,6 +85,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
     })
   }
 
+  if (!ASAAS_WEBHOOK_SECRET) {
+    return new Response(JSON.stringify({ error: 'ASAAS_WEBHOOK_SECRET não configurado' }), {
+      status: 503,
+      headers,
+    })
+  }
+
   const rawBody = await req.text()
   console.log('[asaas-webhook] Body recebido:', rawBody.substring(0, 200))
   
@@ -106,10 +112,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.log('[asaas-webhook] Evento:', payload?.event, 'Status:', payload?.payment?.status, 'PaymentId:', payload?.payment?.id)
 
     if (!supabaseAdmin) {
-      console.log('[asaas-webhook] Supabase admin não configurado')
       return new Response(
-        JSON.stringify({ ok: true, message: 'Webhook recebido. Supabase admin não configurado.' }),
-        { status: 200, headers }
+        JSON.stringify({ error: 'Supabase admin não configurado' }),
+        { status: 503, headers }
       )
     }
 
@@ -137,12 +142,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Buscar pagamento existente pelo external_id (paymentId do Asaas)
     const { data: existing, error: fetchErr } = await supabaseAdmin
       .from('pix_payments')
-      .select('id, card_id, amount')
+      .select('id, user_id, amount, status')
       .eq('external_id', paymentId)
       .maybeSingle()
 
     if (fetchErr) {
       console.error('[asaas-webhook] pix_payments fetch error:', fetchErr.message)
+      return new Response(JSON.stringify({ error: 'Erro ao buscar pagamento PIX' }), {
+        status: 500,
+        headers,
+      })
     }
 
     if (!existing) {
@@ -153,79 +162,35 @@ Deno.serve(async (req: Request): Promise<Response> => {
       )
     }
 
-    console.log('[asaas-webhook] Payment encontrado:', existing.id, 'card_id:', existing.card_id, 'amount:', existing.amount)
-
-    // Atualizar status do pagamento
-    const { error: updateErr } = await supabaseAdmin
-      .from('pix_payments')
-      .update({
-        status: mappedStatus,
-        webhook_data: payload,
-        confirmed_at: mappedStatus === 'confirmed' ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('external_id', paymentId)
-
-    if (updateErr) {
-      console.error('[asaas-webhook] pix_payments update error:', updateErr.message)
-    } else {
-      console.log('[asaas-webhook] pix_payments atualizado para status:', mappedStatus)
-    }
-
-    // Se confirmado, creditar saldo no cartão e registrar transação
     if (mappedStatus === 'confirmed') {
-      console.log('[asaas-webhook] Pagamento confirmado! Creditando saldo...')
-      
-      // Buscar saldo atual do cartão
-      const { data: cardRow, error: cardErr } = await supabaseAdmin
-        .from('cards')
-        .select('balance')
-        .eq('id', existing.card_id)
-        .maybeSingle()
-
-      if (cardErr) {
-        console.error('[asaas-webhook] Erro ao buscar cartão:', cardErr.message)
-      }
-
-      if (!cardErr && cardRow) {
-        // ⚠️ Operações monetárias seguras (evita erros de precisão float)
-        const currentBalance = roundMoney(cardRow.balance || 0)
-        const amountToAdd = roundMoney(existing.amount || 0)
-        const newBalance = safeSumMoney(currentBalance, amountToAdd)
-
-        console.log('[asaas-webhook] Saldo atual:', currentBalance, '+ valor:', amountToAdd, '= novo saldo:', newBalance)
-
-        // Atualizar saldo do cartão
-        const { error: balanceErr } = await supabaseAdmin
-          .from('cards')
-          .update({
-            balance: roundMoney(newBalance),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.card_id)
-
-        if (balanceErr) {
-          console.error('[asaas-webhook] cards balance update error:', balanceErr.message)
-        } else {
-          console.log('[asaas-webhook] Saldo atualizado com sucesso!')
-        }
-      }
-
-      // Registrar transação de crédito
-      const { error: txErr } = await supabaseAdmin
-        .from('transactions')
-        .insert({
-          card_id: existing.card_id,
-          amount: roundMoney(existing.amount),
-          type: 'credit',
-          description: 'Abastecimento via PIX (Asaas)',
-          created_by: 'asaas_webhook',
+      const { error: confirmationError } = await supabaseAdmin.rpc('confirm_account_pix_payment', {
+        p_external_id: paymentId,
+        p_webhook_data: payload,
+      })
+      if (confirmationError) {
+        console.error('[asaas-webhook] Erro ao confirmar pagamento e creditar conta:', confirmationError.message)
+        return new Response(JSON.stringify({ error: 'Erro ao confirmar pagamento PIX' }), {
+          status: 500,
+          headers,
         })
+      }
+    } else if (existing.status !== 'confirmed') {
+      const { error: updateError } = await supabaseAdmin
+        .from('pix_payments')
+        .update({
+          status: mappedStatus,
+          webhook_data: payload,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('external_id', paymentId)
+        .neq('status', 'confirmed')
 
-      if (txErr) {
-        console.error('[asaas-webhook] transactions insert error:', txErr.message)
-      } else {
-        console.log('[asaas-webhook] Transação registrada com sucesso!')
+      if (updateError) {
+        console.error('[asaas-webhook] pix_payments update error:', updateError.message)
+        return new Response(JSON.stringify({ error: 'Erro ao atualizar pagamento PIX' }), {
+          status: 500,
+          headers,
+        })
       }
     }
 
@@ -238,4 +203,3 @@ Deno.serve(async (req: Request): Promise<Response> => {
     )
   }
 })
-

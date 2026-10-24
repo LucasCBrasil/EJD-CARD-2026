@@ -10,15 +10,6 @@ export interface SaleItem {
   price: number
 }
 
-export interface Card {
-  id: string
-  user_id: string
-  user_name: string
-  card_number: string
-  phone_number: string
-  balance: number
-}
-
 export interface Product {
   id: string
   name: string
@@ -32,4 +23,3 @@ export interface ApiResponse<T = any> {
   data?: T
   error?: string
 }
-

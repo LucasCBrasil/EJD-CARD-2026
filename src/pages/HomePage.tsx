@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { usePermissions } from '../hooks/usePermissions'
 import { useAuth } from '../contexts/AuthContext'
-import { useCardByUserId } from '../hooks/useCards'
 
 interface MainCard {
   id: string
@@ -27,7 +26,7 @@ const HomePage: React.FC = () => {
   const { logout } = useAuth()
   const {
     userRole,
-    canViewCards,
+    canViewAccounts,
     canViewAdmin,
     canSellLojinha,
     canSellLanchonete,
@@ -35,20 +34,11 @@ const HomePage: React.FC = () => {
     canManageProductsLanchonete,
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
-    canViewSalesHistorySapatinho,
     canViewOpenOrders,
-    canPlaceOrderSapatinho,
-    canSellSapatinho
   } = usePermissions()
 
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   
-  // Verificar se o usuário tem um cartão associado
-  const { user } = useAuth()
-  const { data: userCard, isLoading: isLoadingCard } = useCardByUserId(user?.id || '', !!user?.id)
-  // Verificar se realmente há um cartão válido (não apenas truthy)
-  const hasAssociatedCard = !isLoadingCard && !!userCard && userCard.id && userCard.card_number
-
   const handleLogout = async () => {
     try {
       await logout()
@@ -60,21 +50,21 @@ const HomePage: React.FC = () => {
   // Definir os cards principais
   const mainCards: MainCard[] = [
     {
-      id: 'meu-cartao',
-      title: 'MEU CARTÃO',
-      icon: '💳',
+      id: 'minha-conta',
+      title: 'MINHA CONTA',
+      icon: '👤',
       description: 'Consulte seu saldo e histórico de compras',
       accent: 'bg-anil-700',
-      path: '/mycard',
+      path: '/account',
       canAccess: true
     },
     {
       id: 'comunicacao',
       title: 'COMUNICAÇÃO',
       icon: '📢',
-      description: 'Gerenciar cartões, criar e adicionar saldo',
+      description: 'Gerenciar contas e saldos dos usuários',
       accent: 'bg-ferro-800',
-      path: '/cards',
+      path: '/accounts',
       canAccess: userRole === 'admin' || userRole === 'comunicacao'
     },
     {
@@ -96,15 +86,6 @@ const HomePage: React.FC = () => {
       canAccess: canSellLanchonete || canManageProductsLanchonete || canViewSalesHistoryLanchonete
     },
     {
-      id: 'sapatinho',
-      title: 'SAPATINHO VELOZ',
-      icon: '💌',
-      description: 'Torne o dia de alguém ainda mais especial',
-      accent: 'bg-ferro-500',
-      path: '/sapatinho-veloz',
-      canAccess: canViewAdmin
-    },
-    {
       id: 'adm',
       title: 'ADM',
       icon: '👥',
@@ -118,13 +99,13 @@ const HomePage: React.FC = () => {
   // Função para obter os sub-menus de cada card
   const getSubMenus = (cardId: string): SubMenuItem[] => {
     switch (cardId) {
-      case 'meu-cartao':
+      case 'minha-conta':
         return [
           {
-            icon: '💳',
-            title: 'Meu Cartão',
+            icon: '👤',
+            title: 'Minha Conta',
             description: 'Ver saldo e histórico',
-            path: '/mycard',
+            path: '/account',
             canAccess: true
           }
         ]
@@ -132,32 +113,25 @@ const HomePage: React.FC = () => {
       case 'comunicacao':
         return [
           {
-            icon: '➕',
-            title: 'Criar Cartão',
-            description: 'Cadastrar novo encontrista',
-            path: '/cards/create',
-            canAccess: canViewCards
-          },
-          {
             icon: '💰',
             title: 'Adicionar Saldo',
-            description: 'Creditar valores em cartões',
-            path: '/cards/add',
-            canAccess: canViewCards
+            description: 'Creditar valores diretamente nas contas',
+            path: '/accounts/add',
+            canAccess: canViewAccounts
           },
           {
             icon: '🔍',
             title: 'Consultar Saldo',
-            description: 'Ver saldo disponível',
-            path: '/cards/balance',
-            canAccess: canViewCards
+            description: 'Ver saldo disponível nas contas',
+            path: '/accounts/balance',
+            canAccess: canViewAccounts
           },
           {
             icon: '💸',
             title: 'Débito Manual',
-            description: 'Debitar valores de cartões',
-            path: '/cards/debit',
-            canAccess: canViewCards
+            description: 'Debitar valores diretamente das contas',
+            path: '/accounts/debit',
+            canAccess: canViewAccounts
           }
         ]
       
@@ -197,34 +171,6 @@ const HomePage: React.FC = () => {
             description: 'Ver pedidos pendentes',
             path: '/pedidos-lojinha',
             canAccess: canViewOpenOrders
-          },
-          {
-            icon: '💌',
-            title: 'Cadastrar Produto Sapatinho',
-            description: 'Adicionar novo produto do sapatinho',
-            path: '/sapatinho-veloz/products/create',
-            canAccess: userRole === 'admin' || userRole === 'lojinha'
-          },
-          {
-            icon: '📋',
-            title: 'Listar Produtos Sapatinho',
-            description: 'Gerenciar produtos do sapatinho',
-            path: '/sapatinho-veloz/products',
-            canAccess: userRole === 'admin' || userRole === 'lojinha'
-          },
-          {
-            icon: '📦',
-            title: 'Pedidos Sapatinho',
-            description: 'Ver pedidos pendentes do sapatinho',
-            path: '/pedidos-sapatinho-veloz',
-            canAccess: canViewOpenOrders && (userRole === 'admin' || userRole === 'lojinha')
-          },
-          {
-            icon: '📊',
-            title: 'Histórico Sapatinho',
-            description: 'Consultar vendas do sapatinho',
-            path: '/historico/sapatinho',
-            canAccess: canViewSalesHistorySapatinho || userRole === 'admin' || userRole === 'lojinha'
           }
         ]
       
@@ -260,52 +206,6 @@ const HomePage: React.FC = () => {
           }
         ]
       
-      case 'sapatinho':
-        return [
-          {
-            icon: '🛍️',
-            title: 'Realizar Venda',
-            description: 'Processar vendas',
-            path: '/sapatinho-veloz/sales',
-            canAccess: canSellSapatinho
-          },
-          {
-            icon: '🛒',
-            title: 'Fazer Pedido',
-            description: 'Solicitar produto',
-            path: '/sapatinho-veloz/select',
-            canAccess: canPlaceOrderSapatinho
-          },
-          {
-            icon: '📊',
-            title: 'Histórico de Vendas',
-            description: 'Consultar vendas realizadas',
-            path: '/historico/sapatinho',
-            canAccess: canViewSalesHistorySapatinho
-          },
-          {
-            icon: '📥',
-            title: 'Pedidos Abertos',
-            description: 'Ver pedidos pendentes',
-            path: '/pedidos-sapatinho-veloz',
-            canAccess: canViewOpenOrders && (userRole === 'admin' || userRole === 'lojinha')
-          },
-          {
-            icon: '💌',
-            title: 'Cadastrar Produto',
-            description: 'Adicionar novo produto',
-            path: '/sapatinho-veloz/products/create',
-            canAccess: userRole === 'admin' || userRole === 'lojinha'
-          },
-          {
-            icon: '📋',
-            title: 'Listar Produtos',
-            description: 'Gerenciar produtos',
-            path: '/sapatinho-veloz/products',
-            canAccess: userRole === 'admin' || userRole === 'lojinha'
-          }
-        ]
-      
       case 'adm':
         return [
           {
@@ -317,8 +217,8 @@ const HomePage: React.FC = () => {
           },
           {
             icon: '💳',
-            title: 'Cartões em Débito',
-            description: 'Ver cartões com saldo negativo',
+            title: 'Contas com Saldo Negativo',
+            description: 'Ver contas com saldo negativo',
             path: '/admin-debitos',
             canAccess: canViewAdmin
           },
@@ -384,14 +284,8 @@ const HomePage: React.FC = () => {
             const hasMultipleSubMenus = subMenus.length > 1
             const hasSingleSubMenu = subMenus.length === 1
 
-            // Cards especiais que devem navegar diretamente para sua página principal
-            const directNavigationCards = ['sapatinho']
-            const shouldNavigateDirectly = directNavigationCards.includes(card.id)
-
             const handleClick = () => {
-              if (shouldNavigateDirectly) {
-                handleSubCardClick(card.path)
-              } else if (hasSingleSubMenu) {
+              if (hasSingleSubMenu) {
                 handleSubCardClick(subMenus[0].path)
               } else if (hasMultipleSubMenus) {
                 handleCardClick(card.id)
@@ -426,7 +320,7 @@ const HomePage: React.FC = () => {
                     <p className="text-sm text-ferro-700 leading-snug mt-1">
                       {card.description}
                     </p>
-                    {hasMultipleSubMenus && !shouldNavigateDirectly && (
+                    {hasMultipleSubMenus && (
                       <span className="mt-3 font-display text-xs tracking-widest uppercase text-vagao-600">
                         {isExpanded ? '▾ Fechar opções' : '▸ Ver opções'}
                       </span>
@@ -483,7 +377,7 @@ const HomePage: React.FC = () => {
         {/* Rodapé */}
         <div className="mt-14 flex justify-center">
           <div className="inline-flex items-center gap-3 pl-2 pr-5 py-2 rounded-full bg-caldeira shadow-bilhete">
-            <img src="/logos/web/ejd-25-anos-creme.webp" alt="EJD 25 anos" className="w-10 h-10" />
+            <img src="/logos/web/trenzinho-creme.webp" alt="EJD 25 anos" className="w-6 h-10 ml-2" />
             <p className="font-display text-sm tracking-wider uppercase text-creme-200">
               Sistema de Gestão · Encontrão EJD 25 Anos
             </p>
@@ -495,5 +389,3 @@ const HomePage: React.FC = () => {
 }
 
 export default HomePage
-
-

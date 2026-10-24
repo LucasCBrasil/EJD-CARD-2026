@@ -6,12 +6,10 @@ const ProductsPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
   
-  const context: ProductCategory = location.pathname.startsWith('/sapatinho-veloz')
-    ? 'sapatinho'
-    : location.pathname.startsWith('/lanchonete')
-      ? 'lanchonete'
-      : 'lojinha'
-  const basePath = context === 'sapatinho' ? '/sapatinho-veloz' : `/${context}`
+  const context: ProductCategory = location.pathname.startsWith('/lanchonete')
+    ? 'lanchonete'
+    : 'lojinha'
+  const basePath = `/${context}`
   
   // Configurações específicas por contexto
   const config = {
@@ -30,14 +28,6 @@ const ProductsPage = () => {
       createDescription: 'Adicione novos itens ao cardápio',
       listDescription: 'Visualize todos os itens do cardápio',
       selectDescription: 'Cadastre, edite e visualize itens da lanchonete'
-    },
-    sapatinho: {
-      title: 'Itens do Sapatinho Veloz',
-      createLabel: 'Cadastrar Item',
-      listLabel: 'Listar Itens',
-      createDescription: 'Adicione novos itens especiais ao Sapatinho Veloz',
-      listDescription: 'Visualize os itens disponíveis',
-      selectDescription: 'Gerencie os itens do Sapatinho Veloz'
     }
   }
   

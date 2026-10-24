@@ -2,18 +2,19 @@ import React, { useState } from 'react'
 import { Button, Header, ConfirmationModal } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
-import { Card } from '../../types'
+import { UserAccount } from '../../types'
 
-interface DebitCardProps {
+interface DebitBalanceProps {
   onBack?: () => void
 }
 
-const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
-  const { getCardByNumber, updateCardBalance } = useSupabaseData()
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null)
+const DebitBalance: React.FC<DebitBalanceProps> = ({ onBack: _onBack }) => {
+  const { searchAccountsByName, updateUserBalance } = useSupabaseData()
+  const [selectedAccount, setSelectedAccount] = useState<UserAccount | null>(null)
   const [amount, setAmount] = useState('')
   const [formattedAmount, setFormattedAmount] = useState('')
-  const [cardNumber, setCardNumber] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<UserAccount[]>([])
   const [description, setDescription] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
@@ -54,28 +55,38 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
     }
   }
 
-  const handleCardNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\s+/g, '')
-    setCardNumber(value)
+  const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
     setError(null)
-    setSelectedCard(null)
+    setSelectedAccount(null)
     
-    if (value.length >= 3) {
+    if (value.trim().length >= 2) {
       try {
-        const foundCard = await getCardByNumber(value)
-        setSelectedCard(foundCard)
-      } catch (err: any) {
-        setError(err?.message || 'Erro ao buscar cartão')
+        const results = await searchAccountsByName(value.trim())
+        setSearchResults(results)
+        if (results.length === 0) setError('Nenhuma conta encontrada')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao buscar contas')
       }
+    } else {
+      setSearchResults([])
     }
+  }
+
+  const handleSelectAccount = (account: UserAccount) => {
+    setSelectedAccount(account)
+    setSearchQuery(account.name || account.email)
+    setSearchResults([])
+    setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedCard) return
+    if (!selectedAccount) return
 
     const debitAmount = parseFloat(amount)
-    if (debitAmount > (selectedCard.balance || 0)) {
+    if (debitAmount > (selectedAccount.balance || 0)) {
       setError('Saldo insuficiente!')
       return
     }
@@ -85,13 +96,13 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
   }
 
   const handleConfirmDebit = async () => {
-    if (!selectedCard) return
+    if (!selectedAccount) return
 
     const debitAmount = parseFloat(amount)
-    if (debitAmount > (selectedCard.balance || 0)) {
+    if (debitAmount > (selectedAccount.balance || 0)) {
       showError(
         'Saldo Insuficiente!',
-        'O valor do débito é maior que o saldo disponível no cartão.'
+        'O valor do débito é maior que o saldo disponível na conta.'
       )
       return
     }
@@ -100,18 +111,18 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
     setShowConfirmation(false)
     
     try {
-      await updateCardBalance(selectedCard.id, debitAmount, 'debit', description || 'Débito no cartão')
+      await updateUserBalance(selectedAccount.id, debitAmount, 'debit', description || 'Débito manual')
       
       showSuccess(
         'Débito Realizado!',
-        `R$ ${formattedAmount} foi debitado do cartão ${selectedCard.cardNumber} de ${selectedCard.userName || 'usuário'} com sucesso.`
+        `R$ ${formattedAmount} foi debitado da conta de ${selectedAccount.name || selectedAccount.email} com sucesso.`
       )
       
       setAmount('')
       setFormattedAmount('')
-      setCardNumber('')
+      setSearchQuery('')
       setDescription('')
-      setSelectedCard(null)
+      setSelectedAccount(null)
     } catch (err: any) {
       setError(err?.message || 'Erro ao realizar débito')
       showError('Erro ao Debitar', err?.message || 'Não foi possível realizar o débito')
@@ -124,18 +135,14 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
     setShowConfirmation(false)
   }
 
-  const formatCardNumber = (number: string) => {
-    return number.replace(/(\d{4})(?=\d)/g, '$1 ')
-  }
-
   const inputClass = 'w-full px-4 py-3 border-2 border-ferro-200 rounded-xl bg-creme-50 text-ferro-900 focus:border-ferro-500 focus:ring-2 focus:ring-ferro-200 transition-colors duration-200'
-  const insufficient = !!selectedCard && parseFloat(amount || '0') > (selectedCard.balance || 0)
+  const insufficient = !!selectedAccount && parseFloat(amount || '0') > (selectedAccount.balance || 0)
 
   return (
     <div className="space-y-4">
       <Header 
-            title="Débito em Cartão"
-            subtitle="Debite um valor do cartão do encontrista"
+            title="Débito de Saldo"
+            subtitle="Debite um valor diretamente da conta do encontrista"
             showLogo={false}
         />
     <div className="w-full relative z-10">
@@ -144,22 +151,31 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
           {/* Formulário */}
           <div className="painel p-5 md:p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Número do Cartão */}
+              {/* Busca por usuário */}
               <div>
-                <label htmlFor="cardNumber" className="block text-sm font-semibold text-ferro-900 mb-2">
-                  🎫 Número do Cartão
+                <label htmlFor="accountSearch" className="block text-sm font-semibold text-ferro-900 mb-2">
+                  Buscar usuário por nome ou email
                 </label>
                 <input
                   type="text"
-                  inputMode="numeric"
-                  id="cardNumber"
-                  value={cardNumber}
-                  onChange={handleCardNumberChange}
+                  id="accountSearch"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
                   required
-                  className={`${inputClass} font-ticket tracking-widest`}
-                  placeholder="001"
-                  maxLength={3}
+                  className={inputClass}
+                  placeholder="Nome ou email do usuário"
                 />
+                {searchResults.length > 0 && (
+                  <div className="mt-2 rounded-xl border border-ferro-200 bg-creme-50 shadow-bilhete">
+                    {searchResults.map((account) => (
+                      <button key={account.id} type="button" onClick={() => handleSelectAccount(account)}
+                        className="flex w-full justify-between gap-3 border-b border-ferro-100 px-4 py-3 text-left last:border-0 hover:bg-creme-200">
+                        <span><strong>{account.name || 'Sem nome'}</strong><span className="block text-sm text-ferro-600">{account.email}</span></span>
+                        <span>R$ {(account.balance || 0).toFixed(2).replace('.', ',')}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {error && (
@@ -200,17 +216,17 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                 />
               </div>
 
-              {/* Informações do cartão selecionado */}
-              {selectedCard && (
+              {/* Informações da conta selecionada */}
+              {selectedAccount && (
                 <div className="bg-creme-200 border border-ferro-200 rounded-xl p-4 space-y-2 animate-fade-in">
                   <div className="flex items-center justify-between gap-3">
-                    <h4 className="font-display text-sm uppercase tracking-wider text-ferro-700">🎫 Cartão Selecionado</h4>
-                    <span className="font-ticket font-bold text-ferro-900">Nº {formatCardNumber(selectedCard.cardNumber || '')}</span>
+                    <h4 className="font-display text-sm uppercase tracking-wider text-ferro-700">Conta selecionada</h4>
+                    <span className="text-sm text-ferro-600">{selectedAccount.email}</span>
                   </div>
-                  <p className="text-ferro-900 font-semibold">{selectedCard.userName || 'Sem nome'}</p>
+                  <p className="text-ferro-900 font-semibold">{selectedAccount.name || 'Sem nome'}</p>
                   <div className="picote-horizontal pt-2 flex justify-between items-baseline">
                     <span className="text-sm text-ferro-600">Saldo atual</span>
-                    <span className="font-slab text-ferro-900">R$ {(selectedCard.balance || 0).toFixed(2).replace('.', ',')}</span>
+                    <span className="font-slab text-ferro-900">R$ {(selectedAccount.balance || 0).toFixed(2).replace('.', ',')}</span>
                   </div>
                   {amount && (
                     <>
@@ -221,7 +237,7 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                       <div className="flex justify-between items-baseline">
                         <span className="text-sm text-ferro-600">Novo saldo</span>
                         <span className={`font-slab text-lg ${insufficient ? 'text-vagao-600' : 'text-ferro-900'}`}>
-                          R$ {((selectedCard.balance || 0) - parseFloat(amount || '0')).toFixed(2).replace('.', ',')}
+                          R$ {((selectedAccount.balance || 0) - parseFloat(amount || '0')).toFixed(2).replace('.', ',')}
                         </span>
                       </div>
                       {insufficient && (
@@ -239,7 +255,7 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
                 type="submit"
                 size="lg"
                 className="w-full !bg-vagao-600 hover:!bg-vagao-700 !border-vagao-600 !text-creme-50"
-                disabled={isLoading || !selectedCard || (amount ? parseFloat(amount) > selectedCard.balance : false)}
+                disabled={isLoading || !selectedAccount || (amount ? parseFloat(amount) > selectedAccount.balance : false)}
               >
                 {isLoading ? (
                   <>
@@ -263,9 +279,9 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
         onClose={handleCancelConfirmation}
         onConfirm={handleConfirmDebit}
         title="Confirmar Débito"
-        message="Deseja realmente debitar o valor no cartão?"
+        message="Deseja realmente debitar o valor da conta?"
         icon="💸"
-        card={selectedCard}
+        account={selectedAccount}
         transactionType="debit"
         amount={amount}
         formattedAmount={formattedAmount}
@@ -276,4 +292,4 @@ const DebitCard: React.FC<DebitCardProps> = ({ onBack: _onBack }) => {
   )
 }
 
-export default DebitCard
+export default DebitBalance

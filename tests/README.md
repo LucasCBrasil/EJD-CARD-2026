@@ -77,8 +77,8 @@ A suíte completa contém **61 testes** organizados em categorias:
 - Formatação monetária
 
 ### 🏷️ Testes de Categorias (4 testes)
-- Validação de categorias válidas (lojinha, lanchonete, sapatinho)
-- Categoria inválida
+- Validação das categorias suportadas (lojinha, lanchonete)
+- Rejeição de categorias inválidas ou legadas
 
 ## 📊 Resultado Esperado
 
@@ -131,4 +131,3 @@ Se os testes falharem:
 2. Verifique se o `tsx` está instalado: `npm list tsx`
 3. Se necessário, instale o tsx: `npm install --save-dev tsx`
 4. Verifique os erros específicos no output dos testes
-

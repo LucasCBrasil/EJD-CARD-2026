@@ -170,10 +170,7 @@ Deno.serve(async (req) => {
 
     const userRole = await getUserRole(authResult.id)
     const supabase = createSupabaseClient()
-    const url = new URL(req.url)
-    const category = url.searchParams.get('category') as 'lojinha' | 'sapatinho' | null
-
-    // REGRA: Apenas admin e lojinha podem ver pedidos (tanto da lojinha quanto do sapatinho)
+    // REGRA: Apenas admin e lojinha podem ver pedidos da lojinha.
     if (!['admin', 'lojinha'].includes(userRole)) {
       return new Response(
         JSON.stringify({
@@ -187,82 +184,34 @@ Deno.serve(async (req) => {
       )
     }
 
-    if (category === 'sapatinho') {
-      // Pedidos do Sapatinho (apenas admin e lojinha podem ver)
-      // Usar relacionamento direto do Supabase (como na branch que funciona)
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-      const { data: orders, error } = await supabase
-        .from('sapatinho_veloz_orders')
-        .select(`
-          *,
-          sapatinho_veloz_order_items (
-            id,
-            order_id,
-            product_id,
-            product_name,
-            quantity,
-            price,
-            created_at
-          )
-        `)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Erro ao buscar pedidos:', error)
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Erro ao buscar pedidos'
-          } as ApiResponse),
-          {
-            status: 500,
-            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-          }
-        )
-      }
-
+    if (error) {
       return new Response(
         JSON.stringify({
-          success: true,
-          data: orders || []
+          success: false,
+          error: 'Erro ao buscar pedidos'
         } as ApiResponse),
         {
-          status: 200,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-        }
-      )
-    } else {
-      // Pedidos da Lojinha (apenas admin e lojinha podem ver - já validado acima)
-
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Erro ao buscar pedidos'
-          } as ApiResponse),
-          {
-            status: 500,
-            headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
-          }
-        )
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: orders || []
-        } as ApiResponse),
-        {
-          status: 200,
+          status: 500,
           headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
         }
       )
     }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: orders || []
+      } as ApiResponse),
+      {
+        status: 200,
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+      }
+    )
   } catch (error) {
     console.error('Error in list-orders:', error)
     return new Response(

@@ -73,7 +73,7 @@ const SalesHistoryPage: React.FC = () => {
         
         return {
           id: sale.id,
-          userId: sale.card_id || sale.userId || '',
+          userId: sale.user_id || sale.userId || '',
           sellerId: sale.seller_id || sale.sellerId || '',
           saleId: sale.sale_number?.toString() || sale.sale_id || sale.id,
           category: sale.category || context,
@@ -81,13 +81,8 @@ const SalesHistoryPage: React.FC = () => {
           total: parseFloat(sale.total) || 0,
           status: sale.status || 'completed',
           createdAt: sale.created_at || sale.createdAt || null,
-          card: sale.cards ? (Array.isArray(sale.cards) ? (sale.cards[0] ? {
-            cardNumber: sale.cards[0].card_number || sale.cards[0].cardNumber,
-            userName: sale.cards[0].user_name || sale.cards[0].userName
-          } : null) : {
-            cardNumber: sale.cards.card_number || sale.cards.cardNumber,
-            userName: sale.cards.user_name || sale.cards.userName
-          }) : null,
+          customerName: sale.user_name || sale.customer_name || sale.user?.name || '',
+          customerEmail: sale.user_email || sale.user?.email || '',
           seller: (sale.app_users && (Array.isArray(sale.app_users) ? sale.app_users[0] : sale.app_users)) || sale.seller ? {
             id: sale.seller_id || (Array.isArray(sale.app_users) ? sale.app_users[0]?.id : sale.app_users?.id) || sale.seller?.id || '',
             name: (Array.isArray(sale.app_users) ? sale.app_users[0]?.name : sale.app_users?.name) || sale.seller?.name || 'Vendedor',
@@ -143,7 +138,7 @@ const SalesHistoryPage: React.FC = () => {
       return allSales
     }
     return allSales.filter(sale =>
-      sale.card?.userName?.toLowerCase().includes(searchName.toLowerCase())
+      sale.customerName?.toLowerCase().includes(searchName.toLowerCase())
     )
   }, [allSales, searchName])
 
@@ -290,11 +285,10 @@ const SalesHistoryPage: React.FC = () => {
                     <p>
                       <span className="text-ferro-500">Data:</span> <span className="font-semibold text-ferro-900">{sale.createdAt ? formatDate(sale.createdAt) : 'Data não disponível'}</span>
                     </p>
-                    {sale.card?.cardNumber && sale.card?.userName && (
+                    {sale.customerName && (
                       <p>
-                        <span className="text-ferro-500">Cartão:</span> <span className="font-ticket font-bold text-ferro-900">{sale.card.cardNumber}</span>
-                        <span className="text-ferro-300"> · </span>
-                        <span className="text-ferro-500">Cliente:</span> <span className="font-semibold text-ferro-900">{sale.card.userName}</span>
+                        <span className="text-ferro-500">Cliente:</span> <span className="font-semibold text-ferro-900">{sale.customerName}</span>
+                        {sale.customerEmail && <span className="ml-2 text-ferro-500">({sale.customerEmail})</span>}
                       </p>
                     )}
                     {sale.seller?.name && (

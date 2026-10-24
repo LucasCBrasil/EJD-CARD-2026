@@ -1,7 +1,7 @@
 # Configuração do Supabase Local (opcional)
 # Este arquivo é usado pelo Supabase CLI
 
-project_id = "exppyrjeqxjglwdcijsk"
+project_id = "adpkpzuhvrbfftlxabjd"
 
 [api]
 enabled = true

@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from '@tanstack/react-router'
 import { Header, ConfirmationModal } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { productService, type Product } from '../../services/productService'
-import { usePermissions } from '../../hooks/usePermissions'
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import type { ProductCategory } from '../../types'
 
@@ -11,22 +10,11 @@ const ListProductsPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { showSuccess, showError, showInfo } = useToastContext()
-  const { userRole } = usePermissions()
   
-  const context: ProductCategory = location.pathname.startsWith('/sapatinho-veloz')
-    ? 'sapatinho'
-    : location.pathname.startsWith('/lanchonete')
-      ? 'lanchonete'
-      : 'lojinha'
-  const basePath = context === 'sapatinho' ? '/sapatinho-veloz' : `/${context}`
-  
-  // Proteção: apenas admin e lojinha podem gerenciar produtos de Sapatinho
-  useEffect(() => {
-    if (context === 'sapatinho' && userRole !== 'admin' && userRole !== 'lojinha') {
-      showError('Acesso Negado', 'Você não tem permissão para gerenciar produtos de Sapatinho.')
-      navigate({ to: '/' as any, replace: true })
-    }
-  }, [context, userRole, navigate, showError])
+  const context: ProductCategory = location.pathname.startsWith('/lanchonete')
+    ? 'lanchonete'
+    : 'lojinha'
+  const basePath = `/${context}`
   
   const [products, setProducts] = useState<Product[]>([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -49,19 +37,12 @@ const ListProductsPage = () => {
       emptyMessage: 'Nenhum item cadastrado no cardápio',
       deleteTitle: 'Excluir Item',
       deleteMessage: 'Deseja realmente excluir este item do cardápio?'
-    },
-    sapatinho: {
-      title: 'Itens do Sapatinho Veloz',
-      subtitle: 'Gerencie os itens disponíveis',
-      emptyMessage: 'Nenhum item cadastrado para o Sapatinho',
-      deleteTitle: 'Excluir Item',
-      deleteMessage: 'Deseja realmente excluir este item do Sapatinho?'
     }
   }
   
   const currentConfig = config[context]
-  const itemSingular = context === 'lojinha' ? 'produto' : context === 'sapatinho' ? 'item' : 'item'
-  const itemSingularTitle = context === 'lojinha' ? 'Produto' : context === 'sapatinho' ? 'Item' : 'Item'
+  const itemSingular = context === 'lojinha' ? 'produto' : 'item'
+  const itemSingularTitle = context === 'lojinha' ? 'Produto' : 'Item'
 
   // Carregar produtos
   useEffect(() => {
@@ -155,10 +136,9 @@ const ListProductsPage = () => {
     return price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
-  const getDefaultImage = (context: 'lojinha' | 'lanchonete' | 'sapatinho'): string => {
+  const getDefaultImage = (context: 'lojinha' | 'lanchonete'): string => {
     const labels = {
       lanchonete: { title: 'Item sem imagem', sub: 'Cardápio da Lanchonete', icon: '☕' },
-      sapatinho: { title: 'Item sem imagem', sub: 'Sapatinho Veloz', icon: '💌' },
       lojinha: { title: 'Produto sem imagem', sub: 'Lojinha', icon: '🚂' }
     }[context]
     const svg = `
