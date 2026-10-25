@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { usePermissions } from '../hooks/usePermissions'
 import { useAuth } from '../contexts/AuthContext'
+import { useSelfOrderEnabled } from '../hooks/useLanchoneteOrders'
 
 interface MainCard {
   id: string
@@ -35,7 +36,12 @@ const HomePage: React.FC = () => {
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
     canViewOpenOrders,
+    canSelfOrderLanchonete,
+    canManageLanchoneteOrders,
   } = usePermissions()
+  const { data: selfOrderEnabled = false } = useSelfOrderEnabled()
+  const canSelfOrderNow = canSelfOrderLanchonete && selfOrderEnabled
+  const isLanchoneteStaff = canSellLanchonete || canManageProductsLanchonete || canViewSalesHistoryLanchonete || canManageLanchoneteOrders
 
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   
@@ -80,10 +86,10 @@ const HomePage: React.FC = () => {
       id: 'lanchonete',
       title: 'LANCHONETE',
       icon: '🍔',
-      description: 'Vendas, produtos e histórico da lanchonete',
+      description: isLanchoneteStaff ? 'Pedidos, vendas, produtos e histórico da lanchonete' : 'Peça seu lanche e pague com seu saldo',
       accent: 'bg-latao-500',
       path: '/lanchonete',
-      canAccess: canSellLanchonete || canManageProductsLanchonete || canViewSalesHistoryLanchonete
+      canAccess: isLanchoneteStaff || canSelfOrderNow
     },
     {
       id: 'adm',
@@ -177,8 +183,29 @@ const HomePage: React.FC = () => {
       case 'lanchonete':
         return [
           {
+            icon: '🍔',
+            title: 'Fazer Pedido',
+            description: 'Pagar com meu saldo',
+            path: '/lanchonete/pedir',
+            canAccess: canSelfOrderNow
+          },
+          {
+            icon: '🎫',
+            title: 'Meus Pedidos',
+            description: 'Acompanhar status',
+            path: '/lanchonete/meus-pedidos',
+            canAccess: canSelfOrderNow
+          },
+          {
+            icon: '📥',
+            title: 'Fila de Pedidos',
+            description: 'Preparar e entregar pedidos do app',
+            path: '/lanchonete/fila',
+            canAccess: canManageLanchoneteOrders
+          },
+          {
             icon: '🍽️',
-            title: 'Realizar Venda',
+            title: 'Venda no Balcão',
             description: 'Processar vendas',
             path: '/lanchonete/select',
             canAccess: canSellLanchonete

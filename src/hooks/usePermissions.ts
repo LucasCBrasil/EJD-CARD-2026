@@ -42,6 +42,10 @@ export const usePermissions = () => {
     // Entregas
     canViewOpenOrders: hasPermission(userRole, 'canViewOpenOrders'),
     canMarkAsDelivered: hasPermission(userRole, 'canMarkAsDelivered'),
+
+    // Autoatendimento da Lanchonete
+    canSelfOrderLanchonete: hasPermission(userRole, 'canSelfOrderLanchonete'),
+    canManageLanchoneteOrders: hasPermission(userRole, 'canManageLanchoneteOrders'),
     
     // Admin
     canViewAdmin: hasPermission(userRole, 'canViewAdmin'),
