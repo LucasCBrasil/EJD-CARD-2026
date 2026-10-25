@@ -83,6 +83,8 @@ Deno.serve(async (req: Request) => {
       .from('sales')
       .update({ status: 'delivered', delivered_at: new Date().toISOString() })
       .eq('id', saleId)
+      // Pedidos do autoatendimento seguem o fluxo próprio (lanchonete-orders)
+      .eq('origin', 'balcao')
       .select()
       .single();
 
