@@ -1,19 +1,50 @@
 import React from 'react'
 import { InternalCard } from '../../components/shared'
 import { usePermissions } from '../../hooks/usePermissions'
+import { useSelfOrderEnabled } from '../../hooks/useLanchoneteOrders'
 
 const LanchonetePage = () => {
   const {
     canSellLanchonete,
     canManageProductsLanchonete,
-    canViewSalesHistoryLanchonete
+    canViewSalesHistoryLanchonete,
+    canSelfOrderLanchonete,
+    canManageLanchoneteOrders
   } = usePermissions()
+  const { data: selfOrderEnabled = false } = useSelfOrderEnabled()
 
   const cards = [
     {
+      icon: '🍔',
+      title: 'Fazer Pedido',
+      description: 'Peça seu lanche e pague com seu saldo',
+      path: '/lanchonete/pedir',
+      color: 'from-latao-400 to-latao-600',
+      gradient: 'border-latao-300',
+      canAccess: canSelfOrderLanchonete && selfOrderEnabled
+    },
+    {
+      icon: '🎫',
+      title: 'Meus Pedidos',
+      description: 'Acompanhe o status dos seus pedidos',
+      path: '/lanchonete/meus-pedidos',
+      color: 'from-anil-600 to-anil-800',
+      gradient: 'border-anil-300',
+      canAccess: canSelfOrderLanchonete
+    },
+    {
+      icon: '📥',
+      title: 'Fila de Pedidos',
+      description: 'Pedidos feitos pelo app para preparar e entregar',
+      path: '/lanchonete/fila',
+      color: 'from-vagao-500 to-vagao-700',
+      gradient: 'border-vagao-300',
+      canAccess: canManageLanchoneteOrders
+    },
+    {
       icon: '🍽️',
-      title: 'Realizar Venda',
-      description: 'Processar vendas de lanches e bebidas',
+      title: 'Venda no Balcão',
+      description: 'Registrar venda debitando a conta do cliente',
       path: '/lanchonete/select',
       color: 'from-latao-400 to-latao-600',
       gradient: 'border-latao-300',

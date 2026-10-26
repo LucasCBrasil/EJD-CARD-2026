@@ -43,7 +43,7 @@ export interface Sale {
   customerEmail?: string
   items: SaleItem[]
   total: number
-  status: 'completed' | 'delivered'
+  status: 'completed' | 'delivered' | 'pending' | 'preparing' | 'ready' | 'cancelled'
   createdAt: string
   seller?: {
     id: string

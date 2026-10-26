@@ -21,6 +21,7 @@ function getSupabaseFunctionsUrl(): string {
 // Configuração visual das flags
 const flagConfig: Record<string, { icon: string; label: string; color: 'success' | 'warning' | 'info' | 'error' }> = {
   pix_enabled: { icon: '💳', label: 'Abastecimento via PIX', color: 'success' },
+  lanchonete_self_order: { icon: '🍔', label: 'Pedidos da Lanchonete pelo app', color: 'success' },
 }
 
 const FeatureFlagsManagement: React.FC = () => {

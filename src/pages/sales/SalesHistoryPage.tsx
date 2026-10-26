@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { Sale } from '../../contexts/SupabaseDataContext'
 import { api } from '../../lib/api-client'
+import { getOrderStatusClass, getOrderStatusLabel } from '../../lib/orderStatus'
 
 type ContextType = 'lojinha' | 'lanchonete'
 
@@ -269,14 +270,8 @@ const SalesHistoryPage: React.FC = () => {
                       <div className="font-slab text-2xl text-vagao-600 leading-tight">
                         R$ {formatPrice(sale.total)}
                       </div>
-                      <span className={`carimbo text-[11px] mt-1 ${
-                        sale.status === 'completed' ? 'text-green-700' :
-                        sale.status === 'delivered' ? 'text-anil-700' :
-                        'text-ferro-500'
-                      }`}>
-                        {sale.status === 'completed' ? '✓ Concluída' :
-                         sale.status === 'delivered' ? 'Entregue' :
-                         sale.status}
+                      <span className={`carimbo text-[11px] mt-1 ${getOrderStatusClass(sale.status)}`}>
+                        {getOrderStatusLabel(sale.status)}
                       </span>
                     </div>
                   </div>

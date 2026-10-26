@@ -116,7 +116,9 @@ async function request<T = any>(
       // Retornar erro no formato esperado
       return {
         success: false,
-        error: responseData.error || responseData.message || `Erro ${response.status}`
+        error: responseData.error || responseData.message || `Erro ${response.status}`,
+        code: responseData.code,
+        details: responseData.details,
       } as T
     }
 
@@ -290,4 +292,61 @@ export const api = {
     }>('my-account-history', {
       method: 'GET',
     }),
+
+  // Pedido de autoatendimento da Lanchonete (comprador = usuário logado)
+  createSelfOrder: (items: SelfOrderItemInput[], requestId: string) =>
+    request<ApiResult<{ saleId: string; saleNumber: number; total: number; newBalance: number; alreadyExisted: boolean }>>(
+      'create-self-order',
+      { method: 'POST', body: { items, requestId } },
+    ),
+
+  listMyLanchoneteOrders: () =>
+    request<ApiResult<LanchoneteOrder[]>>('my-lanchonete-orders', { method: 'GET' }),
+
+  cancelMyLanchoneteOrder: (saleId: string) =>
+    request<ApiResult<{ saleId: string; saleNumber: number; refundedAmount: number; newBalance: number }>>(
+      'my-lanchonete-orders',
+      { method: 'POST', body: { saleId, action: 'cancel' } },
+    ),
+
+  // Fila da equipe da Lanchonete
+  listLanchoneteOrders: (status: 'open' | 'delivered' | 'cancelled' = 'open') =>
+    request<ApiResult<LanchoneteOrder[]>>('lanchonete-orders', { method: 'GET', query: { status } }),
+
+  updateLanchoneteOrderStatus: (saleId: string, status: 'preparing' | 'ready' | 'delivered') =>
+    request<ApiResult<{ saleId: string; saleNumber: number; status: string }>>('lanchonete-orders', {
+      method: 'POST',
+      body: { saleId, status },
+    }),
+
+  cancelLanchoneteOrder: (saleId: string) =>
+    request<ApiResult<{ saleId: string; saleNumber: number; refundedAmount: number }>>('lanchonete-orders', {
+      method: 'POST',
+      body: { saleId, action: 'cancel' },
+    }),
+}
+
+export interface ApiResult<T> {
+  success: boolean
+  data?: T
+  error?: string
+  code?: string
+  details?: any
+}
+
+export interface SelfOrderItemInput {
+  productId: string
+  quantity: number
+}
+
+export interface LanchoneteOrder {
+  id: string
+  saleNumber: number
+  total: number
+  status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+  createdAt: string
+  statusUpdatedAt: string | null
+  deliveredAt: string | null
+  customerName?: string
+  items: Array<{ productId: string; productName: string; quantity: number; price: number }>
 }

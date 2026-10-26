@@ -159,7 +159,8 @@ const AccountPage: React.FC = () => {
         const saleHistory: HistoryItem[] = (response.data.sales || []).map((sale: any) => ({
           id: sale.id,
           date: sale.created_at || sale.createdAt,
-          label: (sale.sale_items || []).map((item: any) => item.product_name).filter(Boolean).join(', ') || 'Compra',
+          label: ((sale.sale_items || []).map((item: any) => item.product_name).filter(Boolean).join(', ') || 'Compra')
+            + (sale.status === 'cancelled' ? ' (cancelado e estornado)' : ''),
           amount: Number(sale.total) || 0,
           type: sale.category || 'lojinha',
         }))

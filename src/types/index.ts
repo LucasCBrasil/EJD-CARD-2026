@@ -44,7 +44,7 @@ export interface Sale {
   category: ProductCategory
   items: SaleItem[]
   total: number
-  status: 'completed' | 'delivered'
+  status: 'completed' | 'delivered' | 'pending' | 'preparing' | 'ready' | 'cancelled'
   createdAt: string
   created_at?: string
 }
