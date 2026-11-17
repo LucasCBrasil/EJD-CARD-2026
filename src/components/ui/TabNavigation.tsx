@@ -67,14 +67,12 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
               📊 Histórico Lojinha
             </button>
           )}
-          (
-            <button
-              onClick={() => onTabChange('lanchonete')}
-              className={tabClass(activeTab === 'lanchonete')}
-            >
-              🍔 Lanchonete
-            </button>
-          )
+          <button
+            onClick={() => onTabChange('lanchonete')}
+            className={tabClass(activeTab === 'lanchonete')}
+          >
+            🍔 Lanchonete
+          </button>
           {canViewSalesHistoryLanchonete && (
             <button
               onClick={() => {
