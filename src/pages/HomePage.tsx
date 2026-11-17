@@ -38,6 +38,7 @@ const HomePage: React.FC = () => {
     canViewOpenOrders,
     canSelfOrderLanchonete,
     canManageLanchoneteOrders,
+    canManageFoodTrucks,
   } = usePermissions()
   const { data: selfOrderEnabled = false } = useSelfOrderEnabled()
   const canSelfOrderNow = canSelfOrderLanchonete && selfOrderEnabled
@@ -90,6 +91,15 @@ const HomePage: React.FC = () => {
       accent: 'bg-latao-500',
       path: '/lanchonete',
       canAccess: isLanchoneteStaff || canSelfOrderNow
+    },
+    {
+      id: 'food-trucks',
+      title: 'FOOD TRUCKS',
+      icon: '🚚',
+      description: 'Veja os cardápios dos parceiros. A compra é feita direto no food truck',
+      accent: 'bg-anil-600',
+      path: '/food-trucks',
+      canAccess: true
     },
     {
       id: 'adm',
@@ -255,6 +265,13 @@ const HomePage: React.FC = () => {
             description: 'Pulso do sistema em tempo real',
             path: '/acompanhar',
             canAccess: canViewAdmin
+          },
+          {
+            icon: '🚚',
+            title: 'Food Trucks',
+            description: 'Cadastrar food trucks e cardápios',
+            path: '/admin-food-trucks',
+            canAccess: canManageFoodTrucks
           }
         ]
       

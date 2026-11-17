@@ -3,8 +3,8 @@ import { useRouter } from '@tanstack/react-router'
 import { usePermissions } from '../../hooks/usePermissions'
 
 interface TabNavigationProps {
-  activeTab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard'
-  onTabChange: (tab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard') => void
+  activeTab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'foodTrucks'
+  onTabChange: (tab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'foodTrucks') => void
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange }) => {
@@ -67,14 +67,18 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
               📊 Histórico Lojinha
             </button>
           )}
-          (
-            <button
-              onClick={() => onTabChange('lanchonete')}
-              className={tabClass(activeTab === 'lanchonete')}
-            >
-              🍔 Lanchonete
-            </button>
-          )
+          <button
+            onClick={() => onTabChange('lanchonete')}
+            className={tabClass(activeTab === 'lanchonete')}
+          >
+            🍔 Lanchonete
+          </button>
+          <button
+            onClick={() => safeNavigate('/food-trucks')}
+            className={tabClass(activeTab === 'foodTrucks')}
+          >
+            🚚 Food Trucks
+          </button>
           {canViewSalesHistoryLanchonete && (
             <button
               onClick={() => {

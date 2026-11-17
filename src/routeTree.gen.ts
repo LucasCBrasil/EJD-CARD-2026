@@ -13,6 +13,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutPedidosLojinhaRouteImport } from './routes/_layout/pedidos-lojinha'
+import { Route as LayoutFoodTrucksRouteImport } from './routes/_layout/food-trucks'
+import { Route as LayoutAdminFoodTrucksRouteImport } from './routes/_layout/admin-food-trucks'
 import { Route as LayoutAdminDebitosRouteImport } from './routes/_layout/admin-debitos'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutAcompanharRouteImport } from './routes/_layout/acompanhar'
@@ -58,6 +60,16 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
 const LayoutPedidosLojinhaRoute = LayoutPedidosLojinhaRouteImport.update({
   id: '/pedidos-lojinha',
   path: '/pedidos-lojinha',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutFoodTrucksRoute = LayoutFoodTrucksRouteImport.update({
+  id: '/food-trucks',
+  path: '/food-trucks',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutAdminFoodTrucksRoute = LayoutAdminFoodTrucksRouteImport.update({
+  id: '/admin-food-trucks',
+  path: '/admin-food-trucks',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutAdminDebitosRoute = LayoutAdminDebitosRouteImport.update({
@@ -210,6 +222,8 @@ export interface FileRoutesByFullPath {
   '/acompanhar': typeof LayoutAcompanharRoute
   '/admin': typeof LayoutAdminRoute
   '/admin-debitos': typeof LayoutAdminDebitosRoute
+  '/admin-food-trucks': typeof LayoutAdminFoodTrucksRoute
+  '/food-trucks': typeof LayoutFoodTrucksRoute
   '/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
   '/': typeof LayoutIndexRoute
   '/accounts/add': typeof LayoutAccountsAddRoute
@@ -242,6 +256,8 @@ export interface FileRoutesByTo {
   '/acompanhar': typeof LayoutAcompanharRoute
   '/admin': typeof LayoutAdminRoute
   '/admin-debitos': typeof LayoutAdminDebitosRoute
+  '/admin-food-trucks': typeof LayoutAdminFoodTrucksRoute
+  '/food-trucks': typeof LayoutFoodTrucksRoute
   '/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
   '/': typeof LayoutIndexRoute
   '/accounts/add': typeof LayoutAccountsAddRoute
@@ -276,6 +292,8 @@ export interface FileRoutesById {
   '/_layout/acompanhar': typeof LayoutAcompanharRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/admin-debitos': typeof LayoutAdminDebitosRoute
+  '/_layout/admin-food-trucks': typeof LayoutAdminFoodTrucksRoute
+  '/_layout/food-trucks': typeof LayoutFoodTrucksRoute
   '/_layout/pedidos-lojinha': typeof LayoutPedidosLojinhaRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/accounts/add': typeof LayoutAccountsAddRoute
@@ -310,6 +328,8 @@ export interface FileRouteTypes {
     | '/acompanhar'
     | '/admin'
     | '/admin-debitos'
+    | '/admin-food-trucks'
+    | '/food-trucks'
     | '/pedidos-lojinha'
     | '/'
     | '/accounts/add'
@@ -342,6 +362,8 @@ export interface FileRouteTypes {
     | '/acompanhar'
     | '/admin'
     | '/admin-debitos'
+    | '/admin-food-trucks'
+    | '/food-trucks'
     | '/pedidos-lojinha'
     | '/'
     | '/accounts/add'
@@ -375,6 +397,8 @@ export interface FileRouteTypes {
     | '/_layout/acompanhar'
     | '/_layout/admin'
     | '/_layout/admin-debitos'
+    | '/_layout/admin-food-trucks'
+    | '/_layout/food-trucks'
     | '/_layout/pedidos-lojinha'
     | '/_layout/'
     | '/_layout/accounts/add'
@@ -435,6 +459,20 @@ declare module '@tanstack/react-router' {
       path: '/pedidos-lojinha'
       fullPath: '/pedidos-lojinha'
       preLoaderRoute: typeof LayoutPedidosLojinhaRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/food-trucks': {
+      id: '/_layout/food-trucks'
+      path: '/food-trucks'
+      fullPath: '/food-trucks'
+      preLoaderRoute: typeof LayoutFoodTrucksRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/admin-food-trucks': {
+      id: '/_layout/admin-food-trucks'
+      path: '/admin-food-trucks'
+      fullPath: '/admin-food-trucks'
+      preLoaderRoute: typeof LayoutAdminFoodTrucksRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/admin-debitos': {
@@ -634,6 +672,8 @@ interface LayoutRouteChildren {
   LayoutAcompanharRoute: typeof LayoutAcompanharRoute
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutAdminDebitosRoute: typeof LayoutAdminDebitosRoute
+  LayoutAdminFoodTrucksRoute: typeof LayoutAdminFoodTrucksRoute
+  LayoutFoodTrucksRoute: typeof LayoutFoodTrucksRoute
   LayoutPedidosLojinhaRoute: typeof LayoutPedidosLojinhaRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutAccountsAddRoute: typeof LayoutAccountsAddRoute
@@ -666,6 +706,8 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAcompanharRoute: LayoutAcompanharRoute,
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutAdminDebitosRoute: LayoutAdminDebitosRoute,
+  LayoutAdminFoodTrucksRoute: LayoutAdminFoodTrucksRoute,
+  LayoutFoodTrucksRoute: LayoutFoodTrucksRoute,
   LayoutPedidosLojinhaRoute: LayoutPedidosLojinhaRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutAccountsAddRoute: LayoutAccountsAddRoute,
