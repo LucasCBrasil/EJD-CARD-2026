@@ -2,21 +2,11 @@ import React, { useMemo, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { TrainLoader } from '../../components/shared'
 import { useFoodTrucks } from '../../hooks/useFoodTrucks'
-import type { FoodTruck, FoodTruckMenuItem } from '../../types'
+import { groupMenuBySection } from '../../lib/foodTrucks'
+import type { FoodTruck } from '../../types'
 
 const formatPrice = (price: number) =>
   price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-
-/** Agrupa os itens por seção, mantendo a ordem em que cada seção aparece. */
-function groupBySection(items: FoodTruckMenuItem[]) {
-  const groups = new Map<string, FoodTruckMenuItem[]>()
-  for (const item of items) {
-    const list = groups.get(item.section) || []
-    list.push(item)
-    groups.set(item.section, list)
-  }
-  return Array.from(groups, ([section, sectionItems]) => ({ section, items: sectionItems }))
-}
 
 interface ThumbProps {
   src: string | null
@@ -78,7 +68,7 @@ const NoSaleNotice: React.FC = () => (
 )
 
 const TruckMenu: React.FC<{ truck: FoodTruck }> = ({ truck }) => {
-  const sections = useMemo(() => groupBySection(truck.items), [truck.items])
+  const sections = useMemo(() => groupMenuBySection(truck.items), [truck.items])
   // Só reserva espaço para foto se algum item do food truck tiver foto
   const showThumbs = truck.items.some((item) => !!item.imageUrl)
 

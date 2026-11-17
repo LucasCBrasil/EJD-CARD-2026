@@ -5,6 +5,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 import { useFoodTrucks, useManageFoodTrucks } from '../../hooks/useFoodTrucks'
 import { useToastContext } from '../../contexts/ToastContext'
 import { uploadFoodTruckImage, validateFoodTruckImage, FOOD_TRUCK_IMAGE_TYPES } from '../../services/foodTruckImages'
+import { groupMenuBySection } from '../../lib/foodTrucks'
 import type { FoodTruck, FoodTruckMenuItem } from '../../types'
 
 const labelClass = 'block text-sm font-display font-semibold uppercase tracking-wide text-ferro-800 mb-2'
@@ -320,7 +321,8 @@ const ItemForm: React.FC<{
         </div>
         <div>
           <label htmlFor="item-order" className={labelClass}>Ordem</label>
-          <input id="item-order" type="number" inputMode="numeric" step={1} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="w-28" />
+          <input id="item-order" type="number" inputMode="numeric" step={1} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="w-28" aria-describedby="item-order-hint" />
+          <p id="item-order-hint" className={hintClass}>Menor vem primeiro. A seção segue o item de menor ordem.</p>
         </div>
       </div>
       <ImagePicker
@@ -364,10 +366,8 @@ const FoodTrucksAdminPage: React.FC = () => {
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
 
   const selected = trucks.find((t) => t.id === selectedId) || null
-  const sections = useMemo(
-    () => Array.from(new Set((selected?.items || []).map((i) => i.section))),
-    [selected]
-  )
+  const itemsBySection = useMemo(() => groupMenuBySection(selected?.items || []), [selected])
+  const sections = itemsBySection.map((g) => g.section)
 
   if (!canManageFoodTrucks) {
     return (
@@ -415,11 +415,6 @@ const FoodTrucksAdminPage: React.FC = () => {
       setPendingDelete(null)
     }
   }
-
-  const itemsBySection = sections.map((section) => ({
-    section,
-    items: (selected?.items || []).filter((i) => i.section === section),
-  }))
 
   return (
     <div className="painel text-ferro-900 p-4 sm:p-8 space-y-8">
