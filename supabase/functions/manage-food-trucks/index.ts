@@ -29,6 +29,7 @@ import { getCorsHeaders } from '../_shared/cors.ts'
 const BUCKET = 'food-trucks'
 const PUBLIC_MARKER = `/storage/v1/object/public/${BUCKET}/`
 const IMAGE_PATH_RE = /^(logo|item)\/[0-9a-f-]{36}\.(jpg|png|webp)$/
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const CONTENT_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -80,7 +81,12 @@ function storagePath(url: string | null | undefined): string | null {
   if (!url) return null
   const idx = url.indexOf(PUBLIC_MARKER)
   if (idx === -1) return null
-  const path = decodeURIComponent(url.slice(idx + PUBLIC_MARKER.length).split('?')[0])
+  let path: string
+  try {
+    path = decodeURIComponent(url.slice(idx + PUBLIC_MARKER.length).split('?')[0])
+  } catch {
+    return null // %xx malformado: trata como URL inválida (400), não erro interno
+  }
   return IMAGE_PATH_RE.test(path) ? path : null
 }
 
@@ -94,7 +100,7 @@ function imageUrl(value: unknown, field: string): string | null {
 }
 
 function uuid(value: unknown, field: string): string {
-  if (typeof value !== 'string' || !/^[0-9a-f-]{36}$/i.test(value)) {
+  if (typeof value !== 'string' || !UUID_RE.test(value)) {
     throw new ValidationError(`${field} inválido`)
   }
   return value
