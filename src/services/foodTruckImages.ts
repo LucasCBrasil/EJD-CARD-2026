@@ -7,7 +7,7 @@
  * escrita para anon/authenticated.
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { api } from '../lib/api-client'
 
 export const FOOD_TRUCK_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -24,7 +24,7 @@ export function validateFoodTruckImage(file: File): string | null {
   return null
 }
 
-let storageClient: ReturnType<typeof createClient> | null = null
+let storageClient: SupabaseClient | null = null
 
 function getStorageClient() {
   if (storageClient) return storageClient
@@ -36,7 +36,8 @@ function getStorageClient() {
     throw new Error('Supabase não configurado')
   }
   storageClient = createClient(supabaseUrl, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
+    // Cliente só para Storage: não mexe na sessão do auth-client
+    auth: { storageKey: 'ejd-food-truck-upload', persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   })
   return storageClient
 }

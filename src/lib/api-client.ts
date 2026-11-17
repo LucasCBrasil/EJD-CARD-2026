@@ -271,7 +271,7 @@ export const api = {
     }),
 
   manageFoodTrucks: (data: Record<string, unknown>, method: 'POST' | 'PUT' | 'DELETE' = 'POST') =>
-    request<ApiResult<any>>('manage-food-trucks', {
+    request<ApiResult<unknown>>('manage-food-trucks', {
       method,
       body: data,
     }),
