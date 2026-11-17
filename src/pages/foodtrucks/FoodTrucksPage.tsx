@@ -18,8 +18,19 @@ function groupBySection(items: FoodTruckMenuItem[]) {
   return Array.from(groups, ([section, sectionItems]) => ({ section, items: sectionItems }))
 }
 
+interface ThumbProps {
+  src: string | null
+  alt: string
+  fallback: string
+  className: string
+}
+
 /** Imagem com fallback temático (emoji) quando não há foto ou ela falha. */
-const Thumb: React.FC<{ src: string | null; alt: string; fallback: string; className: string }> = ({
+const Thumb: React.FC<ThumbProps> = (props) => <ThumbImage key={props.src ?? 'none'} {...props} />
+
+// O key acima remonta este componente quando a URL muda (ex.: logo trocada),
+// zerando o estado de falha.
+const ThumbImage: React.FC<ThumbProps> = ({
   src,
   alt,
   fallback,
@@ -66,19 +77,13 @@ const NoSaleNotice: React.FC = () => (
   </div>
 )
 
-const TruckMenu: React.FC<{ truck: FoodTruck; asTabPanel: boolean }> = ({ truck, asTabPanel }) => {
+const TruckMenu: React.FC<{ truck: FoodTruck }> = ({ truck }) => {
   const sections = useMemo(() => groupBySection(truck.items), [truck.items])
   // Só reserva espaço para foto se algum item do food truck tiver foto
   const showThumbs = truck.items.some((item) => !!item.imageUrl)
 
   return (
-    <section
-      id={`food-truck-panel-${truck.id}`}
-      {...(asTabPanel
-        ? { role: 'tabpanel', 'aria-labelledby': `food-truck-tab-${truck.id}` }
-        : { 'aria-label': `Cardápio do ${truck.name}` })}
-      className="mt-5"
-    >
+    <section aria-label={`Cardápio do ${truck.name}`} className="mt-5">
       <div className="bilhete flex items-center gap-4 px-4 py-4">
         <Thumb src={truck.logoUrl} alt={`Logo do ${truck.name}`} fallback="🚚" className="w-16 h-16 rounded-xl shrink-0" />
         <div className="min-w-0">
@@ -105,7 +110,7 @@ const TruckMenu: React.FC<{ truck: FoodTruck; asTabPanel: boolean }> = ({ truck,
                 {items.map((item) => (
                   <li key={item.id} className="flex items-start gap-3 py-3 cursor-default">
                     {showThumbs && (
-                      <Thumb src={item.imageUrl} alt={item.name} fallback="🍽️" className="w-16 h-16 rounded-lg shrink-0" />
+                      <Thumb src={item.imageUrl} alt="" fallback="🍽️" className="w-16 h-16 rounded-lg shrink-0" />
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-ferro-900 break-words">{item.name}</p>
@@ -175,7 +180,7 @@ const FoodTrucksPage: React.FC = () => {
                 Escolha o food truck
               </p>
               <div
-                role="tablist"
+                role="group"
                 aria-labelledby="food-truck-picker-label"
                 className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1"
               >
@@ -184,11 +189,8 @@ const FoodTrucksPage: React.FC = () => {
                   return (
                     <button
                       key={truck.id}
-                      id={`food-truck-tab-${truck.id}`}
                       type="button"
-                      role="tab"
-                      aria-selected={active}
-                      aria-controls={`food-truck-panel-${truck.id}`}
+                      aria-pressed={active}
                       onClick={() => selectTruck(truck.id)}
                       className={`flex items-center gap-2 shrink-0 min-h-[44px] rounded-xl border-2 px-3 py-2 font-display text-sm uppercase tracking-wide transition-colors touch-manipulation ${
                         active
@@ -205,7 +207,7 @@ const FoodTrucksPage: React.FC = () => {
             </div>
           )}
 
-          <TruckMenu key={selected.id} truck={selected} asTabPanel={trucks.length > 1} />
+          <TruckMenu key={selected.id} truck={selected} />
         </>
       )}
     </div>
