@@ -37,6 +37,9 @@ export interface RolePermissions {
   canMarkAsDelivered: boolean      // Marcar pedidos como entregue
   canSelfOrderLanchonete: boolean  // Fazer o próprio pedido na Lanchonete
   canManageLanchoneteOrders: boolean  // Fila de pedidos da Lanchonete
+
+  // Food trucks parceiros (cadastro de cardápios; visualização é para todos)
+  canManageFoodTrucks: boolean
   
   // Admin
   canManageUsers: boolean
@@ -62,6 +65,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canMarkAsDelivered: true,
     canSelfOrderLanchonete: true,
     canManageLanchoneteOrders: true,
+    canManageFoodTrucks: true,
     canManageUsers: true,
     canViewAdmin: true,
     canViewReports: true,
@@ -83,6 +87,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canMarkAsDelivered: true,
     canSelfOrderLanchonete: true,
     canManageLanchoneteOrders: false,
+    canManageFoodTrucks: false,
     canManageUsers: false,
     canViewAdmin: false,
     canViewReports: false,
@@ -104,6 +109,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canMarkAsDelivered: false,
     canSelfOrderLanchonete: true,
     canManageLanchoneteOrders: true,
+    canManageFoodTrucks: false,
     canManageUsers: false,
     canViewAdmin: false,
     canViewReports: false,
@@ -125,6 +131,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canMarkAsDelivered: false,
     canSelfOrderLanchonete: true,
     canManageLanchoneteOrders: false,
+    canManageFoodTrucks: false,
     canManageUsers: false,
     canViewAdmin: false,
     canViewReports: false,
@@ -146,6 +153,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canMarkAsDelivered: false,
     canSelfOrderLanchonete: true,
     canManageLanchoneteOrders: false,
+    canManageFoodTrucks: false,
     canManageUsers: false,
     canViewAdmin: false,
     canViewReports: false,
@@ -167,6 +175,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canMarkAsDelivered: false,
     canSelfOrderLanchonete: true,
     canManageLanchoneteOrders: false,
+    canManageFoodTrucks: false,
     canManageUsers: false,
     canViewAdmin: false,
     canViewReports: false,
