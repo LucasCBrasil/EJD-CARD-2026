@@ -200,6 +200,14 @@ const main = async () => {
   check(noName.status === 400, 'nome em branco → 400', noName.body)
   const foreignImage = await manage(adminUser.token, 'PUT', { entity: 'truck', id: truckId, logoUrl: 'https://exemplo.com/logo.png' })
   check(foreignImage.status === 400, 'imagem fora do bucket → 400', foreignImage.body)
+  const foreignHost = await manage(adminUser.token, 'PUT', {
+    entity: 'truck',
+    id: truckId,
+    logoUrl: `https://exemplo.com/storage/v1/object/public/food-trucks/${logo.path}`,
+  })
+  check(foreignHost.status === 400, 'caminho do bucket em outro host → 400', foreignHost.body)
+  const withQuery = await manage(adminUser.token, 'PUT', { entity: 'truck', id: truckId, logoUrl: `${logo.url}?x=1` })
+  check(withQuery.status === 400, 'URL do bucket com query string → 400', withQuery.body)
   const badType = await manage(adminUser.token, 'POST', { entity: 'upload', kind: 'logo', contentType: 'image/svg+xml' })
   check(badType.status === 400, 'URL de upload só para JPG/PNG/WEBP → 400', badType.body)
   const missingTruck = await manage(adminUser.token, 'POST', { entity: 'item', foodTruckId: randomUUID(), name: 'Órfão', price: 5 })

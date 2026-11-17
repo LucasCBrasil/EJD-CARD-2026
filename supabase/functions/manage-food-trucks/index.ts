@@ -90,12 +90,49 @@ function storagePath(url: string | null | undefined): string | null {
   return IMAGE_PATH_RE.test(path) ? path : null
 }
 
-/** URL de imagem opcional: precisa ser do bucket food-trucks. */
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1'])
+
+/** Origem pública do projeto no Supabase hospedado; null no ambiente local. */
+function hostedOrigin(): string | null {
+  try {
+    const url = new URL(Deno.env.get('SUPABASE_URL') || '')
+    return url.protocol === 'https:' ? url.origin : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * URL de imagem opcional: precisa ser do bucket food-trucks deste projeto.
+ * O marcador do bucket no meio de uma URL de outro host não basta: o caminho
+ * tem de ser exatamente o do bucket, sem query nem fragmento. No Supabase
+ * hospedado a URL é regravada com a origem do projeto; no local (onde a função
+ * enxerga o gateway interno) só se aceita localhost.
+ */
 function imageUrl(value: unknown, field: string): string | null {
   if (value === null || value === undefined || value === '') return null
-  if (typeof value !== 'string' || !storagePath(value)) {
-    throw new ValidationError(`${field} inválida: envie a imagem pelo formulário`)
+  const invalid = new ValidationError(`${field} inválida: envie a imagem pelo formulário`)
+  if (typeof value !== 'string') throw invalid
+  const path = storagePath(value)
+  let parsed: URL
+  try {
+    parsed = new URL(value)
+  } catch {
+    throw invalid
   }
+  if (
+    !path ||
+    parsed.pathname !== PUBLIC_MARKER + path ||
+    parsed.search ||
+    parsed.hash ||
+    parsed.username ||
+    parsed.password
+  ) {
+    throw invalid
+  }
+  const origin = hostedOrigin()
+  if (origin) return `${origin}${PUBLIC_MARKER}${path}`
+  if (!LOCAL_HOSTS.has(parsed.hostname)) throw invalid
   return value
 }
 
@@ -235,10 +272,15 @@ Deno.serve(async (req) => {
       }
 
       // DELETE
-      const { data: items } = await supabase
+      const { data: items, error: itemsError } = await supabase
         .from('food_truck_menu_items')
         .select('image_url')
         .eq('food_truck_id', id)
+      if (itemsError) {
+        // Sem a lista de fotos, apagar agora deixaria as imagens órfãs no bucket
+        console.error('[manage-food-trucks] Erro ao buscar itens do food truck:', itemsError.message)
+        return json({ success: false, error: 'Erro ao excluir food truck' }, 500)
+      }
       const { error } = await supabase.from('food_trucks').delete().eq('id', id)
       if (error) {
         console.error('[manage-food-trucks] Erro ao excluir food truck:', error.message)
