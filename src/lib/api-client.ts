@@ -5,6 +5,8 @@
  * Faz chamadas HTTP genéricas para Edge Functions
  */
 
+import type { FoodTruck } from '../types'
+
 const isDev = import.meta.env.DEV
 
 // Em desenvolvimento, priorizar URL local; se não houver, usar localhost padrão
@@ -259,6 +261,25 @@ export const api = {
     request<{ success: boolean; data: { id: string; status: string; amount: number; confirmed_at?: string } }>('get-pix-status', {
       method: 'GET',
       query: { paymentId },
+    }),
+
+  // Food trucks parceiros (somente cardápio)
+  listFoodTrucks: (includeInactive = false) =>
+    request<ApiResult<FoodTruck[]>>('list-food-trucks', {
+      method: 'GET',
+      query: includeInactive ? { includeInactive: 'true' } : undefined,
+    }),
+
+  manageFoodTrucks: (data: Record<string, unknown>, method: 'POST' | 'PUT' | 'DELETE' = 'POST') =>
+    request<ApiResult<any>>('manage-food-trucks', {
+      method,
+      body: data,
+    }),
+
+  getFoodTruckUploadUrl: (kind: 'logo' | 'item', contentType: string) =>
+    request<ApiResult<{ bucket: string; path: string; token: string }>>('manage-food-trucks', {
+      method: 'POST',
+      body: { entity: 'upload', kind, contentType },
     }),
 
   // Feature Flags

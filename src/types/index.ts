@@ -69,3 +69,24 @@ export interface UserAccount {
   balance: number
   createdAt: string
 }
+
+// Food trucks parceiros: só cardápio, a compra é feita direto no food truck
+export interface FoodTruckMenuItem {
+  id: string
+  section: string
+  name: string
+  description: string | null
+  price: number
+  imageUrl: string | null
+  sortOrder: number
+}
+
+export interface FoodTruck {
+  id: string
+  name: string
+  description: string | null
+  logoUrl: string | null
+  sortOrder: number
+  active: boolean
+  items: FoodTruckMenuItem[]
+}
