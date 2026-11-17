@@ -1,0 +1,8 @@
+node_modules
+dist
+.env*
+.specstory
+.codex
+.agents
+.aws
+*.log
