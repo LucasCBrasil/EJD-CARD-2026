@@ -13,9 +13,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutPedidosLojinhaRouteImport } from './routes/_layout/pedidos-lojinha'
-import { Route as LayoutAdminDebitosRouteImport } from './routes/_layout/admin-debitos'
-import { Route as LayoutAdminFoodTrucksRouteImport } from './routes/_layout/admin-food-trucks'
 import { Route as LayoutFoodTrucksRouteImport } from './routes/_layout/food-trucks'
+import { Route as LayoutAdminFoodTrucksRouteImport } from './routes/_layout/admin-food-trucks'
+import { Route as LayoutAdminDebitosRouteImport } from './routes/_layout/admin-debitos'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutAcompanharRouteImport } from './routes/_layout/acompanhar'
 import { Route as LayoutAccountRouteImport } from './routes/_layout/account'
@@ -62,9 +62,9 @@ const LayoutPedidosLojinhaRoute = LayoutPedidosLojinhaRouteImport.update({
   path: '/pedidos-lojinha',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutAdminDebitosRoute = LayoutAdminDebitosRouteImport.update({
-  id: '/admin-debitos',
-  path: '/admin-debitos',
+const LayoutFoodTrucksRoute = LayoutFoodTrucksRouteImport.update({
+  id: '/food-trucks',
+  path: '/food-trucks',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutAdminFoodTrucksRoute = LayoutAdminFoodTrucksRouteImport.update({
@@ -72,9 +72,9 @@ const LayoutAdminFoodTrucksRoute = LayoutAdminFoodTrucksRouteImport.update({
   path: '/admin-food-trucks',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutFoodTrucksRoute = LayoutFoodTrucksRouteImport.update({
-  id: '/food-trucks',
-  path: '/food-trucks',
+const LayoutAdminDebitosRoute = LayoutAdminDebitosRouteImport.update({
+  id: '/admin-debitos',
+  path: '/admin-debitos',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
@@ -461,11 +461,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutPedidosLojinhaRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/admin-debitos': {
-      id: '/_layout/admin-debitos'
-      path: '/admin-debitos'
-      fullPath: '/admin-debitos'
-      preLoaderRoute: typeof LayoutAdminDebitosRouteImport
+    '/_layout/food-trucks': {
+      id: '/_layout/food-trucks'
+      path: '/food-trucks'
+      fullPath: '/food-trucks'
+      preLoaderRoute: typeof LayoutFoodTrucksRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/admin-food-trucks': {
@@ -475,11 +475,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminFoodTrucksRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/food-trucks': {
-      id: '/_layout/food-trucks'
-      path: '/food-trucks'
-      fullPath: '/food-trucks'
-      preLoaderRoute: typeof LayoutFoodTrucksRouteImport
+    '/_layout/admin-debitos': {
+      id: '/_layout/admin-debitos'
+      path: '/admin-debitos'
+      fullPath: '/admin-debitos'
+      preLoaderRoute: typeof LayoutAdminDebitosRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/admin': {
