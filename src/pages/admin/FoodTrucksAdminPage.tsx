@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button, ConfirmationModal, CurrencyInput, TrainLoader } from '../../components/shared'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -20,18 +20,41 @@ const formatPrice = (price: number) =>
 interface ImageState {
   file: File | null
   removed: boolean
+  /** URL do arquivo já enviado; evita reenviar se a gravação falhar e o admin tentar de novo */
+  uploadedUrl?: string
 }
 
 /**
  * Resolve a imagem no momento de salvar:
- * - arquivo novo: envia e retorna a URL
+ * - arquivo novo: envia (uma vez só) e retorna a URL
  * - removida: null
  * - sem mudança: undefined (o campo não é enviado no PUT)
  */
-async function resolveImage(state: ImageState, kind: 'logo' | 'item'): Promise<string | null | undefined> {
-  if (state.file) return uploadFoodTruckImage(state.file, kind)
+async function resolveImage(
+  state: ImageState,
+  kind: 'logo' | 'item',
+  onUploaded: (url: string) => void
+): Promise<string | null | undefined> {
+  if (state.file) {
+    if (state.uploadedUrl) return state.uploadedUrl
+    const url = await uploadFoodTruckImage(state.file, kind)
+    onUploaded(url)
+    return url
+  }
   if (state.removed) return null
   return undefined
+}
+
+/** Ao abrir o formulário (novo ou "Editar"), rola até ele e foca o primeiro campo. */
+function useRevealOnMount() {
+  const ref = useRef<HTMLFormElement>(null)
+  useEffect(() => {
+    const form = ref.current
+    if (!form) return
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    form.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus({ preventScroll: true })
+  }, [])
+  return ref
 }
 
 const ImagePicker: React.FC<{
@@ -78,13 +101,21 @@ const ImagePicker: React.FC<{
           )}
         </div>
         <div className="flex flex-col gap-2">
+          {/* input antes do label para o label mostrar o foco do teclado (peer) */}
+          <input
+            id={id}
+            type="file"
+            accept={FOOD_TRUCK_IMAGE_TYPES.join(',')}
+            onChange={handleFile}
+            aria-label={`${label}: ${shown ? 'trocar imagem' : 'escolher imagem'}`}
+            className="sr-only peer"
+          />
           <label
             htmlFor={id}
-            className="cursor-pointer text-center px-4 py-2 text-sm font-display font-semibold tracking-wide rounded-xl bg-creme-200 hover:bg-creme-300 text-ferro-800 border-2 border-ferro-200"
+            className="cursor-pointer text-center px-4 py-2 text-sm font-display font-semibold tracking-wide rounded-xl bg-creme-200 hover:bg-creme-300 text-ferro-800 border-2 border-ferro-200 peer-focus-visible:ring-2 peer-focus-visible:ring-latao-400 peer-focus-visible:ring-offset-2"
           >
             {shown ? 'Trocar imagem' : 'Escolher imagem'}
           </label>
-          <input id={id} type="file" accept={FOOD_TRUCK_IMAGE_TYPES.join(',')} onChange={handleFile} className="sr-only" />
           {shown && (
             <button
               type="button"
@@ -112,6 +143,7 @@ const TruckForm: React.FC<{ initial: FoodTruck | null; onDone: () => void }> = (
   const [description, setDescription] = useState(initial?.description || '')
   const [sortOrder, setSortOrder] = useState(String(initial?.sortOrder ?? 0))
   const [logo, setLogo] = useState<ImageState>({ file: null, removed: false })
+  const formRef = useRevealOnMount()
   const [saving, setSaving] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
@@ -123,7 +155,7 @@ const TruckForm: React.FC<{ initial: FoodTruck | null; onDone: () => void }> = (
     setSaving(true)
     let logoUrl: string | null | undefined
     try {
-      logoUrl = await resolveImage(logo, 'logo')
+      logoUrl = await resolveImage(logo, 'logo', (url) => setLogo((s) => ({ ...s, uploadedUrl: url })))
     } catch (err) {
       showError('Erro na imagem', (err as Error).message)
       setSaving(false)
@@ -153,7 +185,7 @@ const TruckForm: React.FC<{ initial: FoodTruck | null; onDone: () => void }> = (
   }
 
   return (
-    <form onSubmit={submit} className="bilhete p-4 sm:p-5 space-y-4">
+    <form ref={formRef} onSubmit={submit} className="bilhete p-4 sm:p-5 space-y-4 scroll-mt-4">
       <h4 className="font-display font-semibold uppercase tracking-wide text-ferro-900">
         {initial ? `Editar ${initial.name}` : 'Novo food truck'}
       </h4>
@@ -210,6 +242,7 @@ const ItemForm: React.FC<{
   const [price, setPrice] = useState(initial?.price || 0)
   const [sortOrder, setSortOrder] = useState(String(initial?.sortOrder ?? 0))
   const [photo, setPhoto] = useState<ImageState>({ file: null, removed: false })
+  const formRef = useRevealOnMount()
   const [saving, setSaving] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
@@ -225,7 +258,7 @@ const ItemForm: React.FC<{
     setSaving(true)
     let imageUrl: string | null | undefined
     try {
-      imageUrl = await resolveImage(photo, 'item')
+      imageUrl = await resolveImage(photo, 'item', (url) => setPhoto((s) => ({ ...s, uploadedUrl: url })))
     } catch (err) {
       showError('Erro na imagem', (err as Error).message)
       setSaving(false)
@@ -258,7 +291,7 @@ const ItemForm: React.FC<{
   }
 
   return (
-    <form onSubmit={submit} className="bilhete p-4 sm:p-5 space-y-4">
+    <form ref={formRef} onSubmit={submit} className="bilhete p-4 sm:p-5 space-y-4 scroll-mt-4">
       <h4 className="font-display font-semibold uppercase tracking-wide text-ferro-900">
         {initial ? `Editar ${initial.name}` : 'Novo item do cardápio'}
       </h4>
@@ -283,7 +316,7 @@ const ItemForm: React.FC<{
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="sm:flex-1">
           <label htmlFor="item-price" className={labelClass}>Preço</label>
-          <CurrencyInput id="item-price" value={price} onChange={setPrice} placeholder="0,00" />
+          <CurrencyInput id="item-price" value={price} onChange={setPrice} max={10000} placeholder="0,00" />
         </div>
         <div>
           <label htmlFor="item-order" className={labelClass}>Ordem</label>
@@ -362,13 +395,19 @@ const FoodTrucksAdminPage: React.FC = () => {
           data: { entity: 'truck', id: pendingDelete.truck.id },
           successMessage: 'Food truck excluído.',
         })
-        if (selectedId === pendingDelete.truck.id) setSelectedId(null)
+        const id = pendingDelete.truck.id
+        if (selectedId === id) {
+          setSelectedId(null)
+          setItemForm({ open: false, item: null })
+        }
+        if (truckForm.truck?.id === id) setTruckForm({ open: false, truck: null })
       } else {
         await manage.mutateAsync({
           method: 'DELETE',
           data: { entity: 'item', id: pendingDelete.item.id },
           successMessage: 'Item excluído.',
         })
+        if (itemForm.item?.id === pendingDelete.item.id) setItemForm({ open: false, item: null })
       }
     } catch {
       // toast já exibido pelo hook
