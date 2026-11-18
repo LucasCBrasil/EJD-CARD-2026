@@ -46,8 +46,8 @@ export const salesRouter = router({
 
       // 1. Verificar permissão específica para a categoria
       const hasPermissionForCategory = ctx.user.role === 'admin' ||
-        (category === 'lojinha' && ctx.user.role === 'lojinha') ||
-        (category === 'lanchonete' && ctx.user.role === 'lanchonete')
+        (category === 'lojinha' && (ctx.user.role === 'lojinha' || ctx.user.role === 'coordLojinha')) ||
+        (category === 'lanchonete' && (ctx.user.role === 'lanchonete' || ctx.user.role === 'coordLanchonete'))
 
       if (!hasPermissionForCategory) {
         throw new TRPCError({
@@ -288,7 +288,7 @@ export const salesRouter = router({
       const { category, userId } = input
       const { supabase, user } = ctx
 
-      const canViewAllSales = ['admin', 'lojinha', 'lanchonete'].includes(user.role)
+      const canViewAllSales = ['admin', 'lojinha', 'lanchonete', 'coordLojinha', 'coordLanchonete'].includes(user.role)
       if (userId) {
         if (userId !== user.id && !canViewAllSales) {
           throw new TRPCError({
@@ -305,7 +305,7 @@ export const salesRouter = router({
       } else {
         // Sem userId - está pedindo histórico geral
         // Apenas admin, lojinha ou lanchonete podem ver histórico geral
-        if (!['admin', 'lojinha', 'lanchonete'].includes(user.role)) {
+        if (!['admin', 'lojinha', 'lanchonete', 'coordLojinha', 'coordLanchonete'].includes(user.role)) {
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'Acesso negado: apenas administradores, lojinha e lanchonete podem ver histórico geral',
@@ -313,14 +313,14 @@ export const salesRouter = router({
         }
 
         // Verificar permissão específica por categoria
-        if (category === 'lojinha' && !['admin', 'lojinha'].includes(user.role)) {
+        if (category === 'lojinha' && !['admin', 'lojinha', 'coordLojinha'].includes(user.role)) {
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'Você não tem permissão para ver vendas de: lojinha',
           })
         }
 
-        if (category === 'lanchonete' && !['admin', 'lanchonete'].includes(user.role)) {
+        if (category === 'lanchonete' && !['admin', 'lanchonete', 'coordLanchonete'].includes(user.role)) {
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'Você não tem permissão para ver vendas de: lanchonete',

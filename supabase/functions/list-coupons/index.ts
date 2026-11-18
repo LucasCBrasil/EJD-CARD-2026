@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
     const category = url.searchParams.get('category') as 'lojinha' | 'lanchonete' | null
 
     // Verificar permissões: lanchonete pode ver cupons de lanchonete, lojinha pode ver cupons de lojinha
-    if (category === 'lanchonete' && !['admin', 'lanchonete'].includes(userRole)) {
+    if (category === 'lanchonete' && !['admin', 'lanchonete', 'coordLanchonete'].includes(userRole)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    if (category === 'lojinha' && !['admin', 'lojinha'].includes(userRole)) {
+    if (category === 'lojinha' && !['admin', 'lojinha', 'coordLojinha'].includes(userRole)) {
       return new Response(
         JSON.stringify({
           success: false,

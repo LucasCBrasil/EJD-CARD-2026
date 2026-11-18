@@ -20,6 +20,8 @@ export type UserRole =
   | 'comunicacao'
   | 'servico'
   | 'encontrista'
+  | 'coordLojinha'
+  | 'coordLanchonete'
 
 export interface AuthUser {
   id: string
@@ -171,7 +173,7 @@ Deno.serve(async (req) => {
     const userRole = await getUserRole(authResult.id)
     const supabase = createSupabaseClient()
     // REGRA: Apenas admin e lojinha podem ver pedidos da lojinha.
-    if (!['admin', 'lojinha'].includes(userRole)) {
+    if (!['admin', 'lojinha', 'coordLojinha'].includes(userRole)) {
       return new Response(
         JSON.stringify({
           success: false,

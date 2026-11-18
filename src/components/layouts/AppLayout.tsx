@@ -125,7 +125,9 @@ const AppLayout = () => {
     switch (user?.role) {
       case 'admin': return short ? '👑 Admin' : '👑 Administrador'
       case 'lojinha': return short ? '🏪 Lojinha' : '🏪 Equipe Lojinha'
+      case 'coordLojinha': return short ? '🏪 Lojinha' : '🏪 Coordenador Equipe Lojinha'
       case 'lanchonete': return short ? '🍔 Lanchonete' : '🍔 Equipe Lanchonete'
+      case 'coordLanchonete': return short ? '🍔 Lanchonete' : '🍔 Coordenador Equipe Lanchonete'
       case 'comunicacao': return '📢 Comunicação'
       case 'servico': return '⚙️ Serviço'
       default: return '🎫 Encontrista'

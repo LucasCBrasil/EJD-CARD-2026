@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     const role = await getUserRole(authResult.id)
     const permissions = getUserPermissions(role)
-    const canBrowseAccounts = ['admin', 'lojinha', 'lanchonete', 'comunicacao'].includes(role)
+    const canBrowseAccounts = ['admin', 'lojinha', 'lanchonete', 'comunicacao', 'coordLojinha', 'coordLanchonete'].includes(role)
     const supabase = createSupabaseClient()
     const url = new URL(req.url)
     const requestedUserId = url.searchParams.get('userId')
