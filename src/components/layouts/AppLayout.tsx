@@ -64,6 +64,7 @@ const AppLayout = () => {
     if (path.startsWith('/pix')) return 'pix'
     if (path.includes('/historico/lojinha')) return 'historicoLojinha'
     if (path.includes('/historico/lanchonete')) return 'historicoLanchonete'
+    if (path.startsWith('/food-trucks')) return 'foodTrucks'
     if (path.includes('/pedidos-lojinha')) return 'lojinhaPedidos'
     if (path.includes('/lojinha')) return 'lojinha'
     if (path.includes('/lanchonete')) return 'lanchonete'
@@ -73,8 +74,8 @@ const AppLayout = () => {
     return 'mycard'
   }
 
-  const handleTabChange = (tab: 'pix' | 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'lojinhaPedidos' | 'historicoLanchonete' | 'admin' | 'mycard') => {
-    navigate({ to: `/${tab}` as any, search: {} as any })
+  const handleTabChange = (tab: 'pix' | 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'lojinhaPedidos' | 'historicoLanchonete' | 'admin' | 'mycard' | 'foodTrucks') => {
+    navigate({ to: (tab === 'foodTrucks' ? '/food-trucks' : `/${tab}`) as any, search: {} as any })
   }
 
   const handleBackToContext = () => {

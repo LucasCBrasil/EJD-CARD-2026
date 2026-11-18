@@ -57,6 +57,17 @@ const AdminPage: React.FC = () => {
               <div className="text-sm text-ferro-500">Pulso do sistema em tempo real</div>
             </div>
           </Link>
+
+          <Link
+            to="/admin-food-trucks"
+            className="group flex items-stretch rounded-xl overflow-hidden bg-creme-50 border-2 border-ferro-800/80 shadow-sm hover:shadow-bilhete hover:-translate-y-0.5 active:scale-[0.98] transition-all"
+          >
+            <div className="flex items-center justify-center w-16 shrink-0 bg-anil-600 text-3xl">🚚</div>
+            <div className="picote-vertical flex-1 px-4 py-3">
+              <div className="font-display font-semibold uppercase tracking-wide text-ferro-900">Food Trucks</div>
+              <div className="text-sm text-ferro-500">Cadastrar food trucks parceiros e cardápios</div>
+            </div>
+          </Link>
         </div>
       </div>
 
