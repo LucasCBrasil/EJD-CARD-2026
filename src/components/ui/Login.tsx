@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { useAuth } from '../../contexts/AuthContext'
 import { TrilhosBackground } from '../shared/TrilhosBackground'
+import { getAuthProviders } from '../../lib/auth-client'
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('')
@@ -11,9 +12,25 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [showEmailForm, setShowEmailForm] = useState(false)
+  const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null)
+  const [notice, setNotice] = useState('')
   
   const router = useRouter()
   const { login, register, loginWithGoogle, user } = useAuth()
+
+  useEffect(() => {
+    let cancelled = false
+    getAuthProviders().then(providers => {
+      if (cancelled) return
+      setGoogleEnabled(providers.google)
+      if (!providers.google) setShowEmailForm(true)
+    }).catch(() => {
+      if (cancelled) return
+      setGoogleEnabled(false)
+      setShowEmailForm(true)
+    })
+    return () => { cancelled = true }
+  }, [])
 
   const safeNavigate = (path: string) => {
     router.navigate({ to: path as any, search: {} as any })
@@ -29,6 +46,7 @@ const Login: React.FC = () => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    setNotice('')
     
     try {
       if (isLogin) {
@@ -36,8 +54,13 @@ const Login: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 100))
         safeNavigate('/')
       } else {
-        await register(email, password, name)
-        await login(email, password)
+        const result = await register(email, password, name)
+        if (result.requiresEmailConfirmation) {
+          setNotice('Confira sua caixa de entrada e confirme seu e-mail pelo link enviado. Depois, entre com sua senha.')
+          setIsLogin(true)
+          setPassword('')
+          return
+        }
         await new Promise(resolve => setTimeout(resolve, 100))
         safeNavigate('/')
       }
@@ -47,7 +70,11 @@ const Login: React.FC = () => {
       if (err.message) {
         const message = err.message.toLowerCase()
         
-        if (message.includes('password') && message.includes('letter') && message.includes('number')) {
+        if (message.includes('email not confirmed')) {
+          errorMessage = 'Confirme seu e-mail pelo link enviado antes de entrar.'
+        } else if (message.includes('invalid login credentials')) {
+          errorMessage = 'E-mail ou senha incorretos. Verifique suas credenciais.'
+        } else if (message.includes('password') && message.includes('letter') && message.includes('number')) {
           errorMessage = 'A senha deve conter pelo menos uma letra e um número'
         } else if (message.includes('password') && message.includes('letter')) {
           errorMessage = 'A senha deve conter pelo menos uma letra'
@@ -81,6 +108,8 @@ const Login: React.FC = () => {
       
       setError(errorMessage)
       setIsLoading(false)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -113,6 +142,7 @@ const Login: React.FC = () => {
           <div className="trilho mx-6 mt-4" />
 
           <div className="px-6 sm:px-8 pt-5 pb-7">
+            {notice && <div role="status" className="mb-4 p-3 rounded-xl text-sm bg-creme-100 border border-ferro-200 text-ferro-900">{notice}</div>}
             {error && (
               <div className="mb-4 p-3 rounded-xl text-sm bg-vagao-50 border-2 border-vagao-200 text-vagao-800">
                 {error}
@@ -132,7 +162,7 @@ const Login: React.FC = () => {
                   setIsLoading(false)
                 }
               }}
-              disabled={isLoading}
+              disabled={isLoading || googleEnabled !== true}
               className="w-full h-16 !px-4 rounded-2xl flex items-center justify-center gap-4 mb-4 bg-ferro-800 hover:bg-ferro-700 text-creme-100 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 transition-all duration-200"
             >
               <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow">
@@ -155,8 +185,9 @@ const Login: React.FC = () => {
                           />
                         </svg>
               </span>
-              <span className="font-display text-lg uppercase tracking-wider">Embarcar com Google</span>
+              <span className="font-display text-lg uppercase tracking-wider">{googleEnabled === null ? 'Verificando acesso…' : 'Embarcar com Google'}</span>
             </button>
+            {googleEnabled === false && <p className="text-sm text-ferro-600 text-center mb-4">O acesso com Google está indisponível no momento. Use seu e-mail e senha para entrar ou criar uma conta.</p>}
 
             {!showEmailForm && (
               <button
@@ -266,7 +297,7 @@ const Login: React.FC = () => {
                       {isLogin ? 'Cadastre-se aqui' : 'Faça login'}
                     </button>
                   </div>
-                  <button
+                  {googleEnabled && <button
                     type="button"
                     onClick={() => {
                       setShowEmailForm(false)
@@ -278,7 +309,7 @@ const Login: React.FC = () => {
                     className="!p-0 bg-transparent text-sm font-medium text-ferro-600 hover:text-ferro-800"
                   >
                     ← Voltar para login com Google
-                  </button>
+                  </button>}
                 </div>
               </>
             )}

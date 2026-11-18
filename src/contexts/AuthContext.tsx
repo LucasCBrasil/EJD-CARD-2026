@@ -15,7 +15,7 @@ interface AuthContextType {
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
-  register: (email: string, password: string, name: string) => Promise<void>
+  register: (email: string, password: string, name: string) => Promise<{ requiresEmailConfirmation: boolean }>
   logout: () => Promise<void>
   getAccessToken: () => Promise<string | null>
   refreshUserProfile: () => Promise<void>
@@ -244,7 +244,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string, name: string) => {
     const cleanEmail = (email || '').trim().toLowerCase()
-    const { error } = await auth.signUp({
+    const { data, error } = await auth.signUp({
       email: cleanEmail,
       password,
       options: { data: { name } }
@@ -256,6 +256,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       throw new Error(anyErr?.message || 'Erro no cadastro')
     }
+    return { requiresEmailConfirmation: !data?.session }
   }
 
   const loginWithGoogle = async () => {
