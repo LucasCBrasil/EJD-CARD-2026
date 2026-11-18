@@ -457,6 +457,9 @@ const SalesPage: React.FC = () => {
                     </div>
                     <div className="picote-horizontal flex flex-col flex-1 p-3">
                       <h4 className="font-display font-medium text-ferro-900 text-sm leading-tight mb-1 line-clamp-2">{p.name}</h4>
+                      <p className="text-xs text-ferro-600 mb-2">
+                        Estoque: {p.stock} {p.stock === 1 ? 'unidade' : 'unidades'}
+                      </p>
                       <p className="font-slab text-lg text-vagao-600 mb-3 mt-auto">R$ {formatPrice(p.price)}</p>
                       <button
                         onClick={() => handleAddToCart(p)}

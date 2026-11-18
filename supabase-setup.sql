@@ -66,6 +66,7 @@ CREATE TABLE public.products (
   category TEXT NOT NULL CHECK (category IN ('lojinha', 'lanchonete')),
   description TEXT,
   stock INTEGER CHECK (stock IS NULL OR stock >= 0),
+  image_url TEXT,
   active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
