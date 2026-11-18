@@ -17,11 +17,11 @@ Deno.serve(async (req) => {
     const amount = body.amount
     const document = String(body.cpfCnpj || '').replace(/\D/g, '')
     const key = body.idempotencyKey
-    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 1 || !Number.isSafeInteger(Math.round(amount * 100)) ||
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0.01 || amount > 99999999.99 || !Number.isSafeInteger(Math.round(amount * 100)) ||
         Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001 ||
         !/^(\d{11}|\d{14})$/.test(document) || typeof key !== 'string' ||
         !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) {
-      return reply({ success: false, error: 'Informe valor a partir de R$ 1,00, CPF/CNPJ e identificador válidos.' }, 400)
+      return reply({ success: false, error: 'Informe valor a partir de R$ 0,01, CPF/CNPJ e identificador válidos.' }, 400)
     }
     const db = createSupabaseClient()
     const { serviceFee, chargedAmount } = pixPricing(amount)

@@ -23,7 +23,7 @@ for (const [name, change] of Object.entries({
   })
 }
 
-for (const [amount, fee, total] of [[1, 0.01, 1.01], [1.49, 0.01, 1.5], [1.5, 0.02, 1.52], [6, 0.06, 6.06], [100, 1, 101], [10001, 100.01, 10101.01]]) {
+for (const [amount, fee, total] of [[0.01, 0, 0.01], [0.49, 0, 0.49], [0.5, 0.01, 0.51], [1, 0.01, 1.01], [1.49, 0.01, 1.5], [1.5, 0.02, 1.52], [6, 0.06, 6.06], [100, 1, 101], [10001, 100.01, 10101.01]]) {
   Deno.test(`calcula taxa de 1% para recarga de ${amount}`, () => {
     const result = pixPricing(amount)
     if (result.serviceFee !== fee || result.chargedAmount !== total) throw new Error('Taxa ou total incorretos')

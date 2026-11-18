@@ -24,7 +24,7 @@ export default function PixPage() {
   const [copied, setCopied] = useState(false)
   const submitting = useRef(false)
   const attempt = useRef<{ input: string; key: string } | null>(null)
-  const validAmount = Number.isFinite(amount) && amount >= 1
+  const validAmount = Number.isFinite(amount) && amount >= 0.01
   const { serviceFee, chargedAmount } = pixPricing(amount)
 
   useEffect(() => {
@@ -92,8 +92,8 @@ export default function PixPage() {
       {loading ? <TrainLoader fullScreen={false} title="Gerando Pix…" message="Aguarde um momento" /> : paymentId === 'new' ? <>
         <div className="bilhete p-4"><span className="text-xs uppercase">Conta que receberá o crédito</span><p className="font-semibold">{user?.name}</p><p className="text-sm break-all">{user?.email}</p></div>
         <div><p className="font-semibold mb-2">Quanto deseja recarregar?</p>
-          <CurrencyInput value={amount} onChange={setAmount} min={1} aria-label="Valor da recarga" />
-          <p className="text-xs text-ferro-600 mt-1">Recargas a partir de R$ 1,00.</p></div>
+          <CurrencyInput value={amount} onChange={setAmount} max={99999999.99} aria-label="Valor da recarga" />
+          <p className="text-xs text-ferro-600 mt-1">Escolha qualquer valor a partir de R$ 0,01.</p></div>
         <div><p className="font-semibold mb-2">CPF/CNPJ do pagador</p>
           <CpfCnpjInput value={cpfCnpj} onChange={setCpfCnpj} aria-label="CPF ou CNPJ do pagador" />
           {cpfCnpj && !isValidCpfCnpj(cpfCnpj).valid && <p className="text-sm text-vagao-700 mt-1">Informe um CPF ou CNPJ válido.</p>}</div>
