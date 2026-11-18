@@ -3,6 +3,7 @@ import { requireAuth, getUserRole } from '../_shared/auth.ts'
 import { getUserPermissions } from '../_shared/roles.ts'
 import type { ApiResponse } from '../_shared/types.ts'
 import { getCorsHeaders } from '../_shared/cors.ts'
+import { syncMercadoPagoPayment } from '../_shared/mercadopago.ts'
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin')
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseClient()
     let query = supabase
       .from('pix_payments')
-      .select('id, status, amount, confirmed_at')
+      .select('id, user_id, external_id, status, amount, pix_code, qr_code_url, confirmed_at, webhook_data')
       .eq('external_id', paymentId)
 
     if (!canReadAll) {
@@ -63,7 +64,10 @@ Deno.serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify({ success: true, data } as ApiResponse), {
+    const result = data.status === 'pending' && data.webhook_data?.provider === 'mercadopago'
+      ? await syncMercadoPagoPayment(data)
+      : { id: data.id, status: data.status, amount: data.amount, pix_code: data.pix_code, qr_code_url: data.qr_code_url, confirmed_at: data.confirmed_at }
+    return new Response(JSON.stringify({ success: true, data: { ...result, amount_charged: Number(data.webhook_data?.amount_charged ?? data.amount) } } as ApiResponse), {
       status: 200,
       headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
     })

@@ -15,9 +15,9 @@ const supabaseUrl = isDev
   ? (import.meta.env.VITE_SUPABASE_LOCAL_URL || 'https://auth.ejdcard.com.br')
   : (import.meta as any).env?.VITE_SUPABASE_URL
 
-const API_BASE_URL = supabaseUrl 
+const API_BASE_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || (supabaseUrl
   ? `${supabaseUrl}/functions/v1`
-  : ''
+  : '')
 
 // Log para debug (apenas em desenvolvimento)
 if (isDev) {
@@ -95,6 +95,7 @@ async function request<T = any>(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     }
+    if (import.meta.env.VITE_SUPABASE_ANON_KEY) headers.apikey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
     const response = await fetch(url.toString(), {
       method,
@@ -131,9 +132,9 @@ async function request<T = any>(
                           error.message?.includes('CORS')
     
     if (isNetworkError) {
-      const errorMsg = isDev
+      const errorMsg = isDev && /localhost|127\.0\.0\.1/.test(API_BASE_URL)
         ? `Edge Function '${functionName}' não está rodando localmente. Execute 'supabase functions serve' em um terminal separado. Se ainda não iniciou o Supabase local, execute 'supabase start' primeiro.`
-        : `Edge Function '${functionName}' não encontrada ou não está acessível. Verifique se fez deploy da função: 'supabase functions deploy ${functionName}'`
+        : 'Não foi possível acessar o serviço. Tente novamente em instantes. Se o problema continuar, contate a organização.'
       
       console.error(`[api-client] ${errorMsg}`, error)
       return {
@@ -257,8 +258,10 @@ export const api = {
     }),
 
   // PIX Payment Status
+  createPixPayment: (input: { amount: number; cpfCnpj: string; idempotencyKey: string }) =>
+    request<{ success: boolean; data: { paymentId: string; pixCode: string; qrCodeUrl: string; amount: number; chargedAmount?: number }; error?: string }>('mercadopago-pix', { method: 'POST', body: input }),
   getPixPaymentStatus: (paymentId: string) =>
-    request<{ success: boolean; data: { id: string; status: string; amount: number; confirmed_at?: string } }>('get-pix-status', {
+    request<{ success: boolean; error?: string; data: { id: string; status: string; amount: number; amount_charged?: number; pix_code?: string; qr_code_url?: string; confirmed_at?: string } }>('get-pix-status', {
       method: 'GET',
       query: { paymentId },
     }),

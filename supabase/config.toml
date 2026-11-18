@@ -27,3 +27,5 @@ additional_redirect_urls = ["http://localhost:5173"]
 # Configuração das Edge Functions
 # As variáveis de ambiente serão lidas do arquivo .env
 
+[functions.mercadopago-webhook]
+verify_jwt = false

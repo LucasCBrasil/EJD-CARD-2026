@@ -42,6 +42,8 @@ export function useAccountByUserId(userId: string, enabled = true) {
     },
     enabled: enabled && !!userId,
     retry: false,
+    staleTime: 0,
+    refetchInterval: 15000,
     refetchOnWindowFocus: true,
   })
 }

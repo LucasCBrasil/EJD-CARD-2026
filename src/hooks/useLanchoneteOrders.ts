@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, type ApiResult, type SelfOrderItemInput } from '../lib/api-client'
+import { useAuth } from '../contexts/AuthContext'
+import { accountKeys, useAccountByUserId } from './useAccounts'
 
 export const SELF_ORDER_FLAG = 'lanchonete_self_order'
 
@@ -72,15 +74,9 @@ export function useLanchoneteMenu() {
 }
 
 export function useMyBalance() {
-  return useQuery({
-    queryKey: lanchoneteOrderKeys.balance(),
-    queryFn: async () => {
-      const data = unwrap(await api.getMyAccountHistory(), 'Erro ao carregar seu saldo')
-      return Number(data?.account?.balance) || 0
-    },
-    staleTime: 1000 * 10,
-    refetchOnWindowFocus: true,
-  })
+  const { user } = useAuth()
+  const query = useAccountByUserId(user?.id || '')
+  return { ...query, data: query.data?.balance == null ? undefined : Number(query.data.balance) }
 }
 
 export function useMyLanchoneteOrders(options: { poll?: boolean } = {}) {
@@ -115,6 +111,7 @@ export function useCreateSelfOrder() {
       unwrap(await api.createSelfOrder(items, requestId), 'Erro ao enviar o pedido'),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: lanchoneteOrderKeys.all })
+      queryClient.invalidateQueries({ queryKey: accountKeys.all })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
     },
   })
@@ -129,6 +126,7 @@ export function useCancelMyLanchoneteOrder() {
       unwrap(await api.cancelMyLanchoneteOrder(saleId), 'Erro ao cancelar o pedido'),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: lanchoneteOrderKeys.all })
+      queryClient.invalidateQueries({ queryKey: accountKeys.all })
     },
   })
 }
@@ -147,6 +145,7 @@ export function useUpdateLanchoneteOrder() {
       ),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: lanchoneteOrderKeys.all })
+      queryClient.invalidateQueries({ queryKey: accountKeys.all })
     },
   })
 }

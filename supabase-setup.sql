@@ -373,8 +373,8 @@ BEGIN
     payment_record.user_id,
     payment_record.amount,
     'credit',
-    'Abastecimento via PIX (Asaas)',
-    'asaas_webhook'
+    CASE WHEN payment_record.webhook_data->>'provider' = 'mercadopago' THEN 'Recarga via Pix (Mercado Pago)' ELSE 'Abastecimento via PIX (Asaas)' END,
+    CASE WHEN payment_record.webhook_data->>'provider' = 'mercadopago' THEN 'mercadopago_webhook' ELSE 'asaas_webhook' END
   );
 
   RETURN QUERY SELECT TRUE, payment_record.user_id, payment_record.amount;

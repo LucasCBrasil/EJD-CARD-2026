@@ -58,6 +58,17 @@ function getAuthClient() {
 // Flag para evitar chamadas concorrentes
 let _getSessionPromise: Promise<any> | null = null
 
+export async function getAuthProviders(): Promise<{ google: boolean }> {
+  if (!supabaseUrl || !supabaseAnonKey) return { google: false }
+  const response = await fetch(`${supabaseUrl}/auth/v1/settings`, {
+    headers: { apikey: supabaseAnonKey },
+    signal: AbortSignal.timeout(10000),
+  })
+  if (!response.ok) throw new Error('Não foi possível verificar as opções de acesso.')
+  const settings = await response.json()
+  return { google: settings.external?.google === true }
+}
+
 // API pública apenas para autenticação
 export const auth = {
   getSession: async () => {
@@ -131,11 +142,10 @@ export const auth = {
   },
   
   signInWithGoogle: async () => {
+    const providers = await getAuthProviders()
+    if (!providers.google) throw new Error('O acesso com Google está indisponível no momento. Entre com e-mail e senha.')
     const client = getAuthClient()
-    // Em produção, sempre redireciona para o domínio principal
-    const redirectUrl = isDev 
-      ? window.location.origin 
-      : 'https://ejd-card-2026.vercel.app'
+    const redirectUrl = window.location.origin
     return client.auth.signInWithOAuth({
       provider: 'google',
       options: {

@@ -6,6 +6,7 @@ import { useData } from '../contexts/DataContext'
 import { isSupabaseConfigured } from '../lib/auth-client'
 import { api } from '../lib/api-client'
 import { UserAccount } from '../types'
+import { useAccountByUserId } from '../hooks/useAccounts'
 
 type HistoryItem = {
   id: string
@@ -126,6 +127,7 @@ const LocalAccountPage: React.FC<{ user: { id?: string; email?: string | null; n
 
 const AccountPage: React.FC = () => {
   const { user } = useAuth()
+  const currentAccount = useAccountByUserId(user?.id || '', isSupabaseConfigured())
   const [account, setAccount] = useState<UserAccount | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [pixEnabled, setPixEnabled] = useState(false)
@@ -192,9 +194,12 @@ const AccountPage: React.FC = () => {
   }
 
   if (isLoading) return <div className="painel py-10 text-center text-ferro-600">Carregando sua conta...</div>
-  if (error) return <div role="alert" className="painel py-10 text-center text-vagao-700">{error}</div>
+  if (error) return <div className="space-y-4">
+    {currentAccount.data && <AccountContent account={{ ...currentAccount.data, balance: Number(currentAccount.data.balance), createdAt: currentAccount.data.created_at }} history={[]} pixEnabled={true} />}
+    <div role="alert" className="painel py-5 text-center text-vagao-700">Não foi possível carregar o histórico. {error}</div>
+  </div>
   if (!account) return <div className="painel py-10 text-center text-ferro-600">Conta não encontrada.</div>
-  return <AccountContent account={account} history={history} pixEnabled={pixEnabled} />
+  return <AccountContent account={{ ...account, balance: currentAccount.data?.balance == null ? account.balance : Number(currentAccount.data.balance) }} history={history} pixEnabled={pixEnabled} />
 }
 
 export default AccountPage

@@ -3,8 +3,8 @@ import { useRouter } from '@tanstack/react-router'
 import { usePermissions } from '../../hooks/usePermissions'
 
 interface TabNavigationProps {
-  activeTab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'foodTrucks'
-  onTabChange: (tab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'foodTrucks') => void
+  activeTab: 'pix' | 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'foodTrucks'
+  onTabChange: (tab: 'pix' | 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'historicoLanchonete' | 'lojinhaPedidos' | 'admin' | 'mycard' | 'foodTrucks') => void
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange }) => {
@@ -39,6 +39,9 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
             className={tabClass(activeTab === 'account')}
           >
             👤 Minha Conta
+          </button>
+          <button onClick={() => onTabChange('pix')} className={tabClass(activeTab === 'pix')}>
+            💳 Recarregar saldo
           </button>
           {(userRole === 'admin' || userRole === 'comunicacao') && (
             <button

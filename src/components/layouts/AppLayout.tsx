@@ -4,6 +4,7 @@ import { Header, Button, TrilhosBackground } from '../shared'
 import { GlobalLoading } from '../shared/GlobalLoading'
 import { TabNavigation } from '../ui'
 import { useAuth } from '../../contexts/AuthContext'
+import AccountBalance from '../shared/AccountBalance'
 
 const AppLayout = () => {
   const navigate = useNavigate()
@@ -60,6 +61,7 @@ const AppLayout = () => {
   // Determinar aba ativa baseada na rota
   const getActiveTab = () => {
     const path = routerState.location.pathname
+    if (path.startsWith('/pix')) return 'pix'
     if (path.includes('/historico/lojinha')) return 'historicoLojinha'
     if (path.includes('/historico/lanchonete')) return 'historicoLanchonete'
     if (path.startsWith('/food-trucks')) return 'foodTrucks'
@@ -72,7 +74,7 @@ const AppLayout = () => {
     return 'mycard'
   }
 
-  const handleTabChange = (tab: 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'lojinhaPedidos' | 'historicoLanchonete' | 'admin' | 'mycard' | 'foodTrucks') => {
+  const handleTabChange = (tab: 'pix' | 'account' | 'accounts' | 'lojinha' | 'lanchonete' | 'historicoLojinha' | 'lojinhaPedidos' | 'historicoLanchonete' | 'admin' | 'mycard' | 'foodTrucks') => {
     navigate({ to: (tab === 'foodTrucks' ? '/food-trucks' : `/${tab}`) as any, search: {} as any })
   }
 
@@ -247,6 +249,8 @@ const AppLayout = () => {
               </button>
             </div>
           </div>
+
+          <AccountBalance />
 
           {/* Header apenas em páginas internas, não na home */}
           {!isHomePage && (
