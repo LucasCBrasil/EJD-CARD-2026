@@ -293,13 +293,15 @@ Deno.serve(async (req) => {
           price,
           category,
           description,
-          stock
+          stock,
+          image_url
         }: {
           name: string
           price: number
           category: 'lojinha' | 'lanchonete'
           description?: string
           stock?: number
+          image_url?: string | null
         } = await req.json()
 
         // Validações básicas
@@ -358,6 +360,7 @@ Deno.serve(async (req) => {
             category,
             description,
             stock,
+            image_url,
             active: true
           })
           .select()
@@ -397,6 +400,7 @@ Deno.serve(async (req) => {
           price,
           description,
           stock,
+          image_url,
           active
         } = await req.json()
 
@@ -435,6 +439,7 @@ Deno.serve(async (req) => {
         }
         if (description !== undefined) updates.description = description
         if (stock !== undefined) updates.stock = stock
+        if (image_url !== undefined) updates.image_url = image_url
         if (active !== undefined) updates.active = active
 
         const { data: product, error } = await supabase

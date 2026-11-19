@@ -104,7 +104,7 @@ Deno.serve(async (req: Request) => {
 
     const userRole = (appUser?.role as UserRole) || 'encontrista';
 
-    const { userId, items, category, coupon, discountedTotal } = await req.json();
+    const { userId, items, category, coupon, discountedTotal, cartId, cartVersion } = await req.json();
 
     if (!['lojinha', 'lanchonete'].includes(category)) {
       return new Response(JSON.stringify({
@@ -134,10 +134,14 @@ Deno.serve(async (req: Request) => {
     }
 
     // 4. VALIDAÇÕES BÁSICAS
-    if (!userId || !items || items.length === 0) {
+    if (!userId || (category === 'lojinha'
+      ? typeof cartId !== 'string' || !Number.isInteger(cartVersion) || cartVersion < 0
+      : !Array.isArray(items) || items.length === 0)) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Dados inválidos: userId, items e category são obrigatórios'
+        error: category === 'lojinha'
+          ? 'Dados inválidos: userId, cartId, cartVersion e category são obrigatórios'
+          : 'Dados inválidos: userId, items e category são obrigatórios'
       }), {
         status: 400,
         headers: {
@@ -149,6 +153,75 @@ Deno.serve(async (req: Request) => {
 
     // 5. CRIAR CLIENTE SUPABASE
     const supabase = createSupabaseClient();
+
+    // O estoque da lojinha já foi reservado ao adicionar os itens no carrinho.
+    // O RPC conclui venda, débito, pedido e carrinho na mesma transação.
+    if (category === 'lojinha') {
+      const { data: checkoutData, error: checkoutError } = await supabase.rpc('checkout_lojinha_cart', {
+        p_cart_id: cartId,
+        p_user_id: userId,
+        p_seller_id: user.id,
+        p_expected_version: cartVersion,
+        p_coupon: coupon || null,
+      });
+
+      if (checkoutError) {
+        const message = checkoutError.message.includes('INSUFFICIENT_BALANCE')
+          ? 'Saldo insuficiente para finalizar a venda.'
+          : checkoutError.message.includes('EMPTY_CART')
+            ? 'O carrinho está vazio.'
+            : checkoutError.message.includes('CART_NOT_OPEN')
+              ? 'Este carrinho não está mais aberto.'
+              : checkoutError.message.includes('CART_CHANGED')
+                ? 'O carrinho foi alterado por outro vendedor. Revise os itens e confirme novamente.'
+                : checkoutError.message.includes('COUPON_MINIMUM_NOT_MET')
+                  ? 'O total mínimo de R$ 150,00 não foi atingido para este cupom.'
+                  : checkoutError.message.includes('COUPON_NOT_FOUND')
+                    ? 'Cupom não encontrado ou inativo.'
+                    : checkoutError.message;
+
+        return new Response(JSON.stringify({
+          success: false,
+          error: message,
+        }), {
+          status: 400,
+          headers: {
+            ...getCorsHeaders(origin),
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+
+      const checkout = Array.isArray(checkoutData) ? checkoutData[0] : null;
+      if (!checkout?.sale_id) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Não foi possível concluir o carrinho.'
+        }), {
+          status: 500,
+          headers: {
+            ...getCorsHeaders(origin),
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          saleId: checkout.sale_id,
+          total: checkout.total,
+          alreadyCompleted: checkout.already_completed,
+          message: 'Venda realizada com sucesso!'
+        }
+      }), {
+        status: 200,
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json'
+        }
+      });
+    }
 
     // 6. BUSCAR CONTA
     const { data: account, error: accountError } = await supabase

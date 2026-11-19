@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react'
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useLocation } from '@tanstack/react-router'
 import { ConfirmationModal, TrainLoader } from '../../components/shared'
 import { productService, Product } from '../../services/productService'
@@ -7,8 +7,15 @@ import { useToastContext } from '../../contexts/ToastContext'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { UserAccount } from '../../types'
 import OptimizedImage from '../../components/ui/OptimizedImage'
+import { api } from '../../lib/api-client'
 
 type ContextType = 'lojinha' | 'lanchonete'
+
+interface CartItemSnapshot {
+  product_name: string
+  price: number
+  image_url: string | null
+}
 
 const SalesPage: React.FC = () => {
   const { searchAccountsByName, makeSale, getCoupons } = useSupabaseData()
@@ -20,7 +27,12 @@ const SalesPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [coupons, setCoupons] = useState<Array<{ name: string; discountAmount?: number }>>([])
   const [cartItems, setCartItems] = useState<Record<string, number>>({})
-  const [isSaving] = useState(false)
+  const [cartItemSnapshots, setCartItemSnapshots] = useState<Record<string, CartItemSnapshot>>({})
+  const [lojinhaCartId, setLojinhaCartId] = useState<string | null>(null)
+  const [lojinhaCartVersion, setLojinhaCartVersion] = useState<number | null>(null)
+  const [isCartLoading, setIsCartLoading] = useState(false)
+  const [isCartUpdating, setIsCartUpdating] = useState(false)
+  const [showCancelCartConfirmation, setShowCancelCartConfirmation] = useState(false)
   const [accountSearch, setAccountSearch] = useState('')
   const [searchResults, setSearchResults] = useState<UserAccount[]>([])
   const [selectedAccount, setSelectedAccount] = useState<UserAccount | null>(null)
@@ -34,11 +46,109 @@ const SalesPage: React.FC = () => {
   const [couponError, setCouponError] = useState<string | null>(null)
   const [couponDiscountAmount, setCouponDiscountAmount] = useState<number>(0)
   const itemsPerPage = 6
+  const isSaving = isLoading || isCartLoading || isCartUpdating
+  const cartLoadRequestRef = useRef(0)
+
+  const applyLojinhaCart = useCallback((cart: any) => {
+    if (cart.status !== 'open') {
+      setLojinhaCartId(null)
+      setLojinhaCartVersion(null)
+      setCartItems({})
+      setCartItemSnapshots({})
+      return
+    }
+
+    setLojinhaCartId(cart.id)
+    setLojinhaCartVersion(Number(cart.version))
+    const quantities: Record<string, number> = {}
+    const snapshots: Record<string, CartItemSnapshot> = {}
+    for (const item of cart.items || []) {
+      quantities[item.product_id] = item.quantity
+      snapshots[item.product_id] = {
+        product_name: item.product_name,
+        price: Number(item.price),
+        image_url: item.image_url || null,
+      }
+    }
+    setCartItems(quantities)
+    setCartItemSnapshots(snapshots)
+  }, [])
+
+  const refreshLojinhaCart = async (cartId: string) => {
+    const response = await api.getLojinhaCart({ cartId })
+    if (!response.success) {
+      throw new Error(response.error || 'Erro ao atualizar carrinho')
+    }
+    if (selectedAccount?.id === response.data.user_id) applyLojinhaCart(response.data)
+  }
+
+  const loadLojinhaCartForAccount = async (userId: string) => {
+    const requestId = ++cartLoadRequestRef.current
+    setIsCartLoading(true)
+    setCartItems({})
+    setCartItemSnapshots({})
+    setLojinhaCartId(null)
+    setLojinhaCartVersion(null)
+    try {
+      const response = await api.getLojinhaCart({ userId })
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao buscar carrinho')
+      }
+      if (requestId === cartLoadRequestRef.current) applyLojinhaCart(response.data)
+    } finally {
+      if (requestId === cartLoadRequestRef.current) setIsCartLoading(false)
+    }
+  }
+
+  const mutateLojinhaCart = async (data: Record<string, unknown>) => {
+    if (!lojinhaCartId && !selectedAccount) {
+      showWarning('Carrinho indisponível', 'Selecione uma conta antes de adicionar produtos.')
+      return
+    }
+
+    setIsCartUpdating(true)
+    let targetCartId = lojinhaCartId
+    try {
+      if (!targetCartId && selectedAccount) {
+        const cartResponse = await api.getLojinhaCart({ userId: selectedAccount.id })
+        if (!cartResponse.success) {
+          throw new Error(cartResponse.error || 'Erro ao criar carrinho')
+        }
+        if (selectedAccount?.id === cartResponse.data.user_id) applyLojinhaCart(cartResponse.data)
+        targetCartId = cartResponse.data.id
+      }
+
+      if (!targetCartId) throw new Error('Carrinho não encontrado')
+
+      const response = await api.manageLojinhaCart({ ...data, cartId: targetCartId })
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao atualizar carrinho')
+      }
+
+      if (selectedAccount?.id === response.data.user_id) applyLojinhaCart(response.data)
+      const loadedProducts = await productService.getProducts('lojinha')
+      setProducts(loadedProducts)
+    } catch (mutationError) {
+      const message = mutationError instanceof Error ? mutationError.message : 'Erro ao atualizar carrinho'
+      showError('Erro no carrinho', message)
+      if (targetCartId) {
+        await refreshLojinhaCart(targetCartId).catch(error => {
+          console.error('Erro ao recarregar carrinho após falha:', error)
+        })
+      }
+    } finally {
+      setIsCartUpdating(false)
+    }
+  }
 
   useEffect(() => {
     loadProducts()
     loadCoupons()
     setCartItems({})
+    setCartItemSnapshots({})
+    setLojinhaCartId(null)
+    setLojinhaCartVersion(null)
+    setShowCancelCartConfirmation(false)
     setAccountSearch('')
     setSearchResults([])
     setSelectedAccount(null)
@@ -52,6 +162,33 @@ const SalesPage: React.FC = () => {
       }
     }
   }, [context])
+
+  useEffect(() => {
+    if (context !== 'lojinha' || !lojinhaCartId || isCartUpdating || isCartLoading) return
+
+    let active = true
+    const refresh = async () => {
+      try {
+        const response = await api.getLojinhaCart({ cartId: lojinhaCartId })
+        if (!active) return
+        if (!response.success) {
+          console.error('Erro ao sincronizar carrinho da lojinha:', response.error)
+          return
+        }
+        if (selectedAccount?.id === response.data.user_id) applyLojinhaCart(response.data)
+        const loadedProducts = await productService.getProducts('lojinha')
+        if (active) setProducts(loadedProducts)
+      } catch (syncError) {
+        if (active) console.error('Erro ao sincronizar carrinho da lojinha:', syncError)
+      }
+    }
+
+    const intervalId = setInterval(refresh, 5000)
+    return () => {
+      active = false
+      clearInterval(intervalId)
+    }
+  }, [context, lojinhaCartId, isCartUpdating, isCartLoading, applyLojinhaCart])
 
   const loadProducts = async () => {
     const loadedProducts = await productService.getProducts(context)
@@ -97,10 +234,13 @@ const SalesPage: React.FC = () => {
     if (!products || !Array.isArray(products)) return 0
     return Object.entries(cartItems).reduce((acc, [productId, qty]) => {
       const p = products.find(pr => pr && pr.id === productId)
-      if (!p) return acc
-      return acc + p.price * qty
+      const price = context === 'lojinha'
+        ? cartItemSnapshots[productId]?.price ?? p?.price
+        : p?.price
+      if (price === undefined) return acc
+      return acc + price * qty
     }, 0)
-  }, [cartItems, products])
+  }, [cartItems, cartItemSnapshots, products, context])
 
   // Validar se o cupom ainda é válido quando o total muda (lojinha precisa de mínimo R$ 150)
   useEffect(() => {
@@ -126,6 +266,11 @@ const SalesPage: React.FC = () => {
   const handleAddToCart = (product: Product) => {
     const pid = product.id
     if (!pid) return
+
+    if (context === 'lojinha') {
+      void mutateLojinhaCart({ action: 'add-item', productId: pid, quantity: 1 })
+      return
+    }
     
     // Validar estoque antes de adicionar
     if (product.stock !== null && product.stock !== undefined) {
@@ -150,6 +295,11 @@ const SalesPage: React.FC = () => {
   }
 
   const handleDecrease = (productId: string) => {
+    if (context === 'lojinha') {
+      void mutateLojinhaCart({ action: 'decrease-item', productId })
+      return
+    }
+
     setCartItems(prev => {
       const current = prev[productId] || 0
       const next = Math.max(0, current - 1)
@@ -164,6 +314,11 @@ const SalesPage: React.FC = () => {
   }
 
   const handleIncrease = (productId: string) => {
+    if (context === 'lojinha') {
+      void mutateLojinhaCart({ action: 'add-item', productId, quantity: 1 })
+      return
+    }
+
     if (!products || !Array.isArray(products)) return
     const product = products.find(p => p && p.id === productId)
     if (!product) return
@@ -192,9 +347,35 @@ const SalesPage: React.FC = () => {
 
   const handleClearCart = () => {
     setCartItems({})
+    setCartItemSnapshots({})
     setCouponCode('')
     setCouponError(null)
     setIsCouponApplied(false)
+  }
+
+  const handleCancelLojinhaCart = async () => {
+    if (!lojinhaCartId) return
+    setIsCartUpdating(true)
+    try {
+      const response = await api.manageLojinhaCart({ action: 'cancel', cartId: lojinhaCartId })
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao cancelar carrinho')
+      }
+
+      applyLojinhaCart(response.data)
+      setShowCancelCartConfirmation(false)
+      setCouponCode('')
+      setIsCouponApplied(false)
+      setCouponDiscountAmount(0)
+      const loadedProducts = await productService.getProducts('lojinha')
+      setProducts(loadedProducts)
+      showSuccess('Carrinho cancelado', 'Os produtos reservados foram devolvidos ao estoque.')
+    } catch (cancelError) {
+      const message = cancelError instanceof Error ? cancelError.message : 'Erro ao cancelar carrinho'
+      showError('Erro ao cancelar', message)
+    } finally {
+      setIsCartUpdating(false)
+    }
   }
 
   // Ref para cancelar requisições anteriores
@@ -206,6 +387,15 @@ const SalesPage: React.FC = () => {
     const value = e.target.value.trim();
     setAccountSearch(value);
     setSelectedAccount(null)
+    if (context === 'lojinha') {
+      cartLoadRequestRef.current += 1
+      setIsCartLoading(false)
+      setLojinhaCartId(null)
+      setLojinhaCartVersion(null)
+      setCartItems({})
+      setCartItemSnapshots({})
+      setShowCancelCartConfirmation(false)
+    }
     currentInputRef.current = value; // Atualizar ref com valor atual
     
     // Limpar timeout anterior
@@ -267,11 +457,21 @@ const SalesPage: React.FC = () => {
     }, 500); // 500ms de debounce
   }
 
-  const handleSelectAccount = (account: UserAccount) => {
+  const handleSelectAccount = async (account: UserAccount) => {
     setSelectedAccount(account)
     setAccountSearch(account.name || account.email)
     setSearchResults([])
     setError(null)
+    setShowCancelCartConfirmation(false)
+    if (context === 'lojinha') {
+      try {
+        await loadLojinhaCartForAccount(account.id)
+      } catch (loadError) {
+        const message = loadError instanceof Error ? loadError.message : 'Erro ao carregar carrinho'
+        setError(message)
+        showError('Erro ao carregar carrinho', message)
+      }
+    }
   }
 
   const handleConfirmSale = async () => {
@@ -285,22 +485,28 @@ const SalesPage: React.FC = () => {
     }
     
     // VALIDAÇÃO ANTES DE FINALIZAR
-    const items: SaleItem[] = Object.entries(cartItems)
-      .filter(([productId]) => productId !== null && productId !== undefined)
-      .map(([productId, quantity]) => {
-        const p = products.find(pr => pr && pr.id === productId)
-        if (!p) {
-          throw new Error(`Produto com ID ${productId} não encontrado`)
-        }
-        return {
-          id: p.id,
-          productId: p.id || '',
-          productName: p.name,
-          price: p.price,
-          quantity,
-          image: p.image_url || null
-        }
+    const items: SaleItem[] = []
+    for (const [productId, quantity] of Object.entries(cartItems)) {
+      const product = products.find(item => item?.id === productId)
+      const snapshot = cartItemSnapshots[productId]
+      const productName = snapshot?.product_name || product?.name
+      const price = snapshot?.price ?? product?.price
+      if (!productName || price === undefined) {
+        const message = `Produto com ID ${productId} não encontrado no carrinho`
+        setError(message)
+        showError('Erro', message)
+        return
+      }
+
+      items.push({
+        id: product?.id || productId,
+        productId,
+        productName,
+        price,
+        quantity,
+        image: snapshot?.image_url || product?.image_url || null,
       })
+    }
       
     // Validar que temos itens válidos
     if (items.length === 0) {
@@ -310,30 +516,32 @@ const SalesPage: React.FC = () => {
     }
 
     // Validar estoque ANTES de chamar a função
-    const stockErrors: string[] = []
-    for (const item of items) {
-      const product = products.find(p => p.id === item.productId)
-      if (!product) {
-        stockErrors.push(`Produto "${item.productName}" não encontrado`)
-        continue
-      }
-      
-      if (product.stock !== null && product.stock !== undefined) {
-        if (product.stock === 0) {
-          stockErrors.push(`O produto "${product.name}" não está mais disponível em estoque`)
-        } else if (product.stock < item.quantity) {
-          stockErrors.push(`Estoque insuficiente para "${product.name}". Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''}, mas você está tentando comprar ${item.quantity}`)
+    if (context === 'lanchonete') {
+      const stockErrors: string[] = []
+      for (const item of items) {
+        const product = products.find(p => p.id === item.productId)
+        if (!product) {
+          stockErrors.push(`Produto "${item.productName}" não encontrado`)
+          continue
+        }
+
+        if (product.stock !== null && product.stock !== undefined) {
+          if (product.stock === 0) {
+            stockErrors.push(`O produto "${product.name}" não está mais disponível em estoque`)
+          } else if (product.stock < item.quantity) {
+            stockErrors.push(`Estoque insuficiente para "${product.name}". Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''}, mas você está tentando comprar ${item.quantity}`)
+          }
         }
       }
-    }
 
-    if (stockErrors.length > 0) {
-      const errorMessage = stockErrors.length === 1 
-        ? stockErrors[0]
-        : `Não é possível finalizar a venda:\n${stockErrors.map((e, i) => `${i + 1}. ${e}`).join('\n')}`
-      setError(errorMessage)
-      showError('Erro no estoque', errorMessage)
-      return
+      if (stockErrors.length > 0) {
+        const errorMessage = stockErrors.length === 1
+          ? stockErrors[0]
+          : `Não é possível finalizar a venda:\n${stockErrors.map((e, i) => `${i + 1}. ${e}`).join('\n')}`
+        setError(errorMessage)
+        showError('Erro no estoque', errorMessage)
+        return
+      }
     }
 
     setIsLoading(true)
@@ -351,8 +559,10 @@ const SalesPage: React.FC = () => {
         selectedAccount.id,
         items,
         context,
-        couponCode,
-        discountedTotal
+        context === 'lojinha' && !isCouponApplied ? '' : couponCode,
+        discountedTotal,
+        context === 'lojinha' ? lojinhaCartId || undefined : undefined,
+        context === 'lojinha' ? lojinhaCartVersion ?? undefined : undefined
       )
       
       // Recarregar produtos para atualizar estoque
@@ -366,6 +576,8 @@ const SalesPage: React.FC = () => {
       setSearchResults([])
       setSelectedAccount(null)
       handleClearCart()
+      setLojinhaCartId(null)
+      setLojinhaCartVersion(null)
     } catch (err: any) {
       const errorMessage = err?.message || 'Erro ao realizar venda'
       setError(errorMessage)
@@ -377,6 +589,10 @@ const SalesPage: React.FC = () => {
   }
 
   const handleOpenConfirmation = () => {
+    if (context === 'lojinha' && (!lojinhaCartId || lojinhaCartVersion === null || isCartLoading || isCartUpdating)) {
+      showWarning('Carrinho indisponível', 'Aguarde o carregamento ou atualização do carrinho.')
+      return
+    }
     if (Object.keys(cartItems).length === 0) {
       showWarning('Carrinho vazio', 'Adicione ao menos um item para finalizar a venda.')
       return
@@ -457,10 +673,14 @@ const SalesPage: React.FC = () => {
                     </div>
                     <div className="picote-horizontal flex flex-col flex-1 p-3">
                       <h4 className="font-display font-medium text-ferro-900 text-sm leading-tight mb-1 line-clamp-2">{p.name}</h4>
+                      <p className="text-xs text-ferro-600 mb-2">
+                        Estoque disponível: {p.stock} {p.stock === 1 ? 'unidade' : 'unidades'}
+                      </p>
                       <p className="font-slab text-lg text-vagao-600 mb-3 mt-auto">R$ {formatPrice(p.price)}</p>
                       <button
                         onClick={() => handleAddToCart(p)}
-                        className="w-full bg-ferro-800 hover:bg-ferro-700 text-creme-200 font-display font-semibold tracking-wide text-sm py-2 px-2 rounded-lg transition-colors active:scale-[0.98]"
+                        disabled={isSaving || (context === 'lojinha' && !selectedAccount)}
+                        className="w-full bg-ferro-800 hover:bg-ferro-700 text-creme-200 font-display font-semibold tracking-wide text-sm py-2 px-2 rounded-lg transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         + Adicionar
                       </button>
@@ -572,6 +792,18 @@ const SalesPage: React.FC = () => {
               )}
             </div>
 
+            {context === 'lojinha' && (
+              <p className="mb-3 text-xs text-ferro-600">
+                {isCartLoading
+                  ? 'Carregando carrinho compartilhado...'
+                  : lojinhaCartId
+                    ? 'Carrinho compartilhado: alterações de outros vendedores são sincronizadas automaticamente.'
+                    : selectedAccount
+                      ? error || 'Carrinho encerrado. Um novo será criado ao adicionar um produto.'
+                      : 'Selecione uma conta para carregar ou criar o carrinho compartilhado.'}
+              </p>
+            )}
+
             {/* Itens do carrinho */}
             {Object.keys(cartItems).length === 0 ? (
               <div className="picote-horizontal text-center pt-5 pb-2">
@@ -583,25 +815,29 @@ const SalesPage: React.FC = () => {
                 {/* Lista de itens */}
                 <div className="picote-horizontal pt-3 space-y-2 max-h-64 overflow-y-auto">
                   {Object.entries(cartItems).map(([productId, qty]) => {
-                    const p = products.find(pr => pr.id === productId)!
+                    const p = products.find(pr => pr.id === productId)
+                    const snapshot = cartItemSnapshots[productId]
+                    const productName = snapshot?.product_name || p?.name || 'Produto indisponível'
+                    const productPrice = snapshot?.price ?? p?.price ?? 0
                     return (
                       <div key={productId} className="bg-creme-50 p-2 rounded-lg border border-ferro-200">
                         <div className="flex items-center gap-2">
                           <OptimizedImage
-                            src={p.image_url || ''}
-                            alt={p.name}
+                            src={snapshot?.image_url || p?.image_url || ''}
+                            alt={productName}
                             className="w-10 h-10 rounded object-cover flex-shrink-0"
                             context={context}
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-ferro-900 truncate leading-tight">{p.name}</p>
-                            <p className="text-xs text-ferro-500">R$ {formatPrice(p.price)}</p>
+                            <p className="text-sm font-semibold text-ferro-900 truncate leading-tight">{productName}</p>
+                            <p className="text-xs text-ferro-500">R$ {formatPrice(productPrice)}</p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => handleDecrease(productId)}
+                              disabled={isSaving}
                               className={`${smallBtn} w-8 h-8 bg-creme-200 hover:bg-creme-300 border border-ferro-200 text-ferro-800 text-base`}
                               aria-label="Diminuir"
                             >
@@ -610,6 +846,7 @@ const SalesPage: React.FC = () => {
                             <span className="w-6 text-center text-sm font-semibold text-ferro-900">{qty}</span>
                             <button
                               onClick={() => handleIncrease(productId)}
+                              disabled={isSaving}
                               className={`${smallBtn} w-8 h-8 bg-creme-200 hover:bg-creme-300 border border-ferro-200 text-ferro-800 text-base`}
                               aria-label="Aumentar"
                             >
@@ -617,7 +854,7 @@ const SalesPage: React.FC = () => {
                             </button>
                           </div>
                           <div className="font-slab text-sm text-ferro-900">
-                            R$ {formatPrice(p.price * qty)}
+                            R$ {formatPrice(productPrice * qty)}
                           </div>
                         </div>
                       </div>
@@ -644,7 +881,7 @@ const SalesPage: React.FC = () => {
                           setCouponDiscountAmount(0)
                         }
                       }}
-                      disabled={isCouponApplied || (context === 'lojinha' && total < 150)}
+                      disabled={isSaving || isCouponApplied || (context === 'lojinha' && total < 150)}
                       className="flex-1 min-w-0 px-2 py-2 disabled:opacity-60 truncate"
                       style={{ maxWidth: '100%' }}
                     >
@@ -672,7 +909,7 @@ const SalesPage: React.FC = () => {
                           showSuccess('Cupom aplicado!', 'Desconto de R$10,00')
                         }
                       }}
-                      disabled={isCouponApplied || (context === 'lojinha' && total < 150) || !couponCode}
+                      disabled={isSaving || isCouponApplied || (context === 'lojinha' && total < 150) || !couponCode}
                       className="px-3 py-2 bg-latao-400 hover:bg-latao-300 text-ferro-900 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed font-display font-semibold rounded-lg text-sm flex-shrink-0"
                     >
                       Aplicar
@@ -711,10 +948,13 @@ const SalesPage: React.FC = () => {
                 {/* Botões */}
                 <div className="flex gap-2 pt-2">
                   <button
-                    onClick={handleClearCart}
-                    className="flex-1 bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-200 font-display font-semibold py-2.5 px-2 rounded-lg text-sm"
+                    onClick={() => context === 'lojinha'
+                      ? setShowCancelCartConfirmation(true)
+                      : handleClearCart()}
+                    disabled={isSaving}
+                    className="flex-1 bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-200 font-display font-semibold py-2.5 px-2 rounded-lg text-sm disabled:opacity-50"
                   >
-                    Limpar
+                    {context === 'lojinha' ? 'Cancelar carrinho' : 'Limpar'}
                   </button>
                   <button
                     onClick={handleOpenConfirmation}
@@ -724,6 +964,31 @@ const SalesPage: React.FC = () => {
                     {isSaving ? 'Salvando...' : 'Finalizar'}
                   </button>
                 </div>
+                {context === 'lojinha' && showCancelCartConfirmation && (
+                  <div className="rounded-lg border border-vagao-300 bg-vagao-50 p-3">
+                    <p className="text-sm text-ferro-800">
+                      Cancelar este carrinho devolverá ao estoque todas as unidades reservadas.
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowCancelCartConfirmation(false)}
+                        disabled={isSaving}
+                        className="flex-1 rounded-lg border border-ferro-300 bg-creme-50 px-2 py-2 text-sm text-ferro-800 disabled:opacity-50"
+                      >
+                        Voltar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleCancelLojinhaCart()}
+                        disabled={isSaving}
+                        className="flex-1 rounded-lg bg-vagao-600 px-2 py-2 text-sm font-semibold text-creme-50 disabled:opacity-50"
+                      >
+                        Confirmar cancelamento
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -744,7 +1009,8 @@ const SalesPage: React.FC = () => {
         formattedAmount={discountedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         description={`${Object.entries(cartItems).map(([id, q]) => {
           const p = products.find(pp => pp.id === id)
-          return p ? `${p.name} (${q}x)` : ''
+          const productName = cartItemSnapshots[id]?.product_name || p?.name
+          return productName ? `${productName} (${q}x)` : ''
         }).filter(Boolean).join(', ')}`}
         isLoading={isSaving}
       />

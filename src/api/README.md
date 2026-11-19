@@ -40,7 +40,10 @@ api.updateBalance(data)
 
 // Sales
 api.listSales(category?, cardId?)
-api.createSale(data)
+api.createSale(data) // Lojinha envia cartId; Lanchonete envia items
+api.getLojinhaCart({ userId? }) // Localiza ou cria o carrinho compartilhado
+api.getLojinhaCart({ cartId }) // Atualiza um carrinho aberto
+api.manageLojinhaCart(data) // Adiciona, diminui ou cancela itens/carrinho
 
 // Orders
 api.listOrders(category?)

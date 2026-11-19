@@ -219,6 +219,21 @@ export const api = {
       body: data,
     }),
 
+  getLojinhaCart: (params: { userId?: string; cartId?: string }) =>
+    request<{ success: boolean; data: any; error?: string }>('lojinha-carts', {
+      method: 'GET',
+      query: {
+        ...(params.userId ? { userId: params.userId } : {}),
+        ...(params.cartId ? { cartId: params.cartId } : {}),
+      },
+    }),
+
+  manageLojinhaCart: (data: Record<string, unknown>) =>
+    request<{ success: boolean; data: any; error?: string }>('lojinha-carts', {
+      method: 'POST',
+      body: data,
+    }),
+
   updateBalance: (data: any) =>
     request<{ success: boolean; data: any; error?: string }>('update-balance', {
       method: 'POST',
