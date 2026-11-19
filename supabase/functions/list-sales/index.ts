@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     const limit = limitParam ? Math.max(1, Math.min(100, parseInt(limitParam, 10))) : 20
     const offset = (page - 1) * limit
 
-    const canViewAllSales = ['admin', 'lojinha', 'lanchonete'].includes(userRole)
+    const canViewAllSales = ['admin', 'lojinha', 'lanchonete', 'coordLojinha', 'coordLanchonete'].includes(userRole)
     if (userId) {
       if (userId !== authResult.id && !canViewAllSales) {
         return new Response(JSON.stringify({
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       }
 
       // Verificar permissões específicas por categoria para histórico geral
-      if (category === 'lojinha' && !['admin', 'lojinha'].includes(userRole)) {
+      if (category === 'lojinha' && !['admin', 'lojinha', 'coordLojinha'].includes(userRole)) {
         return new Response(
           JSON.stringify({
             success: false,
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
         )
       }
 
-      if (category === 'lanchonete' && !['admin', 'lanchonete'].includes(userRole)) {
+      if (category === 'lanchonete' && !['admin', 'lanchonete', 'coordLanchonete'].includes(userRole)) {
         return new Response(
           JSON.stringify({
             success: false,

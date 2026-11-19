@@ -148,6 +148,7 @@ const CreateProductPage = () => {
 
   const handleRemoveImage = () => {
     setFormData(prev => ({ ...prev, image: null }))
+    setExistingUrl(null)
     setImagePreview(null)
     // Limpar o input file
     const fileInput = document.getElementById('image') as HTMLInputElement

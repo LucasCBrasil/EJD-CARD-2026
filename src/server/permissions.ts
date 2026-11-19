@@ -12,6 +12,8 @@ export type UserRole =
   | 'comunicacao'
   | 'servico'
   | 'encontrista'
+  | 'coordLojinha'
+  | 'coordLanchonete'
 
 export type Permission =
   // Contas
@@ -54,11 +56,21 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   
   lojinha: [
     'accounts:view_all', 'accounts:view_own',
+    'products:view', 'sales:create_lojinha', 'sales:view_history_lojinha',
+  ],
+
+  coordLojinha: [
+    'accounts:view_all', 'accounts:view_own',
     'products:view', 'products:create_lojinha', 'products:update_lojinha', 'products:delete_lojinha',
     'sales:create_lojinha', 'sales:view_history_lojinha',
   ],
   
   lanchonete: [
+    'accounts:view_all', 'accounts:view_own',
+    'products:view', 'sales:create_lanchonete', 'sales:view_history_lanchonete',
+  ],
+
+  coordLanchonete: [
     'accounts:view_all', 'accounts:view_own',
     'products:view', 'products:create_lanchonete', 'products:update_lanchonete', 'products:delete_lanchonete',
     'sales:create_lanchonete', 'sales:view_history_lanchonete',

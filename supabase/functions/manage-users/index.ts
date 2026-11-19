@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       }
 
       // Validar role
-      const validRoles = ['admin', 'lojinha', 'lanchonete', 'comunicacao', 'servico', 'encontrista']
+      const validRoles = ['admin', 'lojinha', 'lanchonete', 'comunicacao', 'servico', 'encontrista', 'coordLojinha', 'coordLanchonete']
       if (!validRoles.includes(role)) {
         return new Response(
           JSON.stringify({

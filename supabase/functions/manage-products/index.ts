@@ -12,7 +12,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-type UserRole = 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista'
+type UserRole = 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista' | 'coordLojinha' | 'coordLanchonete'
 
 interface ApiResponse {
   success: boolean
@@ -120,11 +120,11 @@ const hasPermission = (userRole: UserRole, permission: 'canManageProductsLojinha
   if (userRole === 'admin') return true
   
   if (permission === 'canManageProductsLojinha') {
-    return userRole === 'lojinha'
+    return userRole === 'coordLojinha'
   }
   
   if (permission === 'canManageProductsLanchonete') {
-    return userRole === 'lanchonete'
+    return userRole === 'coordLanchonete'
   }
   
   return false
@@ -293,13 +293,15 @@ Deno.serve(async (req) => {
           price,
           category,
           description,
-          stock
+          stock,
+          image_url
         }: {
           name: string
           price: number
           category: 'lojinha' | 'lanchonete'
           description?: string
           stock?: number
+          image_url?: string | null
         } = await req.json()
 
         // Validações básicas
@@ -358,6 +360,7 @@ Deno.serve(async (req) => {
             category,
             description,
             stock,
+            image_url,
             active: true
           })
           .select()
@@ -397,6 +400,7 @@ Deno.serve(async (req) => {
           price,
           description,
           stock,
+          image_url,
           active
         } = await req.json()
 
@@ -435,6 +439,7 @@ Deno.serve(async (req) => {
         }
         if (description !== undefined) updates.description = description
         if (stock !== undefined) updates.stock = stock
+        if (image_url !== undefined) updates.image_url = image_url
         if (active !== undefined) updates.active = active
 
         const { data: product, error } = await supabase
