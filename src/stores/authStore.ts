@@ -5,7 +5,7 @@ export interface User {
   id: string
   email: string
   name?: string | null
-  role: 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista'
+  role: 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista' | 'coordLojinha' | 'coordLanchonete'
 }
 
 interface SessionCache {

@@ -12,7 +12,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-type UserRole = 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista'
+type UserRole = 'admin' | 'lojinha' | 'lanchonete' | 'comunicacao' | 'servico' | 'encontrista' | 'coordLojinha' | 'coordLanchonete'
 
 interface ApiResponse {
   success: boolean
@@ -120,11 +120,11 @@ const hasPermission = (userRole: UserRole, permission: 'canManageProductsLojinha
   if (userRole === 'admin') return true
   
   if (permission === 'canManageProductsLojinha') {
-    return userRole === 'lojinha'
+    return userRole === 'coordLojinha'
   }
   
   if (permission === 'canManageProductsLanchonete') {
-    return userRole === 'lanchonete'
+    return userRole === 'coordLanchonete'
   }
   
   return false

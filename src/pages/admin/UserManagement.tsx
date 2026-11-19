@@ -16,13 +16,15 @@ interface User {
 const roleConfig: Record<UserRole, { color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'; label: string; emoji: string }> = {
   admin: { color: 'secondary', label: 'Admin', emoji: '👑' },
   lojinha: { color: 'info', label: 'Lojinha', emoji: '🏪' },
+  coordLojinha: { color: 'info', label: 'Coordenador Lojinha', emoji: '🏪' },
   lanchonete: { color: 'warning', label: 'Lanchonete', emoji: '🍔' },
+  coordLanchonete: { color: 'warning', label: 'Coordenador Lanchonete', emoji: '🍔' },
   comunicacao: { color: 'success', label: 'Comunicação', emoji: '📢' },
   servico: { color: 'default', label: 'Serviço', emoji: '👨‍🔧' },
   encontrista: { color: 'primary', label: 'Encontrista', emoji: '👤' },
 }
 
-const allRoles: UserRole[] = ['admin', 'lojinha', 'lanchonete', 'comunicacao', 'servico', 'encontrista']
+const allRoles: UserRole[] = ['admin', 'lojinha', 'lanchonete', 'comunicacao', 'servico', 'encontrista', 'coordLojinha', 'coordLanchonete']
 
 // Helper para URL das Edge Functions
 function getSupabaseFunctionsUrl(): string {

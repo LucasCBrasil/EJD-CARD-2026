@@ -6,6 +6,8 @@ export type UserRole =
   | 'comunicacao'
   | 'servico'
   | 'encontrista'
+  | 'coordLojinha'
+  | 'coordLanchonete'
 
 export interface RolePermissions {
   // Contas e saldos
@@ -72,7 +74,29 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAccounts: true,
     canAddBalance: false,
     canViewOwnBalance: true,
-    canViewAllBalances: false,
+    canViewAllBalances: true,
+    canManageProductsLojinha: false,
+    canManageProductsLanchonete: false,
+    canSellLojinha: true,
+    canSellLanchonete: false,
+    canViewSalesHistoryLojinha: true,
+    canViewSalesHistoryLanchonete: false,
+    canViewOpenOrders: true,
+    canMarkAsDelivered: true,
+    canSelfOrderLanchonete: true,
+    canManageLanchoneteOrders: false,
+    canManageFoodTrucks: false,
+    canManageUsers: false,
+    canViewAdmin: false,
+    canViewReports: false,
+  },
+
+  // Coordenador de Lojinha
+  coordLojinha: {
+    canViewAccounts: true,
+    canAddBalance: false,
+    canViewOwnBalance: true,
+    canViewAllBalances: true,
     canManageProductsLojinha: true,
     canManageProductsLanchonete: false,
     canSellLojinha: true,
@@ -94,7 +118,29 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAccounts: true,
     canAddBalance: false,
     canViewOwnBalance: true,
-    canViewAllBalances: false,
+    canViewAllBalances: true,
+    canManageProductsLojinha: false,
+    canManageProductsLanchonete: false,
+    canSellLojinha: false,
+    canSellLanchonete: true,
+    canViewSalesHistoryLojinha: false,
+    canViewSalesHistoryLanchonete: true,
+    canViewOpenOrders: false,
+    canMarkAsDelivered: false,
+    canSelfOrderLanchonete: true,
+    canManageLanchoneteOrders: true,
+    canManageFoodTrucks: false,
+    canManageUsers: false,
+    canViewAdmin: false,
+    canViewReports: false,
+  },
+
+  // Coordenador de Lanchonete
+  coordLanchonete: {
+    canViewAccounts: true,
+    canAddBalance: false,
+    canViewOwnBalance: true,
+    canViewAllBalances: true,
     canManageProductsLojinha: false,
     canManageProductsLanchonete: true,
     canSellLojinha: false,
