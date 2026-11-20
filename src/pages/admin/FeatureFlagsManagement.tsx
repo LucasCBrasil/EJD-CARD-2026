@@ -1,21 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import { useAuth } from '../../contexts/AuthContext'
+import { api } from '../../lib/api-client'
 
 interface FeatureFlag {
   key: string
   enabled: boolean
   description?: string
   updated_at?: string
-}
-
-// Helper para URL das Edge Functions
-function getSupabaseFunctionsUrl(): string {
-  const envFunctionsUrl = (import.meta as any).env?.VITE_SUPABASE_FUNCTIONS_URL
-  const envSupabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL
-  if (envFunctionsUrl) return envFunctionsUrl
-  if (envSupabaseUrl) return `${envSupabaseUrl}/functions/v1`
-  return '/functions/v1'
 }
 
 // Configuração visual das flags
@@ -25,7 +16,6 @@ const flagConfig: Record<string, { icon: string; label: string; color: 'success'
 }
 
 const FeatureFlagsManagement: React.FC = () => {
-  const { getAccessToken } = useAuth()
   const [flags, setFlags] = useState<FeatureFlag[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,14 +26,7 @@ const FeatureFlagsManagement: React.FC = () => {
     setError(null)
 
     try {
-      const functionsBase = getSupabaseFunctionsUrl()
-      const anonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY
-
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (anonKey) headers['apikey'] = anonKey
-
-      const res = await fetch(`${functionsBase}/feature-flags`, { headers })
-      const json = await res.json()
+      const json = await api.listFeatureFlags()
 
       if (json.success && json.data) {
         setFlags(json.data)
@@ -58,37 +41,11 @@ const FeatureFlagsManagement: React.FC = () => {
   }
 
   const toggleFlag = async (flag: FeatureFlag) => {
-    // Obter token atualizado
-    const accessToken = await getAccessToken()
-    
-    if (!accessToken) {
-      setError('Sessão expirada. Faça login novamente.')
-      return
-    }
-
     setUpdatingFlag(flag.key)
     setError(null)
 
     try {
-      const functionsBase = getSupabaseFunctionsUrl()
-      const anonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      }
-      if (anonKey) headers['apikey'] = anonKey
-
-      const res = await fetch(`${functionsBase}/feature-flags`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          key: flag.key,
-          enabled: !flag.enabled,
-        }),
-      })
-
-      const json = await res.json()
+      const json = await api.updateFeatureFlag(flag.key, !flag.enabled)
 
       if (json.success && json.data) {
         setFlags(prev =>
@@ -144,11 +101,11 @@ const FeatureFlagsManagement: React.FC = () => {
             <div key={i} className="h-20 rounded-xl bg-creme-200 border border-ferro-200 animate-pulse" />
           ))}
         </div>
-      ) : flags.length === 0 ? (
+      ) : flags.length === 0 && !error ? (
         <div className="rounded-xl border border-anil-200 bg-anil-100/60 px-4 py-3 text-sm text-anil-800">
           Nenhuma feature flag configurada.
         </div>
-      ) : (
+      ) : flags.length > 0 ? (
         <div className="flex flex-col gap-3">
           {flags.map(flag => {
             const config = flagConfig[flag.key] || { icon: '🏳️', label: flag.key, color: 'info' as const }
@@ -204,7 +161,7 @@ const FeatureFlagsManagement: React.FC = () => {
             )
           })}
         </div>
-      )}
+      ) : null}
 
       <div className="mt-4 rounded-xl border border-latao-300 bg-latao-50 px-4 py-3 text-sm text-latao-900">
         <strong>⚠️ Atenção:</strong> Alterações nas feature flags têm efeito imediato para todos os usuários.

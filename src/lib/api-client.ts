@@ -316,12 +316,12 @@ export const api = {
     }),
 
   listFeatureFlags: () =>
-    request<{ success: boolean; data: Array<{ key: string; enabled: boolean; description?: string; updated_at?: string }> }>('feature-flags', {
+    request<{ success: boolean; data: Array<{ key: string; enabled: boolean; description?: string; updated_at?: string }>; error?: string }>('feature-flags', {
       method: 'GET',
     }),
 
   updateFeatureFlag: (key: string, enabled: boolean) =>
-    request<{ success: boolean; data: { key: string; enabled: boolean } }>('feature-flags', {
+    request<{ success: boolean; data: { key: string; enabled: boolean }; error?: string }>('feature-flags', {
       method: 'PUT',
       body: { key, enabled },
     }),
