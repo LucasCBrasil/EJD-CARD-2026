@@ -6,6 +6,7 @@ import { useData } from '../contexts/DataContext'
 import { isSupabaseConfigured } from '../lib/auth-client'
 import { api } from '../lib/api-client'
 import { UserAccount } from '../types'
+import PixRefundCheckbox from '../components/PixRefundCheckbox'
 import { useAccountByUserId } from '../hooks/useAccounts'
 
 type HistoryItem = {
@@ -58,6 +59,7 @@ const AccountContent: React.FC<{ account: UserAccount; history: HistoryItem[]; p
               </div>
               <span className="carimbo text-green-700 text-xs shrink-0">Conta ativa</span>
             </div>
+            <div className="mt-3"><PixRefundCheckbox /></div>
           </div>
         </div>
       </div>

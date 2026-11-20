@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAccountByUserId } from '../../hooks/useAccounts'
+import PixRefundCheckbox from '../PixRefundCheckbox'
 
 export default function AccountBalance() {
   const { user } = useAuth()
@@ -20,6 +21,7 @@ export default function AccountBalance() {
         <button type="button" onClick={() => void refetch()} disabled={isFetching} aria-label="Atualizar saldo" className="!px-3 !py-2 rounded-xl border border-ferro-200 text-ferro-800 disabled:opacity-50">↻</button>
         <button type="button" onClick={() => navigate({ to: '/pix/$paymentId', params: { paymentId: 'new' } })} className="!px-3 !py-2 rounded-xl bg-latao-400 font-display uppercase text-ferro-900">Recarregar saldo</button>
       </div>
+      <div className="w-full"><PixRefundCheckbox /></div>
     </div>
   )
 }
