@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { api } from '../../lib/api-client'
 import { Button } from '../../components/shared'
 
-type Refund = { id: string; pix_key: string | null; whatsapp: string | null; status: string; created_at: string; manual_settlement_amount?: number | null; manual_claimed_by?: string | null; manual_claim_mine?: boolean; app_users: { name: string; email: string; balance: number } | null; credits: { amount: number; description: string; created_at: string; created_by: string | null }[]; operations?: { id: string; amount: number; status: string }[]; account_operations?: { id: string; status: string }[] }
+type Refund = { id: string; pix_key: string | null; whatsapp: string | null; status: string; created_at: string; authorized_at?: string | null; manual_settlement_amount?: number | null; manual_claimed_by?: string | null; manual_claim_mine?: boolean; app_users: { name: string; email: string; balance: number } | null; credits: { amount: number; description: string; created_at: string; created_by: string | null }[]; operations?: { id: string; amount: number; status: string }[]; account_operations?: { id: string; status: string }[] }
 type ManualClaim = { id: string; name: string; amount: number; pix_key: string; whatsapp: string; balance_changed: boolean }
 
 function isPixOnly(item: Refund) {
@@ -107,16 +107,31 @@ export default function RefundManagement() {
           <td className="p-4 font-semibold">{item.app_users?.name || item.app_users?.email || 'Usuário'}</td><td className="p-4">{item.app_users ? `R$ ${Number(item.app_users.balance).toFixed(2).replace('.', ',')}` : 'Indisponível'}</td><td className="p-4 break-all">{item.pix_key || 'Não informada — contate a pessoa'}</td>
           <td className="p-4">{item.status === 'pending' ? <Button disabled={busy || !item.pix_key || (!!item.manual_claimed_by && !item.manual_claim_mine) || (!item.manual_claim_mine && (!item.app_users || Number(item.app_users.balance) <= 0 || item.account_operations?.some(o => ['prepared', 'processing', 'unknown'].includes(o.status))))} onClick={() => void openManual(item)}>{item.manual_claimed_by ? (item.manual_claim_mine ? 'Retomar ressarcimento' : 'Em atendimento') : 'Registrar baixa manual'}</Button> : '—'}</td>
         </tr>)}</tbody></table></div>}
-      {tab === 'approved' && visibleItems.map(item => <article key={item.id} className="rounded-xl border border-ferro-200 p-4 space-y-2">
-        <h3 className="font-semibold">{item.app_users?.name || item.app_users?.email || 'Usuário'} — {item.manual_settlement_amount != null ? 'Baixa manual registrada' : item.status === 'pending' ? 'Pendente' : item.operations?.some(o => o.status === 'approved') ? 'Reembolso Pix aprovado' : 'Autorizado anteriormente — pagamento não confirmado'}</h3>
-        <p>{item.app_users?.email} · Saldo atual: R$ {Number(item.app_users?.balance || 0).toFixed(2).replace('.', ',')}</p>
-        <p>Chave Pix: {item.pix_key || 'Não informada'} · WhatsApp: {item.whatsapp || 'Não informado'}</p>
-        <p>Solicitado em: {new Date(item.created_at).toLocaleString('pt-BR')}</p>
-        <div><strong>Créditos registrados:</strong>{item.credits.length ? <ul className="list-disc pl-5">{item.credits.map((c, i) => <li key={i}>{c.description} — R$ {Number(c.amount).toFixed(2).replace('.', ',')} ({new Date(c.created_at).toLocaleDateString('pt-BR')})</li>)}</ul> : ' Nenhum crédito registrado.'}</div>
-        {item.operations?.map(operation => <p key={operation.id} className="font-semibold">{operation.status === 'approved' ? 'Reembolso aprovado' : ['cancelled', 'rejected'].includes(operation.status) ? 'Reserva liberada ao saldo' : 'Reserva aguardando confirmação'}: R$ {Number(operation.amount).toFixed(2).replace('.', ',')}</p>)}
-        {item.manual_settlement_amount != null && <p className="font-semibold">Baixa manual registrada: R$ {Number(item.manual_settlement_amount).toFixed(2).replace('.', ',')}</p>}
-        {item.status === 'pending' && <Button disabled={busy} onClick={() => void authorize(item.id, item.operations?.some(o => ['prepared', 'processing', 'unknown'].includes(o.status)) === true)}>{item.operations?.some(o => ['prepared', 'processing', 'unknown'].includes(o.status)) ? 'Consultar ou retomar reembolso' : 'Autorizar devolução Pix'}</Button>}
-      </article>)}
+      {tab === 'approved' && visibleItems.length > 0 && <div className="overflow-x-auto rounded-xl border border-ferro-200">
+        <table className="w-full min-w-[800px] text-left text-sm">
+          <thead className="bg-ferro-100"><tr><th scope="col" className="p-4">Usuário</th><th scope="col" className="p-4">Valor registrado</th><th scope="col" className="p-4">Tipo</th><th scope="col" className="p-4">Status</th><th scope="col" className="p-4">Data</th><th scope="col" className="p-4">Detalhes</th></tr></thead>
+          <tbody>{visibleItems.map(item => {
+            const approvedPix = (item.operations || []).filter(operation => operation.status === 'approved')
+            const approvedTotal = approvedPix.reduce((sum, operation) => sum + Number(operation.amount), Number(item.manual_settlement_amount || 0))
+            const pendingOperation = item.operations?.some(operation => ['prepared', 'processing', 'unknown'].includes(operation.status)) === true
+            const type = item.manual_settlement_amount != null ? (approvedPix.length ? 'Pix e manual' : 'Manual') : 'Pix'
+            const status = item.status === 'pending' ? 'Solicitação pendente' : item.manual_settlement_amount != null ? 'Baixa manual registrada' : 'Reembolso Pix aprovado'
+            return <tr key={item.id} className="border-t border-ferro-200 align-top">
+              <td className="p-4 font-semibold">{item.app_users?.name || item.app_users?.email || 'Usuário'}</td>
+              <td className="p-4 whitespace-nowrap">R$ {approvedTotal.toFixed(2).replace('.', ',')}</td>
+              <td className="p-4">{type}</td><td className="p-4">{status}</td>
+              <td className="p-4 whitespace-nowrap">{item.authorized_at ? new Date(item.authorized_at).toLocaleString('pt-BR') : 'Não informada'}</td>
+              <td className="p-4"><details><summary className="cursor-pointer font-semibold">Ver detalhes</summary>
+                <div className="mt-2 min-w-56 space-y-2"><p>E-mail: {item.app_users?.email || 'Não informado'}</p><p>Saldo atual: {item.app_users ? `R$ ${Number(item.app_users.balance).toFixed(2).replace('.', ',')}` : 'Indisponível'}</p><p className="break-all">Chave Pix: {item.pix_key || 'Não informada'}</p><p>WhatsApp: {item.whatsapp || 'Não informado'}</p><p>Solicitado em: {new Date(item.created_at).toLocaleString('pt-BR')}</p>
+                  <div><strong>Créditos registrados:</strong>{item.credits.length ? <ul className="list-disc pl-5">{item.credits.map((credit, index) => <li key={index}>{credit.description} — R$ {Number(credit.amount).toFixed(2).replace('.', ',')} ({new Date(credit.created_at).toLocaleDateString('pt-BR')})</li>)}</ul> : ' Nenhum crédito registrado.'}</div>
+                  {item.operations?.map(operation => <p key={operation.id}>{operation.status === 'approved' ? 'Reembolso aprovado' : ['cancelled', 'rejected'].includes(operation.status) ? 'Reserva liberada ao saldo' : 'Reserva aguardando confirmação'}: R$ {Number(operation.amount).toFixed(2).replace('.', ',')}</p>)}
+                  {item.status === 'pending' && <Button disabled={busy} onClick={() => void authorize(item.id, pendingOperation)}>{pendingOperation ? 'Consultar ou retomar reembolso' : 'Autorizar devolução Pix'}</Button>}
+                </div>
+              </details></td>
+            </tr>
+          })}</tbody>
+        </table>
+      </div>}
     </div>}
     {manualClaim && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="manual-refund-title">
       <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
