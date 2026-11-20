@@ -1,9 +1,10 @@
 import React from 'react'
 import { InternalCard } from '../../components/shared'
+import RefundManagement from './RefundManagement'
 import { usePermissions } from '../../hooks/usePermissions'
 
 const AccountsPage = () => {
-  const { canViewAccounts, canAddBalance } = usePermissions()
+  const { canViewAccounts, canAddBalance, isAdmin } = usePermissions()
 
   const cards = [
     {
@@ -64,6 +65,7 @@ const AccountsPage = () => {
           />
         ))}
       </div>
+      {isAdmin && <RefundManagement />}
     </div>
   )
 }

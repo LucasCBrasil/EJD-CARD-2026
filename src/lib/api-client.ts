@@ -154,6 +154,14 @@ async function request<T = any>(
 
 // API pública - métodos genéricos que não expõem estrutura
 export const api = {
+  listRefunds: () => request<any>('refunds'),
+  requestRefund: (pix_key: string, whatsapp: string) => request<any>('refunds', { method: 'POST', body: { pix_key, whatsapp, confirmed: true } }),
+  getMyPixRefundEligibility: () => request<any>('refunds', { query: { view: 'mine' } }),
+  requestOriginalPixRefund: () => request<any>('refunds', { method: 'POST', body: { mode: 'original_pix', confirmed: true } }),
+  authorizeRefund: (id: string) => request<any>('refunds', { method: 'PUT', body: { id, action: 'refund_pix' } }),
+  settleManualRefund: (id: string, expected_balance: number) => request<any>('refunds', { method: 'PUT', body: { id, action: 'settle_manual', expected_balance } }),
+  claimManualRefund: (id: string) => request<any>('refunds', { method: 'PUT', body: { id, action: 'claim_manual' } }),
+  releaseManualRefund: (id: string) => request<any>('refunds', { method: 'PUT', body: { id, action: 'release_manual' } }),
   // Products
   listProducts: (category?: string) => 
     request<{ success: boolean; data: any[] }>('list-products', {

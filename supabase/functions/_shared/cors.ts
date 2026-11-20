@@ -4,8 +4,8 @@
  */
 
 const getAllowedOrigins = () => {
-  const allowed = Deno.env.get('ALLOWED_ORIGINS') || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000'
-  return allowed.split(',').map(o => o.trim())
+  const allowed = Deno.env.get('ALLOWED_ORIGINS') || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000,https://ejd-card-2026.vercel.app,https://ejd-card-2026-delta.vercel.app'
+  return [...allowed.split(',').map(o => o.trim()), 'https://ejd-card-2026-delta.vercel.app']
 }
 
 export const getCorsHeaders = (origin: string | null) => {
