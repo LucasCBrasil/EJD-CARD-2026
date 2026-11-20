@@ -96,7 +96,7 @@ interface SupabaseDataContextType {
   getProducts: (category: 'lojinha' | 'lanchonete') => Product[]
   
   // Funções de vendas
-  makeSale: (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => Promise<string>
+  makeSale: (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number, cartId?: string, cartVersion?: number) => Promise<string>
   getSales: (category?: 'lojinha' | 'lanchonete', limit?: number) => Promise<Sale[]>
   getSalesByUserId: (userId: string, limit?: number) => Promise<Sale[]>
   
@@ -385,7 +385,7 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
   }
 
   // ✅ Agora usa Edge Function via api-client
-  const makeSale = async (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number) => {
+  const makeSale = async (userId: string, items: Omit<SaleItem, 'id'>[], category: 'lojinha' | 'lanchonete', coupon: string, discountedTotal: number, cartId?: string, cartVersion?: number) => {
     
     // VALIDAÇÕES BÁSICAS
     if (!userId) {
@@ -413,7 +413,9 @@ export const SupabaseDataProvider: React.FC<SupabaseDataProviderProps> = ({ chil
         })),
         category,
         coupon: coupon || undefined,
-        discountedTotal: discountedTotal || undefined
+        discountedTotal: discountedTotal || undefined,
+        cartId,
+        cartVersion,
       })
 
       if (!response.success) throw new Error((response as any).error || 'Erro ao criar venda')

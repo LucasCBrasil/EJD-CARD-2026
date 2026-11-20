@@ -2,6 +2,7 @@
 -- Execute no SQL Editor de um projeto Supabase vazio. O Supabase Auth ja fornece
 -- auth.users e os roles anon, authenticated e service_role usados abaixo.
 -- As Edge Functions e o backend devem acessar as tabelas com a service role.
+-- Depois, aplique as migrations em supabase/migrations para habilitar as RPCs e evolucoes do schema.
 
 -- ---------------------------------------------------------------------------
 -- Tipos e perfis de usuario
@@ -151,6 +152,55 @@ CREATE INDEX idx_orders_sale_id ON public.orders(sale_id);
 CREATE INDEX idx_orders_user_id ON public.orders(user_id);
 CREATE INDEX idx_orders_status ON public.orders(status);
 CREATE INDEX idx_orders_created_at ON public.orders(created_at);
+
+CREATE TABLE public.lojinha_carts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.app_users(id) ON DELETE RESTRICT,
+  status TEXT NOT NULL DEFAULT 'open'
+    CHECK (status IN ('open', 'completed', 'cancelled')),
+  version BIGINT NOT NULL DEFAULT 0 CHECK (version >= 0),
+  created_by UUID REFERENCES public.app_users(id) ON DELETE SET NULL,
+  completed_by UUID REFERENCES public.app_users(id) ON DELETE SET NULL,
+  cancelled_by UUID REFERENCES public.app_users(id) ON DELETE SET NULL,
+  sale_id UUID UNIQUE REFERENCES public.sales(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  cancelled_at TIMESTAMPTZ,
+  CONSTRAINT lojinha_carts_completion_consistency CHECK (
+    (status = 'completed' AND sale_id IS NOT NULL AND completed_at IS NOT NULL)
+    OR (status <> 'completed' AND sale_id IS NULL AND completed_at IS NULL)
+  ),
+  CONSTRAINT lojinha_carts_cancellation_consistency CHECK (
+    (status = 'cancelled' AND cancelled_at IS NOT NULL)
+    OR (status <> 'cancelled' AND cancelled_at IS NULL)
+  )
+);
+
+CREATE UNIQUE INDEX lojinha_carts_one_open_per_user_uidx
+  ON public.lojinha_carts (user_id)
+  WHERE status = 'open';
+
+CREATE INDEX lojinha_carts_user_created_idx
+  ON public.lojinha_carts (user_id, created_at DESC);
+
+CREATE TABLE public.lojinha_cart_items (
+  cart_id UUID NOT NULL REFERENCES public.lojinha_carts(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE RESTRICT,
+  product_name TEXT NOT NULL,
+  price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  reserved_quantity INTEGER NOT NULL DEFAULT 0 CHECK (
+    reserved_quantity >= 0 AND reserved_quantity <= quantity
+  ),
+  image_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (cart_id, product_id)
+);
+
+CREATE INDEX lojinha_cart_items_product_idx
+  ON public.lojinha_cart_items (product_id);
 
 -- ---------------------------------------------------------------------------
 -- Movimentacoes de saldo, pagamentos PIX, cupons e configuracoes
@@ -395,6 +445,8 @@ DECLARE
     'sales',
     'sale_items',
     'orders',
+    'lojinha_carts',
+    'lojinha_cart_items',
     'transactions',
     'pix_payments',
     'coupons',
