@@ -215,10 +215,17 @@ const HomePage: React.FC = () => {
           },
           {
             icon: '🍽️',
-            title: 'Venda no Balcão',
+            title: 'Vendas Ambulantes',
             description: 'Processar vendas',
             path: '/lanchonete/select',
             canAccess: canSellLanchonete
+          },
+          {
+            icon: '🎒',
+            title: 'Controle dos Ambulantes',
+            description: 'Visualizar itens nas bags e registrar devolução de sobras',
+            path: '/lanchonete/ambulantes',
+            canAccess: canManageProductsLanchonete
           },
           {
             icon: '📊',

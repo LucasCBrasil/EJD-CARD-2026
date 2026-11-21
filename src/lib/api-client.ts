@@ -371,6 +371,30 @@ export const api = {
       method: 'POST',
       body: { saleId, action: 'cancel' },
     }),
+
+ // Bag de vendas ambulantes da Lanchonete
+  getAmbulanteBag: () =>
+    request<ApiResult<AmbulanteBagItem[]>>('ambulante-bag', {
+      method: 'GET',
+    }),
+
+  listAllAmbulanteBags: () =>
+    request<ApiResult<AmbulanteSellerSummary[]>>('ambulante-bag', {
+      method: 'GET',
+      query: { view: 'all' },
+    }),
+
+  takeToAmbulanteBag: (items: Array<{ productId: string; quantity: number }>) =>
+    request<ApiResult<unknown>>('ambulante-bag', {
+      method: 'POST',
+      body: { action: 'take', items },
+    }),
+
+  returnFromAmbulanteBag: (items: Array<{ productId: string; quantity: number }>, targetUserId?: string) =>
+    request<ApiResult<unknown>>('ambulante-bag', {
+      method: 'POST',
+      body: { action: 'return', items, ...(targetUserId ? { targetUserId } : {}) },
+    }),
 }
 
 export interface ApiResult<T> {
@@ -396,4 +420,36 @@ export interface LanchoneteOrder {
   deliveredAt: string | null
   customerName?: string
   items: Array<{ productId: string; productName: string; quantity: number; price: number }>
+}
+
+export interface AmbulanteBagItem {
+  productId: string
+  quantity: number
+  updatedAt: string
+  product: {
+    id: string
+    name: string
+    price: number
+    category: 'lanchonete'
+    description?: string | null
+    generalStock: number | null
+    stock: number
+    active: boolean
+  }
+}
+
+export interface AmbulanteSellerSummary {
+  sellerId: string
+  sellerName: string
+  sellerEmail: string
+  totalUnits: number
+  totalValue: number
+  lastUpdatedAt: string | null
+  items: Array<{
+    productId: string
+    productName: string
+    price: number
+    quantity: number
+    generalStock: number | null
+  }>
 }
