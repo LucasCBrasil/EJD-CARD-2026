@@ -7,14 +7,19 @@ import { useToastContext } from '../../contexts/ToastContext'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { UserAccount } from '../../types'
 import OptimizedImage from '../../components/ui/OptimizedImage'
-import { api } from '../../lib/api-client'
+import { api, type AmbulanteBagItem } from '../../lib/api-client'
 
 type ContextType = 'lojinha' | 'lanchonete'
+type BagModalMode = 'take' | 'return' | null
 
 interface CartItemSnapshot {
   product_name: string
   price: number
   image_url: string | null
+}
+
+const isFullEmail = (value: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())
 }
 
 const SalesPage: React.FC = () => {
@@ -25,6 +30,12 @@ const SalesPage: React.FC = () => {
   const context: ContextType = location.pathname.includes('/lojinha') ? 'lojinha' : 'lanchonete'
 
   const [products, setProducts] = useState<Product[]>([])
+  const [generalLanchoneteProducts, setGeneralLanchoneteProducts] = useState<Product[]>([])
+  const [bagItems, setBagItems] = useState<AmbulanteBagItem[]>([])
+  const [bagModalMode, setBagModalMode] = useState<BagModalMode>(null)
+  const [bagDraftQuantities, setBagDraftQuantities] = useState<Record<string, number>>({})
+  const [isBagSubmitting, setIsBagSubmitting] = useState(false)
+
   const [coupons, setCoupons] = useState<Array<{ name: string; discountAmount?: number }>>([])
   const [cartItems, setCartItems] = useState<Record<string, number>>({})
   const [cartItemSnapshots, setCartItemSnapshots] = useState<Record<string, CartItemSnapshot>>({})
@@ -34,7 +45,6 @@ const SalesPage: React.FC = () => {
   const [isCartUpdating, setIsCartUpdating] = useState(false)
   const [showCancelCartConfirmation, setShowCancelCartConfirmation] = useState(false)
   const [accountSearch, setAccountSearch] = useState('')
-  const [searchResults, setSearchResults] = useState<UserAccount[]>([])
   const [selectedAccount, setSelectedAccount] = useState<UserAccount | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [searchFilter, setSearchFilter] = useState('')
@@ -46,7 +56,7 @@ const SalesPage: React.FC = () => {
   const [couponError, setCouponError] = useState<string | null>(null)
   const [couponDiscountAmount, setCouponDiscountAmount] = useState<number>(0)
   const itemsPerPage = 6
-  const isSaving = isLoading || isCartLoading || isCartUpdating
+  const isSaving = isLoading || isCartLoading || isCartUpdating || isBagSubmitting
   const cartLoadRequestRef = useRef(0)
 
   const applyLojinhaCart = useCallback((cart: any) => {
@@ -141,21 +151,78 @@ const SalesPage: React.FC = () => {
     }
   }
 
+  const loadProducts = useCallback(async () => {
+    if (context === 'lojinha') {
+      const loadedProducts = await productService.getProducts('lojinha')
+      setProducts(loadedProducts || [])
+      setCurrentPage(1)
+      return
+    }
+
+    const [allProducts, bagRes] = await Promise.all([
+      productService.getProducts('lanchonete'),
+      api.getAmbulanteBag(),
+    ])
+
+    const catalog = allProducts || []
+    setGeneralLanchoneteProducts(catalog)
+
+    if (!bagRes.success) {
+      showError('Erro ao carregar bag', bagRes.error || 'Não foi possível carregar os itens da sua bag.')
+      setBagItems([])
+      setProducts([])
+      setCurrentPage(1)
+      return
+    }
+
+    const currentBag = bagRes.data || []
+    setBagItems(currentBag)
+
+    const bagAsProducts: Product[] = currentBag.map((entry) => {
+      const catalogItem = catalog.find((p) => p.id === entry.productId)
+      return {
+        id: entry.product.id,
+        name: entry.product.name,
+        price: entry.product.price,
+        category: 'lanchonete',
+        description: entry.product.description || catalogItem?.description || null,
+        stock: entry.quantity,
+        active: entry.product.active,
+        image_url: catalogItem?.image_url || null,
+      } as Product
+    })
+
+    setProducts(bagAsProducts)
+    setCurrentPage(1)
+  }, [context, showError])
+
+  const loadCoupons = async () => {
+    if (context === 'lojinha') {
+      setCoupons([])
+      setCouponCode('')
+      setIsCouponApplied(false)
+      setCouponDiscountAmount(0)
+      return
+    }
+    const loadedCoupons = await getCoupons(context)
+    setCoupons(loadedCoupons || [])
+  }
+
   useEffect(() => {
-    loadProducts()
-    loadCoupons()
+    void loadProducts()
+    void loadCoupons()
     setCartItems({})
     setCartItemSnapshots({})
     setLojinhaCartId(null)
     setLojinhaCartVersion(null)
     setShowCancelCartConfirmation(false)
     setAccountSearch('')
-    setSearchResults([])
     setSelectedAccount(null)
     setSearchFilter('')
     setCurrentPage(1)
-    
-    // Limpar timeout ao desmontar ou mudar contexto
+    setBagModalMode(null)
+    setBagDraftQuantities({})
+
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current)
@@ -190,18 +257,66 @@ const SalesPage: React.FC = () => {
     }
   }, [context, lojinhaCartId, isCartUpdating, isCartLoading, applyLojinhaCart])
 
-  const loadProducts = async () => {
-    const loadedProducts = await productService.getProducts(context)
-    setProducts(loadedProducts || [])
-    setCurrentPage(1)
+  const handleOpenBagModal = async (mode: 'take' | 'return') => {
+    setBagDraftQuantities({})
+    setBagModalMode(mode)
+    await loadProducts()
   }
 
-  const loadCoupons = async () => {
-    const loadedCoupons = await getCoupons(context)
-    setCoupons(loadedCoupons || [])
+  const handleChangeBagDraftQty = (productId: string, delta: number, maxAvailable: number | null) => {
+    setBagDraftQuantities((prev) => {
+      const current = prev[productId] || 0
+      const next = Math.max(0, current + delta)
+      const clamped = maxAvailable !== null && maxAvailable !== undefined ? Math.min(next, maxAvailable) : next
+      const copy = { ...prev }
+      if (clamped === 0) {
+        delete copy[productId]
+      } else {
+        copy[productId] = clamped
+      }
+      return copy
+    })
   }
 
-  // Filtrar produtos por nome
+  const handleConfirmBagAction = async () => {
+    if (!bagModalMode) return
+    const itemsToMove = Object.entries(bagDraftQuantities)
+      .filter(([, qty]) => qty > 0)
+      .map(([productId, quantity]) => ({ productId, quantity }))
+
+    if (itemsToMove.length === 0) {
+      showWarning('Nenhum item selecionado', 'Selecione ao menos uma unidade para continuar.')
+      return
+    }
+
+    setIsBagSubmitting(true)
+    try {
+      const response =
+        bagModalMode === 'take'
+          ? await api.takeToAmbulanteBag(itemsToMove)
+          : await api.returnFromAmbulanteBag(itemsToMove)
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao atualizar estoque da bag')
+      }
+
+      showSuccess(
+        bagModalMode === 'take' ? 'Bag abastecida!' : 'Itens devolvidos!',
+        bagModalMode === 'take'
+          ? 'Os itens foram transferidos do estoque geral para a sua bag.'
+          : 'As sobras foram devolvidas ao estoque geral da lanchonete.'
+      )
+      setBagModalMode(null)
+      setBagDraftQuantities({})
+      handleClearCart()
+      await loadProducts()
+    } catch (bagErr) {
+      showError('Erro na bag', bagErr instanceof Error ? bagErr.message : 'Erro ao movimentar itens da bag')
+    } finally {
+      setIsBagSubmitting(false)
+    }
+  }
+
   const filteredProducts = useMemo(() => {
     if (!products || !Array.isArray(products)) return []
     if (!searchFilter.trim()) return products
@@ -209,7 +324,6 @@ const SalesPage: React.FC = () => {
     return products.filter(p => p && p.name && p.name.toLowerCase().includes(filterLower))
   }, [products, searchFilter])
 
-  // Produtos paginados
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
     return filteredProducts.slice(startIndex, startIndex + itemsPerPage)
@@ -242,26 +356,12 @@ const SalesPage: React.FC = () => {
     }, 0)
   }, [cartItems, cartItemSnapshots, products, context])
 
-  // Validar se o cupom ainda é válido quando o total muda (lojinha precisa de mínimo R$ 150)
-  useEffect(() => {
-    if (context === 'lojinha' && isCouponApplied && total < 150) {
-      // Se o total ficou abaixo de R$ 150, remover o cupom
-      setIsCouponApplied(false)
-      setCouponDiscountAmount(0)
-      showWarning('Cupom removido', 'O cupom foi removido porque o total da compra ficou abaixo de R$ 150,00')
-    }
-  }, [total, context, isCouponApplied, showWarning])
-
   const discountedTotal = useMemo(() => {
-    if (isCouponApplied && couponCode) {
-      if (context === 'lanchonete' && couponDiscountAmount > 0) {
-        return Math.max(0, total - couponDiscountAmount)
-      } else if (context === 'lojinha') {
-        return Math.max(0, total - 10)
-      }
+    if (context === 'lanchonete' && isCouponApplied && couponCode && couponDiscountAmount > 0) {
+      return Math.max(0, total - couponDiscountAmount)
     }
     return total
-  }, [total, isCouponApplied, couponCode, couponDiscountAmount, context]) 
+  }, [total, isCouponApplied, couponCode, couponDiscountAmount, context])
 
   const handleAddToCart = (product: Product) => {
     const pid = product.id
@@ -271,23 +371,22 @@ const SalesPage: React.FC = () => {
       void mutateLojinhaCart({ action: 'add-item', productId: pid, quantity: 1 })
       return
     }
-    
-    // Validar estoque antes de adicionar
+
     if (product.stock !== null && product.stock !== undefined) {
       const currentQuantity = cartItems[pid] || 0
       if (product.stock === 0) {
-        showWarning('Produto indisponível', `O produto "${product.name}" não está mais disponível em estoque.`)
+        showWarning('Sem estoque na bag', `Você não possui mais "${product.name}" na sua bag.`)
         return
       }
       if (product.stock < currentQuantity + 1) {
         showWarning(
-          'Estoque insuficiente', 
-          `Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''} de "${product.name}". Você já tem ${currentQuantity} no carrinho.`
+          'Estoque insuficiente na bag',
+          `Você tem apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} de "${product.name}" na bag.`
         )
         return
       }
     }
-    
+
     setCartItems(prev => ({
       ...prev,
       [pid]: (prev[pid] || 0) + 1
@@ -322,23 +421,22 @@ const SalesPage: React.FC = () => {
     if (!products || !Array.isArray(products)) return
     const product = products.find(p => p && p.id === productId)
     if (!product) return
-    
-    // Validar estoque antes de aumentar
+
     if (product.stock !== null && product.stock !== undefined) {
       const currentQuantity = cartItems[productId] || 0
       if (product.stock === 0) {
-        showWarning('Produto indisponível', `O produto "${product.name}" não está mais disponível em estoque.`)
+        showWarning('Sem estoque na bag', `Você não possui mais "${product.name}" na sua bag.`)
         return
       }
       if (product.stock < currentQuantity + 1) {
         showWarning(
-          'Estoque insuficiente', 
-          `Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''} de "${product.name}". Você já tem ${currentQuantity} no carrinho.`
+          'Estoque insuficiente na bag',
+          `Você tem apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} de "${product.name}" na bag.`
         )
         return
       }
     }
-    
+
     setCartItems(prev => ({
       ...prev,
       [productId]: (prev[productId] || 0) + 1
@@ -351,6 +449,7 @@ const SalesPage: React.FC = () => {
     setCouponCode('')
     setCouponError(null)
     setIsCouponApplied(false)
+    setCouponDiscountAmount(0)
   }
 
   const handleCancelLojinhaCart = async () => {
@@ -378,89 +477,12 @@ const SalesPage: React.FC = () => {
     }
   }
 
-  // Ref para cancelar requisições anteriores
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
   const lastSearchRef = React.useRef<string>('')
   const currentInputRef = React.useRef<string>('')
 
-  const handleAccountSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
-    setAccountSearch(value);
-    setSelectedAccount(null)
-    if (context === 'lojinha') {
-      cartLoadRequestRef.current += 1
-      setIsCartLoading(false)
-      setLojinhaCartId(null)
-      setLojinhaCartVersion(null)
-      setCartItems({})
-      setCartItemSnapshots({})
-      setShowCancelCartConfirmation(false)
-    }
-    currentInputRef.current = value; // Atualizar ref com valor atual
-    
-    // Limpar timeout anterior
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    if (!value) {
-      setSelectedAccount(null);
-      setSearchResults([])
-      setError(null);
-      lastSearchRef.current = '';
-      return;
-    }
-
-    // Debounce: esperar 500ms após parar de digitar
-    searchTimeoutRef.current = setTimeout(async () => {
-      const searchValue = currentInputRef.current.trim();
-      
-      // Verificar se o valor ainda é o mesmo (evitar race conditions)
-      if (!searchValue || searchValue !== value) {
-        return;
-      }
-
-      // Evitar repetir a mesma busca.
-      if (searchValue === lastSearchRef.current) {
-        return;
-      }
-
-      lastSearchRef.current = searchValue;
-      
-      try {
-        // Não usar isLoading aqui - só durante a venda
-        setError(null);
-        
-        const accounts = await searchAccountsByName(searchValue);
-        
-        // Verificar novamente se o valor ainda é o mesmo quando a resposta chega
-        if (currentInputRef.current.trim() !== searchValue) {
-          return;
-        }
-
-        if (accounts.length > 0) {
-          setSearchResults(accounts);
-          setError(null);
-        } else {
-          setSearchResults([]);
-          setError('Nenhuma conta encontrada');
-        }
-      } catch (err: any) {
-        // Verificar novamente se o valor ainda é o mesmo
-        if (currentInputRef.current.trim() !== searchValue) {
-          return;
-        }
-        console.error('Erro ao buscar contas:', err);
-        setError(err instanceof Error ? err.message : 'Erro ao buscar contas');
-        setSearchResults([]);
-      }
-    }, 500); // 500ms de debounce
-  }
-
   const handleSelectAccount = async (account: UserAccount) => {
     setSelectedAccount(account)
-    setAccountSearch(account.name || account.email)
-    setSearchResults([])
     setError(null)
     setShowCancelCartConfirmation(false)
     if (context === 'lojinha') {
@@ -474,17 +496,93 @@ const SalesPage: React.FC = () => {
     }
   }
 
+  const handleAccountSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value
+    const normalizedEmail = rawValue.trim().toLowerCase()
+    setAccountSearch(rawValue)
+    setSelectedAccount(null)
+
+    if (context === 'lojinha') {
+      cartLoadRequestRef.current += 1
+      setIsCartLoading(false)
+      setLojinhaCartId(null)
+      setLojinhaCartVersion(null)
+      setCartItems({})
+      setCartItemSnapshots({})
+      setShowCancelCartConfirmation(false)
+    }
+
+    currentInputRef.current = normalizedEmail
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    if (!normalizedEmail) {
+      setSelectedAccount(null)
+      setError(null)
+      lastSearchRef.current = ''
+      return
+    }
+
+    // Só consulta o servidor quando o e-mail completo for digitado
+    if (!isFullEmail(normalizedEmail)) {
+      setError(null)
+      lastSearchRef.current = ''
+      return
+    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      const searchValue = currentInputRef.current
+
+      if (!searchValue || searchValue !== normalizedEmail || !isFullEmail(searchValue)) {
+        return
+      }
+
+      if (searchValue === lastSearchRef.current) {
+        return
+      }
+
+      lastSearchRef.current = searchValue
+
+      try {
+        setError(null)
+        const accounts = await searchAccountsByName(searchValue)
+
+        if (currentInputRef.current !== searchValue) {
+          return
+        }
+
+        const exactMatch = accounts.find(
+          (acc) => acc.email && acc.email.trim().toLowerCase() === searchValue
+        )
+
+        if (exactMatch) {
+          await handleSelectAccount(exactMatch)
+        } else {
+          setSelectedAccount(null)
+          setError('Nenhuma conta encontrada com este e-mail')
+        }
+      } catch (err: any) {
+        if (currentInputRef.current !== searchValue) {
+          return
+        }
+        console.error('Erro ao buscar conta:', err)
+        setError(err instanceof Error ? err.message : 'Erro ao buscar conta')
+        setSelectedAccount(null)
+      }
+    }, 400)
+  }
+
   const handleConfirmSale = async () => {
     setError(null)
-    
-    // VALIDAÇÃO: Verificar se products está carregado
+
     if (!products || !Array.isArray(products) || products.length === 0) {
       setError('Produtos ainda não foram carregados. Aguarde um momento e tente novamente.')
       showError('Erro', 'Produtos ainda não foram carregados. Aguarde um momento e tente novamente.')
       return
     }
-    
-    // VALIDAÇÃO ANTES DE FINALIZAR
+
     const items: SaleItem[] = []
     for (const [productId, quantity] of Object.entries(cartItems)) {
       const product = products.find(item => item?.id === productId)
@@ -507,29 +605,27 @@ const SalesPage: React.FC = () => {
         image: snapshot?.image_url || product?.image_url || null,
       })
     }
-      
-    // Validar que temos itens válidos
+
     if (items.length === 0) {
       setError('Nenhum item válido no carrinho')
       showError('Erro', 'Nenhum item válido no carrinho')
       return
     }
 
-    // Validar estoque ANTES de chamar a função
     if (context === 'lanchonete') {
       const stockErrors: string[] = []
       for (const item of items) {
         const product = products.find(p => p.id === item.productId)
         if (!product) {
-          stockErrors.push(`Produto "${item.productName}" não encontrado`)
+          stockErrors.push(`Produto "${item.productName}" não encontrado na sua bag`)
           continue
         }
 
         if (product.stock !== null && product.stock !== undefined) {
           if (product.stock === 0) {
-            stockErrors.push(`O produto "${product.name}" não está mais disponível em estoque`)
+            stockErrors.push(`Você não possui mais "${product.name}" na sua bag`)
           } else if (product.stock < item.quantity) {
-            stockErrors.push(`Estoque insuficiente para "${product.name}". Temos apenas ${product.stock} unidade${product.stock > 1 ? 's' : ''} disponível${product.stock > 1 ? 'eis' : ''}, mas você está tentando comprar ${item.quantity}`)
+            stockErrors.push(`Estoque insuficiente na bag para "${product.name}". Você possui ${product.stock} unidade${product.stock > 1 ? 's' : ''}, mas tentou vender ${item.quantity}`)
           }
         }
       }
@@ -539,41 +635,39 @@ const SalesPage: React.FC = () => {
           ? stockErrors[0]
           : `Não é possível finalizar a venda:\n${stockErrors.map((e, i) => `${i + 1}. ${e}`).join('\n')}`
         setError(errorMessage)
-        showError('Erro no estoque', errorMessage)
+        showError('Erro no estoque da bag', errorMessage)
         return
       }
     }
 
     setIsLoading(true)
     try {
-      // Validar que temos todos os dados necessários
       if (!selectedAccount || !selectedAccount.id) {
         throw new Error('Conta não selecionada')
       }
-      
+
       if (!items || items.length === 0) {
         throw new Error('Nenhum item no carrinho')
       }
-      
+
       await makeSale(
         selectedAccount.id,
         items,
         context,
-        context === 'lojinha' && !isCouponApplied ? '' : couponCode,
+        context === 'lanchonete' && isCouponApplied ? couponCode : '',
         discountedTotal,
         context === 'lojinha' ? lojinhaCartId || undefined : undefined,
         context === 'lojinha' ? lojinhaCartVersion ?? undefined : undefined
       )
-      
-      // Recarregar produtos para atualizar estoque
+
       await loadProducts()
-      
+
       showSuccess(
         'Venda realizada!',
-        `Venda de R$ ${total.toFixed(2)} para ${selectedAccount.name || selectedAccount.email} foi realizada com sucesso.`
+        `Venda de R$ ${discountedTotal.toFixed(2)} para ${selectedAccount.name || selectedAccount.email} foi realizada com sucesso.`
       )
       setAccountSearch('')
-      setSearchResults([])
+      lastSearchRef.current = ''
       setSelectedAccount(null)
       handleClearCart()
       setLojinhaCartId(null)
@@ -598,7 +692,7 @@ const SalesPage: React.FC = () => {
       return
     }
     if (!selectedAccount) {
-      showWarning('Conta não selecionada', 'Selecione uma conta para realizar a venda.')
+      showWarning('Conta não selecionada', 'Digite o e-mail completo de uma conta válida para realizar a venda.')
       return
     }
     if (discountedTotal > selectedAccount.balance) {
@@ -612,15 +706,20 @@ const SalesPage: React.FC = () => {
 
   const formatPrice = (price: number): string => price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+  const totalUnitsInBag = useMemo(
+    () => bagItems.reduce((sum, item) => sum + item.quantity, 0),
+    [bagItems]
+  )
+
   const config = context === 'lojinha' ? {
     title: 'Vendas · Lojinha',
     stamp: '🎫 Bilheteria',
     subtitle: 'Adicione itens ao carrinho e finalize a venda',
     icon: '🛍️'
   } : {
-    title: 'Vendas · Lanchonete',
+    title: 'Vendas Ambulantes · Lanchonete',
     stamp: '☕ Vagão-restaurante',
-    subtitle: 'Adicione itens ao carrinho e finalize o pedido',
+    subtitle: 'Venda itens da sua bag ou abasteça/devolva produtos do estoque geral',
     icon: '🍔'
   }
 
@@ -630,11 +729,39 @@ const SalesPage: React.FC = () => {
     <div className="painel p-4 md:p-8">
       {/* Header */}
       <div className="mb-6">
-        <span className="carimbo text-vagao-600 text-xs">{config.stamp}</span>
-        <h2 className="mt-3 text-2xl md:text-3xl font-display font-semibold uppercase tracking-wide text-ferro-900">
-          {config.title}
-        </h2>
-        <p className="text-base text-ferro-700">{config.subtitle}</p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <span className="carimbo text-vagao-600 text-xs">{config.stamp}</span>
+            <h2 className="mt-3 text-2xl md:text-3xl font-display font-semibold uppercase tracking-wide text-ferro-900">
+              {config.title}
+            </h2>
+            <p className="text-base text-ferro-700">{config.subtitle}</p>
+          </div>
+
+          {context === 'lanchonete' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-2 rounded-lg bg-creme-200 border border-ferro-300 text-xs font-semibold text-ferro-800">
+                🎒 Na bag: {totalUnitsInBag} {totalUnitsInBag === 1 ? 'unidade' : 'unidades'}
+              </span>
+              <button
+                type="button"
+                onClick={() => void handleOpenBagModal('take')}
+                disabled={isSaving}
+                className="px-3.5 py-2 bg-ferro-800 hover:bg-ferro-700 text-creme-100 font-display font-semibold text-sm rounded-lg transition-colors disabled:opacity-50"
+              >
+                + Abastecer Bag
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleOpenBagModal('return')}
+                disabled={isSaving || bagItems.length === 0}
+                className="px-3.5 py-2 bg-creme-200 hover:bg-creme-300 text-ferro-900 border border-ferro-300 font-display font-semibold text-sm rounded-lg transition-colors disabled:opacity-50"
+              >
+                ↩️ Devolver Sobras
+              </button>
+            </div>
+          )}
+        </div>
         <div className="trilho w-full mt-4" />
       </div>
 
@@ -646,17 +773,30 @@ const SalesPage: React.FC = () => {
             type="text"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            placeholder="🔍 Buscar produto..."
+            placeholder={context === 'lanchonete' ? '🔍 Buscar produto na sua bag...' : '🔍 Buscar produto...'}
             className="w-full"
           />
 
           {/* Grid de Produtos */}
           {paginatedProducts.length === 0 ? (
-            <div className="bg-creme-100 rounded-xl border border-ferro-200 p-8 text-center">
-              <div className="text-5xl mb-3">🚉</div>
-              <p className="text-ferro-600">
-                {searchFilter ? 'Nenhum produto encontrado.' : 'Nenhum produto disponível.'}
+            <div className="bg-creme-100 rounded-xl border border-ferro-200 p-8 text-center space-y-3">
+              <div className="text-5xl mb-2">{context === 'lanchonete' ? '🎒' : '🚉'}</div>
+              <p className="text-ferro-700 font-medium">
+                {searchFilter
+                  ? 'Nenhum produto encontrado.'
+                  : context === 'lanchonete'
+                    ? 'Sua bag está vazia no momento.'
+                    : 'Nenhum produto disponível.'}
               </p>
+              {context === 'lanchonete' && !searchFilter && (
+                <button
+                  type="button"
+                  onClick={() => void handleOpenBagModal('take')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-ferro-800 hover:bg-ferro-700 text-creme-100 font-display font-semibold text-sm rounded-lg transition-colors"
+                >
+                  + Pegar itens do estoque geral
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -674,7 +814,7 @@ const SalesPage: React.FC = () => {
                     <div className="picote-horizontal flex flex-col flex-1 p-3">
                       <h4 className="font-display font-medium text-ferro-900 text-sm leading-tight mb-1 line-clamp-2">{p.name}</h4>
                       <p className="text-xs text-ferro-600 mb-2">
-                        Estoque disponível: {p.stock} {p.stock === 1 ? 'unidade' : 'unidades'}
+                        {context === 'lanchonete' ? 'Na sua bag' : 'Estoque disponível'}: {p.stock} {p.stock === 1 ? 'unidade' : 'unidades'}
                       </p>
                       <p className="font-slab text-lg text-vagao-600 mb-3 mt-auto">R$ {formatPrice(p.price)}</p>
                       <button
@@ -750,26 +890,15 @@ const SalesPage: React.FC = () => {
 
             {/* Conta a debitar */}
             <div className="mb-3 space-y-2">
-              <label className="block text-sm font-semibold text-ferro-700 mb-1">Conta do cliente</label>
+              <label className="block text-sm font-semibold text-ferro-700 mb-1">E-mail do cliente</label>
               <input
-                type="text"
+                type="email"
                 value={accountSearch}
                 onChange={handleAccountSearchChange}
                 className="w-full"
-                placeholder="Buscar por nome ou email"
+                placeholder="Digite o e-mail completo do cliente"
+                autoComplete="off"
               />
-
-              {searchResults.length > 0 && (
-                <div className="rounded-lg border border-ferro-200 bg-creme-50">
-                  {searchResults.map((account) => (
-                    <button key={account.id} type="button" onClick={() => handleSelectAccount(account)}
-                      className="flex w-full justify-between gap-3 border-b border-ferro-100 px-3 py-2 text-left last:border-0 hover:bg-creme-200">
-                      <span><strong>{account.name || 'Sem nome'}</strong><span className="block text-xs text-ferro-600">{account.email}</span></span>
-                      <span className="font-slab">R$ {account.balance.toFixed(2)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
 
               {selectedAccount ? (
                 <div className="bg-creme-200 rounded-lg p-3 border border-ferro-200 space-y-0.5">
@@ -787,7 +916,7 @@ const SalesPage: React.FC = () => {
                 </div>
               ) : (
                 <p className={`text-sm ${error ? 'text-vagao-600' : 'text-ferro-500'}`}>
-                  {error || 'Busque e selecione uma conta'}
+                  {error || 'Digite o e-mail completo para localizar a conta'}
                 </p>
               )}
             </div>
@@ -800,7 +929,7 @@ const SalesPage: React.FC = () => {
                     ? 'Carrinho compartilhado: alterações de outros vendedores são sincronizadas automaticamente.'
                     : selectedAccount
                       ? error || 'Carrinho encerrado. Um novo será criado ao adicionar um produto.'
-                      : 'Selecione uma conta para carregar ou criar o carrinho compartilhado.'}
+                      : 'Digite o e-mail completo para carregar ou criar o carrinho compartilhado.'}
               </p>
             )}
 
@@ -862,70 +991,68 @@ const SalesPage: React.FC = () => {
                   })}
                 </div>
 
-                {/* Cupom */}
-                <div className="pt-2 border-t border-ferro-200">
-                  <label className="block text-sm font-semibold text-ferro-700 mb-1">Cupom</label>
-                  <div className="flex gap-2">
-                    <select
-                      value={couponCode}
-                      onChange={e => {
-                        setCouponCode(e.target.value)
-                        if (e.target.value) {
-                          const selectedCoupon = coupons.find(c => c.name === e.target.value)
-                          if (selectedCoupon && context === 'lanchonete' && selectedCoupon.discountAmount) {
-                            setCouponDiscountAmount(selectedCoupon.discountAmount)
-                          } else if (context === 'lojinha') {
-                            setCouponDiscountAmount(10)
+                {/* Cupom (apenas Vendas Ambulantes / Lanchonete) */}
+                {context === 'lanchonete' && (
+                  <div className="pt-2 border-t border-ferro-200">
+                    <label className="block text-sm font-semibold text-ferro-700 mb-1">Cupom</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={couponCode}
+                        onChange={e => {
+                          setCouponCode(e.target.value)
+                          if (e.target.value) {
+                            const selectedCoupon = coupons.find(c => c.name === e.target.value)
+                            if (selectedCoupon && selectedCoupon.discountAmount) {
+                              setCouponDiscountAmount(selectedCoupon.discountAmount)
+                            } else {
+                              setCouponDiscountAmount(0)
+                            }
+                          } else {
+                            setCouponDiscountAmount(0)
                           }
-                        } else {
-                          setCouponDiscountAmount(0)
-                        }
-                      }}
-                      disabled={isSaving || isCouponApplied || (context === 'lojinha' && total < 150)}
-                      className="flex-1 min-w-0 px-2 py-2 disabled:opacity-60 truncate"
-                      style={{ maxWidth: '100%' }}
-                    >
-                      <option value="">Selecione</option>
-                      {coupons && Array.isArray(coupons) && coupons.map((coupon, idx) => {
-                        const displayName = coupon.name && coupon.name.length > 20
-                          ? `${coupon.name.substring(0, 17)}...`
-                          : coupon.name
-                        return (
-                          <option key={idx} value={coupon.name} title={coupon.name}>
-                            {displayName} {coupon.discountAmount ? `(-R$ ${coupon.discountAmount.toFixed(2)})` : ''}
-                          </option>
-                        )
-                      })}
-                    </select>
-                    <button
-                      onClick={() => {
-                        if (context === 'lanchonete' && !isCouponApplied && couponCode) {
-                          setIsCouponApplied(true)
-                          const selectedCoupon = coupons.find(c => c.name === couponCode)
-                          const discount = selectedCoupon?.discountAmount || 0
-                          showSuccess('Cupom aplicado!', `Desconto de R$ ${discount.toFixed(2)}`)
-                        } else if (context === 'lojinha' && total >= 150 && !isCouponApplied) {
-                          setIsCouponApplied(true)
-                          showSuccess('Cupom aplicado!', 'Desconto de R$10,00')
-                        }
-                      }}
-                      disabled={isSaving || isCouponApplied || (context === 'lojinha' && total < 150) || !couponCode}
-                      className="px-3 py-2 bg-latao-400 hover:bg-latao-300 text-ferro-900 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed font-display font-semibold rounded-lg text-sm flex-shrink-0"
-                    >
-                      Aplicar
-                    </button>
+                        }}
+                        disabled={isSaving || isCouponApplied}
+                        className="flex-1 min-w-0 px-2 py-2 disabled:opacity-60 truncate"
+                        style={{ maxWidth: '100%' }}
+                      >
+                        <option value="">Selecione</option>
+                        {coupons && Array.isArray(coupons) && coupons.map((coupon, idx) => {
+                          const displayName = coupon.name && coupon.name.length > 20
+                            ? `${coupon.name.substring(0, 17)}...`
+                            : coupon.name
+                          return (
+                            <option key={idx} value={coupon.name} title={coupon.name}>
+                              {displayName} {coupon.discountAmount ? `(-R$ ${coupon.discountAmount.toFixed(2)})` : ''}
+                            </option>
+                          )
+                        })}
+                      </select>
+                      <button
+                        onClick={() => {
+                          if (!isCouponApplied && couponCode) {
+                            setIsCouponApplied(true)
+                            const selectedCoupon = coupons.find(c => c.name === couponCode)
+                            const discount = selectedCoupon?.discountAmount || 0
+                            showSuccess('Cupom aplicado!', `Desconto de R$ ${discount.toFixed(2)}`)
+                          }
+                        }}
+                        disabled={isSaving || isCouponApplied || !couponCode}
+                        className="px-3 py-2 bg-latao-400 hover:bg-latao-300 text-ferro-900 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed font-display font-semibold rounded-lg text-sm flex-shrink-0"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                    {isCouponApplied && (
+                      <p className="text-xs text-green-700 font-semibold mt-1">
+                        ✓ -R$ {couponDiscountAmount.toFixed(2)}
+                      </p>
+                    )}
                   </div>
-                  {context === 'lojinha' && total < 150 && <p className="text-xs text-latao-700 mt-1">Mínimo: R$150</p>}
-                  {isCouponApplied && (
-                    <p className="text-xs text-green-700 font-semibold mt-1">
-                      ✓ -R$ {couponDiscountAmount.toFixed(2)}
-                    </p>
-                  )}
-                </div>
+                )}
 
                 {/* Total */}
                 <div className="picote-horizontal pt-3 space-y-0.5">
-                  {isCouponApplied && (
+                  {context === 'lanchonete' && isCouponApplied && (
                     <>
                       <div className="flex justify-between text-sm text-ferro-700">
                         <span>Subtotal</span>
@@ -995,12 +1122,144 @@ const SalesPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Modal de Movimentação da Bag (Abastecer / Devolver) */}
+      {context === 'lanchonete' && bagModalMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-creme-50 rounded-2xl border-2 border-ferro-800 shadow-bilhete w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="p-5 border-b border-ferro-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-display font-semibold uppercase text-ferro-900">
+                  {bagModalMode === 'take' ? '🎒 Abastecer Bag' : '↩️ Devolver Sobras ao Estoque'}
+                </h3>
+                <p className="text-xs text-ferro-600 mt-0.5">
+                  {bagModalMode === 'take'
+                    ? 'Escolha quantos itens deseja retirar do estoque geral para vender.'
+                    : 'Escolha quantos itens da sua bag deseja devolver ao estoque geral.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBagModalMode(null)}
+                disabled={isBagSubmitting}
+                className="text-ferro-600 hover:text-ferro-900 font-bold text-lg px-2"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto space-y-2.5 flex-1">
+              {bagModalMode === 'take' ? (
+                generalLanchoneteProducts.filter(p => p.active !== false).length === 0 ? (
+                  <p className="text-center text-sm text-ferro-600 py-6">Nenhum produto cadastrado na lanchonete.</p>
+                ) : (
+                  generalLanchoneteProducts
+                    .filter((p): p is Product & { id: string } => p.active !== false && Boolean(p.id))
+                    .map(prod => {
+                      const availableGeneral = prod.stock ?? null
+                      const selectedQty = bagDraftQuantities[prod.id] || 0
+                      const currentInBag = bagItems.find(b => b.productId === prod.id)?.quantity || 0
+                      return (
+                        <div key={prod.id} className="flex items-center justify-between gap-3 bg-creme-100 p-3 rounded-xl border border-ferro-200">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-sm text-ferro-900 truncate">{prod.name}</p>
+                            <p className="text-xs text-ferro-600">
+                              Estoque geral: <strong>{availableGeneral === null ? 'Ilimitado' : `${availableGeneral} un.`}</strong>
+                              {currentInBag > 0 && ` · Já na bag: ${currentInBag}`}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleChangeBagDraftQty(prod.id, -1, availableGeneral)}
+                              disabled={isBagSubmitting || selectedQty === 0}
+                              className={`${smallBtn} w-8 h-8 bg-creme-200 hover:bg-creme-300 border border-ferro-300 text-ferro-900 text-base leading-none disabled:opacity-40`}
+                            >
+                              −
+                            </button>
+                            <span className="w-7 text-center font-semibold text-sm text-ferro-900">{selectedQty}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleChangeBagDraftQty(prod.id, 1, availableGeneral)}
+                              disabled={isBagSubmitting || (availableGeneral !== null && selectedQty >= availableGeneral)}
+                              className={`${smallBtn} w-8 h-8 bg-ferro-800 hover:bg-ferro-700 text-creme-100 text-base leading-none disabled:opacity-40`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })
+                )
+              ) : bagItems.length === 0 ? (
+                <p className="text-center text-sm text-ferro-600 py-6">Sua bag não possui itens para devolver.</p>
+              ) : (
+                bagItems.map(entry => {
+                  const selectedQty = bagDraftQuantities[entry.productId] || 0
+                  return (
+                    <div key={entry.productId} className="flex items-center justify-between gap-3 bg-creme-100 p-3 rounded-xl border border-ferro-200">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm text-ferro-900 truncate">{entry.product.name}</p>
+                        <p className="text-xs text-ferro-600">
+                          Na sua bag: <strong>{entry.quantity} un.</strong>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleChangeBagDraftQty(entry.productId, -1, entry.quantity)}
+                          disabled={isBagSubmitting || selectedQty === 0}
+                          className={`${smallBtn} w-8 h-8 bg-creme-200 hover:bg-creme-300 border border-ferro-300 text-ferro-900 text-base leading-none disabled:opacity-40`}
+                        >
+                          −
+                        </button>
+                        <span className="w-7 text-center font-semibold text-sm text-ferro-900">{selectedQty}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleChangeBagDraftQty(entry.productId, 1, entry.quantity)}
+                          disabled={isBagSubmitting || selectedQty >= entry.quantity}
+                          className={`${smallBtn} w-8 h-8 bg-ferro-800 hover:bg-ferro-700 text-creme-100 text-base leading-none disabled:opacity-40`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            <div className="p-4 border-t border-ferro-200 bg-creme-100 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setBagModalMode(null)}
+                disabled={isBagSubmitting}
+                className="flex-1 py-2.5 px-3 rounded-lg bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-300 font-display font-semibold text-sm disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleConfirmBagAction()}
+                disabled={isBagSubmitting || Object.keys(bagDraftQuantities).length === 0}
+                className="flex-1 py-2.5 px-3 rounded-lg bg-vagao-600 hover:bg-vagao-700 text-creme-50 font-display font-semibold text-sm disabled:opacity-50"
+              >
+                {isBagSubmitting
+                  ? 'Salvando...'
+                  : bagModalMode === 'take'
+                    ? 'Confirmar Retirada'
+                    : 'Confirmar Devolução'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Confirmação */}
       <ConfirmationModal
         isOpen={showConfirmation}
         onClose={handleCancelConfirmation}
         onConfirm={() => { setShowConfirmation(false); handleConfirmSale() }}
-        title={context === 'lojinha' ? 'Confirmar Venda' : 'Confirmar Pedido'}
+        title={context === 'lojinha' ? 'Confirmar Venda' : 'Confirmar Venda Ambulante'}
         icon={config.icon}
         account={selectedAccount}
         variant="account-transaction"
@@ -1018,8 +1277,8 @@ const SalesPage: React.FC = () => {
       {/* Modal de Loading - Bloqueia a tela durante o processamento */}
       {isLoading && (
         <TrainLoader
-          title={context === 'lojinha' ? 'Processando venda...' : 'Processando pedido...'}
-          message={`Por favor, aguarde enquanto finalizamos ${context === 'lojinha' ? 'a venda' : 'o pedido'}`}
+          title={context === 'lojinha' ? 'Processando venda...' : 'Processando venda ambulante...'}
+          message={`Por favor, aguarde enquanto finalizamos ${context === 'lojinha' ? 'a venda' : 'a venda ambulante'}`}
         />
       )}
     </div>

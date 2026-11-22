@@ -43,12 +43,21 @@ const LanchonetePage = () => {
     },
     {
       icon: '🍽️',
-      title: 'Venda no Balcão',
+      title: 'Vendas Ambulantes',
       description: 'Registrar venda debitando a conta do cliente',
       path: '/lanchonete/select',
       color: 'from-latao-400 to-latao-600',
       gradient: 'border-latao-300',
       canAccess: canSellLanchonete
+    },
+    {
+      icon: '🎒',
+      title: 'Controle dos Ambulantes',
+      description: 'Visualizar itens nas bags e registrar devolução de sobras',
+      path: '/lanchonete/ambulantes',
+      color: 'from-ferro-700 to-ferro-900',
+      gradient: 'border-ferro-300',
+      canAccess: canManageProductsLanchonete
     },
     {
       icon: '📊',
