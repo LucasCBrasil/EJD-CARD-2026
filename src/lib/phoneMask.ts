@@ -71,7 +71,8 @@ export function toNationalDigits(value: string): string | null {
     if (!digits.startsWith('55')) return null
     digits = digits.slice(2)
   }
-  // 0 + DDD ou 0 + operadora + DDD. DDD nunca começa com 0.
-  digits = digits.replace(/^0(?:\d{2})?(?=\d{10,11}$)/, '')
-  return /^[1-9]{2}\d{8,9}$/.test(digits) ? digits : null
+  // 0 + DDD ou 0 + operadora + DDD. DDD e código de operadora nunca começam com 0 ("00" é discagem internacional).
+  digits = digits.replace(/^0(?:[1-9]\d)?(?=\d{10,11}$)/, '')
+  // DDD + celular (9 + 8 dígitos) ou fixo (8 dígitos começando de 2 a 8). Recusa "55 11 98765-432", digitado sem o "+".
+  return /^[1-9]{2}(?:9\d{8}|[2-8]\d{7})$/.test(digits) ? digits : null
 }
