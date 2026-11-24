@@ -9,18 +9,22 @@ SELECT no_plan();
 INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local', '{"name":"Usuario Um"}'),
   ('22222222-2222-2222-2222-222222222222', 'u2@test.local', '{"name":"Usuario Dois"}'),
-  ('33333333-3333-3333-3333-333333333333', 'staff@test.local', '{"name":"Equipe"}');
+  ('33333333-3333-3333-3333-333333333333', 'staff@test.local', '{"name":"Equipe"}'),
+  ('44444444-4444-4444-4444-444444444444', 'combo-buyer@test.local', '{"name":"Comprador de combo"}');
 
 UPDATE public.app_users SET balance = 50.00 WHERE id = '11111111-1111-1111-1111-111111111111';
 UPDATE public.app_users SET balance = 5.00 WHERE id = '22222222-2222-2222-2222-222222222222';
 UPDATE public.app_users SET role = 'lanchonete' WHERE id = '33333333-3333-3333-3333-333333333333';
+UPDATE public.app_users SET balance = 100.00 WHERE id = '44444444-4444-4444-4444-444444444444';
 
 INSERT INTO public.products (id, name, price, category, stock, active) VALUES
   ('aaaaaaaa-0000-0000-0000-000000000001', 'Coxinha teste', 5.00, 'lanchonete', 10, TRUE),
   ('aaaaaaaa-0000-0000-0000-000000000002', 'Refri teste', 4.50, 'lanchonete', NULL, TRUE),
   ('aaaaaaaa-0000-0000-0000-000000000003', 'Inativo teste', 3.00, 'lanchonete', 10, FALSE),
   ('aaaaaaaa-0000-0000-0000-000000000004', 'Camiseta teste', 20.00, 'lojinha', 10, TRUE),
-  ('aaaaaaaa-0000-0000-0000-000000000005', 'Bolo teste', 6.00, 'lanchonete', 1, TRUE);
+  ('aaaaaaaa-0000-0000-0000-000000000005', 'Bolo teste', 6.00, 'lanchonete', 1, TRUE),
+  ('aaaaaaaa-0000-0000-0000-000000000006', 'Pão combo teste', 3.00, 'lanchonete', 3, TRUE),
+  ('aaaaaaaa-0000-0000-0000-000000000007', 'Suco combo teste', 5.00, 'lanchonete', 5, TRUE);
 
 -- ---------------------------------------------------------------------------
 -- Privilegios: so service_role executa
@@ -35,6 +39,8 @@ SELECT ok(NOT has_function_privilege('authenticated', 'public.cancel_lanchonete_
   'authenticated nao executa cancel_lanchonete_order');
 SELECT ok(has_function_privilege('service_role', 'public.create_lanchonete_self_order(uuid,jsonb,uuid)', 'EXECUTE'),
   'service_role executa create_lanchonete_self_order');
+SELECT ok(has_table_privilege('service_role', 'public.product_combo_items', 'SELECT'),
+  'service_role pode ler os componentes dos combos no cardapio');
 
 -- ---------------------------------------------------------------------------
 -- Feature flag
@@ -297,6 +303,77 @@ SELECT throws_ok(
   format($$SELECT * FROM public.cancel_lanchonete_order(%L, '33333333-3333-3333-3333-333333333333', TRUE)$$,
     (SELECT sale_id FROM order3)),
   'P0001', 'INVALID_STATUS_TRANSITION', 'pedido entregue nao pode ser cancelado');
+
+-- ---------------------------------------------------------------------------
+-- Combos consomem e devolvem o estoque dos componentes
+-- ---------------------------------------------------------------------------
+CREATE TEMP TABLE combo1 AS
+SELECT id FROM public.create_lanchonete_combo(
+  'Combo teste',
+  6.50,
+  '[{"productId":"aaaaaaaa-0000-0000-0000-000000000006","quantity":1},
+    {"productId":"aaaaaaaa-0000-0000-0000-000000000007","quantity":1}]'
+);
+
+SELECT is((SELECT is_combo FROM public.products WHERE id = (SELECT id FROM combo1)), TRUE,
+  'combo e gravado como produto do cardapio');
+SELECT is(
+  (SELECT LEAST(MIN(product.stock / component.quantity), 999)::INTEGER
+   FROM public.product_combo_items AS component
+   JOIN public.products AS product ON product.id = component.component_product_id
+   WHERE component.combo_id = (SELECT id FROM combo1)),
+  3, 'estoque inicial do combo e limitado pelo componente com menor disponibilidade');
+
+SELECT throws_ok(
+  $$SELECT * FROM public.create_lanchonete_combo(
+    'Combo com combo',
+    10.00,
+    jsonb_build_array(
+      jsonb_build_object('productId', (SELECT id FROM combo1), 'quantity', 1),
+      jsonb_build_object('productId', 'aaaaaaaa-0000-0000-0000-000000000006', 'quantity', 1)
+    )
+  )$$,
+  'P0001', 'COMBO_COMPONENT_UNAVAILABLE', 'nao permite incluir outro combo como componente');
+
+SELECT throws_ok(
+  format(
+    $$SELECT * FROM public.create_lanchonete_self_order(
+      '44444444-4444-4444-4444-444444444444',
+      '[{"productId":"%s","quantity":4}]',
+      gen_random_uuid()
+    )$$,
+    (SELECT id FROM combo1)
+  ),
+  'P0001', 'OUT_OF_STOCK', 'compra acima do menor estoque dos componentes e bloqueada');
+SELECT is((SELECT stock FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000006'),
+  3, 'tentativa indisponivel nao baixa estoque');
+
+CREATE TEMP TABLE combo_order AS
+SELECT * FROM public.create_lanchonete_self_order(
+  '44444444-4444-4444-4444-444444444444',
+  jsonb_build_array(jsonb_build_object('productId', (SELECT id FROM combo1), 'quantity', 2)),
+  gen_random_uuid()
+);
+SELECT is((SELECT total FROM combo_order), 13.00::NUMERIC, 'pedido cobra o valor cadastrado para o combo');
+SELECT is((SELECT stock FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000006'),
+  1, 'compra baixa o estoque do primeiro componente');
+SELECT is((SELECT stock FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000007'),
+  3, 'compra baixa o estoque do segundo componente');
+SELECT is((SELECT COUNT(*)::INTEGER
+  FROM public.sale_item_components AS component
+  JOIN public.sale_items AS item ON item.id = component.sale_item_id
+  WHERE item.sale_id = (SELECT sale_id FROM combo_order)),
+  2, 'pedido registra a composicao consumida para estorno');
+
+SELECT * FROM public.cancel_lanchonete_order(
+  (SELECT sale_id FROM combo_order),
+  '44444444-4444-4444-4444-444444444444',
+  FALSE
+);
+SELECT is((SELECT stock FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000006'),
+  3, 'cancelamento devolve estoque do primeiro componente');
+SELECT is((SELECT stock FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000007'),
+  5, 'cancelamento devolve estoque do segundo componente');
 
 SELECT * FROM finish();
 ROLLBACK;

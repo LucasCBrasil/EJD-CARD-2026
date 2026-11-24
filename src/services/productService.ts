@@ -8,7 +8,7 @@ export type Product = {
   id: string | null // alterado de number para string
   name: string
   price: number
-  stock: number
+  stock: number | null
   image?: string | null
   image_url?: string | null
   category?: string | null
@@ -33,11 +33,13 @@ export const productService = {
         price: parseFloat(product.price) || 0,
         category: product.category || category,
         description: product.description || null,
-        stock: product.stock || 0,
+        stock: product.stock == null ? null : Number(product.stock),
         active: product.active !== false,
         createdAt: product.created_at,
         image_url: product.image_url || product.image || null,
         image: product.image_url || product.image || null,
+        is_combo: product.is_combo === true,
+        combo_items: product.combo_items || [],
       } as Product))
 
       // Ordenar por nome
@@ -92,11 +94,13 @@ export const productService = {
         price: parseFloat(product.price) || 0,
         category: product.category || category,
         description: product.description || null,
-        stock: product.stock || 0,
+        stock: product.stock == null ? null : Number(product.stock),
         active: product.active !== false,
         createdAt: product.created_at,
         image_url: product.image_url || product.image || null,
         image: product.image_url || product.image || null,
+        is_combo: product.is_combo === true,
+        combo_items: product.combo_items || [],
       } as Product
     } catch (err) {
       console.error('productService.getProductById unexpected error:', err)
@@ -160,6 +164,10 @@ export const productService = {
   // ✅ Agora usa Edge Function via api-client
   async saveProduct(category: ProductCategory, product: Product, newImageFile: File | null, existingImageUrl: string | null | undefined): Promise<Product | null> {
     try {
+      if (product.is_combo) {
+        throw new Error('Combos devem ser gerenciados pela tela de combos.')
+      }
+
       // Handle image upload if file exists
       let imageUrl = existingImageUrl;
       if (newImageFile instanceof File) {
@@ -202,7 +210,7 @@ export const productService = {
         price: parseFloat(savedProduct.price) || 0,
         category: savedProduct.category || category,
         description: savedProduct.description || null,
-        stock: savedProduct.stock || 0,
+        stock: savedProduct.stock == null ? null : Number(savedProduct.stock),
         active: savedProduct.active !== false,
         createdAt: savedProduct.created_at,
         image_url: savedProduct.image_url || savedProduct.image || null,

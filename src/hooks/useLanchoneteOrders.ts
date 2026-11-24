@@ -38,6 +38,7 @@ export interface MenuProduct {
   price: number
   stock: number | null // null = sem controle de estoque
   imageUrl: string | null
+  comboItems: { productId: string; name: string; quantity: number }[]
 }
 
 export function useSelfOrderEnabled() {
@@ -65,6 +66,13 @@ export function useLanchoneteMenu() {
           price: Number(product.price) || 0,
           stock: product.stock === null || product.stock === undefined ? null : Number(product.stock),
           imageUrl: product.image_url || product.image || null,
+          comboItems: Array.isArray(product.combo_items)
+            ? product.combo_items.map((item: any) => ({
+              productId: item.product_id,
+              name: item.name,
+              quantity: Number(item.quantity),
+            }))
+            : [],
         }))
         .sort((a, b) => a.name.localeCompare(b.name))
     },

@@ -55,4 +55,7 @@ api.listTransactions(cardId?)
 
 // Products (admin)
 api.manageProducts(data, method)
+api.createLanchoneteCombo({ name, price, components }) // Apenas admin e coordLanchonete
 ```
+
+Os combos entram no cardápio com estoque calculado pela disponibilidade dos itens componentes.

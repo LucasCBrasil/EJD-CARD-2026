@@ -257,6 +257,16 @@ export const api = {
       body: data,
     }),
 
+  createLanchoneteCombo: (data: {
+    name: string
+    price: number
+    components: { productId: string; quantity: number }[]
+  }) =>
+    request<ApiResult<unknown>>('manage-lanchonete-combos', {
+      method: 'POST',
+      body: data,
+    }),
+
   // Coupons
   listCoupons: (category?: string) =>
     request<{ success: boolean; data: Array<{ name: string; discountAmount?: number }> }>('list-coupons', {

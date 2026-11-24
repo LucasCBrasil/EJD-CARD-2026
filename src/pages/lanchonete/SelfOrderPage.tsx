@@ -116,18 +116,24 @@ const SelfOrderPage: React.FC = () => {
       case 'OUT_OF_STOCK': {
         const productId = (error as LanchoneteOrderError).details?.productId
         const available = (error as LanchoneteOrderError).details?.available
-        setCart((prev) => {
-          const next = { ...prev }
-          if (code === 'OUT_OF_STOCK' && typeof available === 'number' && available > 0) next[productId] = available
-          else delete next[productId]
-          return next
-        })
+        const isCartLine = typeof productId === 'string'
+          && Object.prototype.hasOwnProperty.call(cart, productId)
+        if (isCartLine) {
+          setCart((prev) => {
+            const next = { ...prev }
+            if (code === 'OUT_OF_STOCK' && typeof available === 'number' && available > 0) next[productId] = available
+            else delete next[productId]
+            return next
+          })
+        }
         void menu.refetch()
         showWarning(
           code === 'OUT_OF_STOCK' ? 'Estoque acabou' : 'Item indisponível',
-          code === 'OUT_OF_STOCK' && available > 0
+          isCartLine && code === 'OUT_OF_STOCK' && available > 0
             ? `${productName || 'Um item'} tem só ${available} unidade(s). Ajustamos seu carrinho, confira e confirme de novo.`
-            : `${productName || 'Um item'} saiu do cardápio e foi removido do carrinho. Confira e confirme de novo.`,
+            : code === 'OUT_OF_STOCK'
+              ? 'Um dos itens do pedido, possivelmente de um combo, ficou sem estoque. Atualizamos o cardápio; confira a disponibilidade e tente novamente.'
+              : `${productName || 'Um item'} saiu do cardápio e foi removido do carrinho. Confira e confirme de novo.`,
         )
         return
       }
@@ -285,10 +291,17 @@ const SelfOrderPage: React.FC = () => {
                 </div>
                 <div className="picote-horizontal flex flex-col flex-1 p-3">
                   <h3 className="font-display font-medium text-ferro-900 text-sm leading-tight mb-1 line-clamp-2">{product.name}</h3>
-                  <p className="font-slab text-lg text-vagao-600 mt-auto">R$ {formatPrice(product.price)}</p>
-                  {product.stock !== null && product.stock > 0 && product.stock <= 5 && (
-                    <p className="text-xs text-latao-700 mb-1">Últimas {product.stock} unidades</p>
+                  {product.comboItems.length > 0 && (
+                    <p className="mb-1 text-xs text-ferro-600">
+                      {product.comboItems.map((item) => `${item.quantity}× ${item.name}`).join(' + ')}
+                    </p>
                   )}
+                  <p className="font-slab text-lg text-vagao-600 mt-auto">R$ {formatPrice(product.price)}</p>
+                  <p className={`text-xs mb-1 ${
+                    product.stock !== null && product.stock <= 5 ? 'text-latao-700' : 'text-ferro-600'
+                  }`}>
+                    Em estoque: {product.stock === null ? 'sem limite' : product.stock}
+                  </p>
                   {soldOut ? (
                     <p className="mt-2 text-center font-display text-sm uppercase tracking-wide text-ferro-500 py-2">Esgotado</p>
                   ) : quantity === 0 ? (
