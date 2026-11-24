@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
     const { data: products, error } = await query
 
     if (error) {
+      console.error('Error listing products:', error.message)
       return new Response(
         JSON.stringify({
           success: false,
@@ -68,6 +69,69 @@ Deno.serve(async (req) => {
           headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
         }
       )
+    }
+
+    const combos = (products || []).filter((product) => product.is_combo)
+    if (combos.length > 0) {
+      const { data: comboItems, error: comboItemsError } = await supabase
+        .from('product_combo_items')
+        .select('combo_id, component_product_id, quantity')
+        .in('combo_id', combos.map((combo) => combo.id))
+
+      if (comboItemsError) {
+        console.error('Error listing combo components:', {
+          code: comboItemsError.code,
+          message: comboItemsError.message,
+          details: comboItemsError.details,
+          hint: comboItemsError.hint,
+        })
+        return new Response(
+          JSON.stringify({ success: false, error: 'Erro ao buscar composição dos combos' } as ApiResponse),
+          { status: 500, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const componentIds = [...new Set((comboItems || []).map((item) => item.component_product_id))]
+      const { data: components, error: componentsError } = componentIds.length > 0
+        ? await supabase.from('products').select('id, name, stock, active').in('id', componentIds)
+        : { data: [], error: null }
+
+      if (componentsError) {
+        console.error('Error listing combo inventory:', componentsError.message)
+        return new Response(
+          JSON.stringify({ success: false, error: 'Erro ao buscar estoque dos combos' } as ApiResponse),
+          { status: 500, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const componentById = new Map((components || []).map((component) => [component.id, component]))
+      const itemsByCombo = new Map<string, typeof comboItems>()
+      for (const item of comboItems || []) {
+        const items = itemsByCombo.get(item.combo_id) || []
+        items.push(item)
+        itemsByCombo.set(item.combo_id, items)
+      }
+
+      for (const combo of combos) {
+        const items = itemsByCombo.get(combo.id) || []
+        const availability = items.map((item) => {
+          const component = componentById.get(item.component_product_id)
+          if (!component || !component.active) return 0
+          return component.stock === null ? null : Math.floor(component.stock / item.quantity)
+        })
+        combo.stock = availability.length === 0
+          ? 0
+          : availability.includes(0)
+            ? 0
+            : availability.every((stock) => stock === null)
+              ? null
+              : Math.min(...availability.filter((stock): stock is number => stock !== null))
+        combo.combo_items = items.map((item) => ({
+          product_id: item.component_product_id,
+          name: componentById.get(item.component_product_id)?.name || 'Item indisponível',
+          quantity: item.quantity,
+        }))
+      }
     }
 
     return new Response(

@@ -417,6 +417,34 @@ Deno.serve(async (req) => {
           )
         }
 
+        const { data: currentProduct, error: currentProductError } = await supabase
+          .from('products')
+          .select('is_combo')
+          .eq('id', id)
+          .maybeSingle()
+
+        if (currentProductError) {
+          console.error('Error checking product before update:', currentProductError.message)
+          return new Response(
+            JSON.stringify({ success: false, error: 'Erro ao verificar produto' } as ApiResponse),
+            { status: 500, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+          )
+        }
+
+        if (!currentProduct) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Produto não encontrado' } as ApiResponse),
+            { status: 404, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+          )
+        }
+
+        if (currentProduct.is_combo) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Combos devem ser gerenciados pela tela de combos.' } as ApiResponse),
+            { status: 400, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+          )
+        }
+
         // Montar objeto de atualização (apenas campos fornecidos)
         const updates: any = {
           updated_at: new Date().toISOString()

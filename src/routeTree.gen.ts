@@ -31,6 +31,7 @@ import { Route as LayoutLanchoneteSelectRouteImport } from './routes/_layout/lan
 import { Route as LayoutLanchonetePedirRouteImport } from './routes/_layout/lanchonete/pedir'
 import { Route as LayoutLanchoneteMeusPedidosRouteImport } from './routes/_layout/lanchonete/meus-pedidos'
 import { Route as LayoutLanchoneteFilaRouteImport } from './routes/_layout/lanchonete/fila'
+import { Route as LayoutLanchoneteCombosRouteImport } from './routes/_layout/lanchonete/combos'
 import { Route as LayoutLanchoneteAmbulantesRouteImport } from './routes/_layout/lanchonete/ambulantes'
 import { Route as LayoutHistoricoLojinhaRouteImport } from './routes/_layout/historico/lojinha'
 import { Route as LayoutHistoricoLanchoneteRouteImport } from './routes/_layout/historico/lanchonete'
@@ -154,6 +155,11 @@ const LayoutLanchoneteFilaRoute = LayoutLanchoneteFilaRouteImport.update({
   path: '/lanchonete/fila',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutLanchoneteCombosRoute = LayoutLanchoneteCombosRouteImport.update({
+  id: '/lanchonete/combos',
+  path: '/lanchonete/combos',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutLanchoneteAmbulantesRoute =
   LayoutLanchoneteAmbulantesRouteImport.update({
     id: '/lanchonete/ambulantes',
@@ -239,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/historico/lanchonete': typeof LayoutHistoricoLanchoneteRoute
   '/historico/lojinha': typeof LayoutHistoricoLojinhaRoute
   '/lanchonete/ambulantes': typeof LayoutLanchoneteAmbulantesRoute
+  '/lanchonete/combos': typeof LayoutLanchoneteCombosRoute
   '/lanchonete/fila': typeof LayoutLanchoneteFilaRoute
   '/lanchonete/meus-pedidos': typeof LayoutLanchoneteMeusPedidosRoute
   '/lanchonete/pedir': typeof LayoutLanchonetePedirRoute
@@ -274,6 +281,7 @@ export interface FileRoutesByTo {
   '/historico/lanchonete': typeof LayoutHistoricoLanchoneteRoute
   '/historico/lojinha': typeof LayoutHistoricoLojinhaRoute
   '/lanchonete/ambulantes': typeof LayoutLanchoneteAmbulantesRoute
+  '/lanchonete/combos': typeof LayoutLanchoneteCombosRoute
   '/lanchonete/fila': typeof LayoutLanchoneteFilaRoute
   '/lanchonete/meus-pedidos': typeof LayoutLanchoneteMeusPedidosRoute
   '/lanchonete/pedir': typeof LayoutLanchonetePedirRoute
@@ -311,6 +319,7 @@ export interface FileRoutesById {
   '/_layout/historico/lanchonete': typeof LayoutHistoricoLanchoneteRoute
   '/_layout/historico/lojinha': typeof LayoutHistoricoLojinhaRoute
   '/_layout/lanchonete/ambulantes': typeof LayoutLanchoneteAmbulantesRoute
+  '/_layout/lanchonete/combos': typeof LayoutLanchoneteCombosRoute
   '/_layout/lanchonete/fila': typeof LayoutLanchoneteFilaRoute
   '/_layout/lanchonete/meus-pedidos': typeof LayoutLanchoneteMeusPedidosRoute
   '/_layout/lanchonete/pedir': typeof LayoutLanchonetePedirRoute
@@ -348,6 +357,7 @@ export interface FileRouteTypes {
     | '/historico/lanchonete'
     | '/historico/lojinha'
     | '/lanchonete/ambulantes'
+    | '/lanchonete/combos'
     | '/lanchonete/fila'
     | '/lanchonete/meus-pedidos'
     | '/lanchonete/pedir'
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/historico/lanchonete'
     | '/historico/lojinha'
     | '/lanchonete/ambulantes'
+    | '/lanchonete/combos'
     | '/lanchonete/fila'
     | '/lanchonete/meus-pedidos'
     | '/lanchonete/pedir'
@@ -419,6 +430,7 @@ export interface FileRouteTypes {
     | '/_layout/historico/lanchonete'
     | '/_layout/historico/lojinha'
     | '/_layout/lanchonete/ambulantes'
+    | '/_layout/lanchonete/combos'
     | '/_layout/lanchonete/fila'
     | '/_layout/lanchonete/meus-pedidos'
     | '/_layout/lanchonete/pedir'
@@ -600,6 +612,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLanchoneteFilaRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/lanchonete/combos': {
+      id: '/_layout/lanchonete/combos'
+      path: '/lanchonete/combos'
+      fullPath: '/lanchonete/combos'
+      preLoaderRoute: typeof LayoutLanchoneteCombosRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/lanchonete/ambulantes': {
       id: '/_layout/lanchonete/ambulantes'
       path: '/lanchonete/ambulantes'
@@ -702,6 +721,7 @@ interface LayoutRouteChildren {
   LayoutHistoricoLanchoneteRoute: typeof LayoutHistoricoLanchoneteRoute
   LayoutHistoricoLojinhaRoute: typeof LayoutHistoricoLojinhaRoute
   LayoutLanchoneteAmbulantesRoute: typeof LayoutLanchoneteAmbulantesRoute
+  LayoutLanchoneteCombosRoute: typeof LayoutLanchoneteCombosRoute
   LayoutLanchoneteFilaRoute: typeof LayoutLanchoneteFilaRoute
   LayoutLanchoneteMeusPedidosRoute: typeof LayoutLanchoneteMeusPedidosRoute
   LayoutLanchonetePedirRoute: typeof LayoutLanchonetePedirRoute
@@ -737,6 +757,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutHistoricoLanchoneteRoute: LayoutHistoricoLanchoneteRoute,
   LayoutHistoricoLojinhaRoute: LayoutHistoricoLojinhaRoute,
   LayoutLanchoneteAmbulantesRoute: LayoutLanchoneteAmbulantesRoute,
+  LayoutLanchoneteCombosRoute: LayoutLanchoneteCombosRoute,
   LayoutLanchoneteFilaRoute: LayoutLanchoneteFilaRoute,
   LayoutLanchoneteMeusPedidosRoute: LayoutLanchoneteMeusPedidosRoute,
   LayoutLanchonetePedirRoute: LayoutLanchonetePedirRoute,

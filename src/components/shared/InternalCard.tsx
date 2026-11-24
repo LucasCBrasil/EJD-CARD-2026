@@ -32,9 +32,18 @@ const InternalCard: React.FC<InternalCardProps> = ({
       type="button"
     >
       <div className={`flex items-center justify-center w-20 md:w-24 shrink-0 rounded-l-xl bg-gradient-to-br ${color}`}>
-        <span className="text-4xl md:text-5xl transform group-hover:scale-110 transition-transform duration-300">
-          {icon}
-        </span>
+        {icon.startsWith('/') ? (
+          <img
+            src={icon}
+            alt=""
+            aria-hidden="true"
+            className="h-16 w-16 object-contain transform group-hover:scale-110 transition-transform duration-300"
+          />
+        ) : (
+          <span className="text-4xl md:text-5xl transform group-hover:scale-110 transition-transform duration-300">
+            {icon}
+          </span>
+        )}
       </div>
       <div className="picote-vertical flex-1 px-5 py-5 md:py-6">
         <h3 className="text-lg md:text-xl font-display font-semibold text-ferro-900 uppercase tracking-wide mb-1">

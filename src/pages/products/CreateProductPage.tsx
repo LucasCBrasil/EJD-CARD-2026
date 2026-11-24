@@ -57,6 +57,12 @@ const CreateProductPage = () => {
             return
           }
 
+          if (data.is_combo) {
+            showWarning('Combo', 'Combos devem ser gerenciados pela tela de combos.')
+            safeNavigate(`${basePath}/products`)
+            return
+          }
+
           setFormData({
             name: data.name ?? '',
             price: (Number(data.price) || 0).toFixed(2).replace('.', ','),
@@ -77,7 +83,7 @@ const CreateProductPage = () => {
 
       fetchProduct()
     }
-  }, [isEditing, id, context, navigate, showError])
+  }, [isEditing, id, context, navigate, showError, showWarning])
 
   // Configurações específicas por contexto
   const config = {

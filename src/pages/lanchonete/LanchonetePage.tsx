@@ -69,6 +69,15 @@ const LanchonetePage = () => {
       canAccess: canViewSalesHistoryLanchonete
     },
     {
+      icon: '/images/combo-lanchonete.png',
+      title: 'Criar Combo',
+      description: 'Combine itens cadastrados e defina um preço promocional',
+      path: '/lanchonete/combos',
+      color: 'from-latao-400 to-latao-600',
+      gradient: 'border-latao-300',
+      canAccess: canManageProductsLanchonete
+    },
+    {
       icon: '🥘',
       title: 'Cadastrar Produto',
       description: 'Adicionar novo item ao cardápio',

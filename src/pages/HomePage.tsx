@@ -242,6 +242,13 @@ const HomePage: React.FC = () => {
             canAccess: canManageProductsLanchonete
           },
           {
+            icon: '/images/combo-lanchonete.png',
+            title: 'Cadastrar Combo',
+            description: 'Adicionar combo de itens ao cardápio',
+            path: '/lanchonete/combos',
+            canAccess: canManageProductsLanchonete
+          },
+          {
             icon: '📋',
             title: 'Listar Produtos',
             description: 'Gerenciar cardápio',
@@ -354,9 +361,18 @@ const HomePage: React.FC = () => {
                   aria-expanded={hasMultipleSubMenus ? isExpanded : undefined}
                 >
                   <div className={`${card.accent} w-20 md:w-24 shrink-0 rounded-l-xl flex flex-col items-center justify-center gap-2`}>
-                    <span className="text-4xl md:text-5xl drop-shadow-sm transform group-hover:scale-110 transition-transform duration-300">
-                      {card.icon}
-                    </span>
+                    {card.icon.startsWith('/') ? (
+                      <img
+                        src={card.icon}
+                        alt=""
+                        aria-hidden="true"
+                        className="h-16 w-16 object-contain drop-shadow-sm transform group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <span className="text-4xl md:text-5xl drop-shadow-sm transform group-hover:scale-110 transition-transform duration-300">
+                        {card.icon}
+                      </span>
+                    )}
                     <span className="font-ticket text-xs text-creme-100/90 tracking-widest">
                       Nº {String(index + 1).padStart(2, '0')}
                     </span>
@@ -392,7 +408,16 @@ const HomePage: React.FC = () => {
                       >
                         <div className={`${card.accent} w-2 shrink-0`} />
                         <div className="flex items-center gap-3 flex-1 px-4 py-3">
-                          <span className="text-2xl md:text-3xl">{subMenu.icon}</span>
+                          {subMenu.icon.startsWith('/') ? (
+                            <img
+                              src={subMenu.icon}
+                              alt=""
+                              aria-hidden="true"
+                              className="h-10 w-10 object-contain"
+                            />
+                          ) : (
+                            <span className="text-2xl md:text-3xl">{subMenu.icon}</span>
+                          )}
                           <div className="flex-1">
                             <h4 className="text-base md:text-lg font-display font-medium text-ferro-900 leading-tight">
                               {subMenu.title}

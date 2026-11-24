@@ -190,7 +190,7 @@ const ListProductsPage = () => {
             {currentProducts.map((product, index) => {
               const productKey = product.id ?? `product-${index}`
               const src = product.image_url || (product as any).image || getDefaultImage(context)
-              const stockColor = product.stock > 10 ? 'text-green-700' : product.stock > 5 ? 'text-latao-700' : 'text-vagao-600'
+              const stockColor = (product.stock ?? 0) > 10 ? 'text-green-700' : (product.stock ?? 0) > 5 ? 'text-latao-700' : 'text-vagao-600'
               return (
                 <div
                   key={productKey}
@@ -217,20 +217,27 @@ const ListProductsPage = () => {
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-ferro-500">Quantidade</span>
+                        <span className="text-sm text-ferro-500">{product.is_combo ? 'Estoque do combo' : 'Quantidade'}</span>
                         <span className={`font-ticket font-bold ${stockColor}`}>
-                          {product.stock}
+                          {product.stock === null ? 'Sem limite' : product.stock}
                         </span>
                       </div>
                     </div>
+                    {product.is_combo && (
+                      <p className="mb-4 text-xs text-ferro-600">
+                        Combo: {(product.combo_items || []).map((item: any) => `${item.quantity}× ${item.name}`).join(' + ')}
+                      </p>
+                    )}
 
                     {/* Botões de Ação */}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleEdit(product)}
+                        onClick={() => product.is_combo
+                          ? showInfo('Combo', 'A edição de combos ainda não está disponível.')
+                          : handleEdit(product)}
                         className="flex-1 px-3 py-2 rounded-lg font-display font-semibold tracking-wide transition-colors bg-ferro-800 hover:bg-ferro-700 text-creme-200"
                       >
-                        Editar
+                        {product.is_combo ? 'Combo' : 'Editar'}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(product)}
@@ -300,7 +307,7 @@ const ListProductsPage = () => {
           id: String(productToDelete.id),
           name: productToDelete.name,
           price: productToDelete.price,
-          stock: productToDelete.stock,
+          stock: productToDelete.stock ?? 0,
           description: productToDelete.description,
           image_url: productToDelete.image_url || null
         } : null}
