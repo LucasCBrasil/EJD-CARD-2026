@@ -3,22 +3,30 @@
 
 export const BRAZIL_DDI = '55'
 
+// `national`: o maior número nacional do país, sem o 0 de discagem. Serve para reconhecer um DDI digitado de novo no número.
 export const DDI_OPTIONS = [
-  { ddi: '55', label: '🇧🇷 +55' },
-  { ddi: '351', label: '🇵🇹 +351' },
-  { ddi: '1', label: '🇺🇸 +1' },
-  { ddi: '54', label: '🇦🇷 +54' },
-  { ddi: '595', label: '🇵🇾 +595' },
-  { ddi: '598', label: '🇺🇾 +598' },
-  { ddi: '56', label: '🇨🇱 +56' },
-  { ddi: '34', label: '🇪🇸 +34' },
-  { ddi: '39', label: '🇮🇹 +39' },
-  { ddi: '44', label: '🇬🇧 +44' },
-  { ddi: '49', label: '🇩🇪 +49' },
-  { ddi: '33', label: '🇫🇷 +33' },
+  { ddi: '55', national: 11, label: '🇧🇷 +55' },
+  { ddi: '351', national: 9, label: '🇵🇹 +351' },
+  { ddi: '1', national: 10, label: '🇺🇸 +1' },
+  { ddi: '54', national: 11, label: '🇦🇷 +54' },
+  { ddi: '595', national: 9, label: '🇵🇾 +595' },
+  { ddi: '598', national: 8, label: '🇺🇾 +598' },
+  { ddi: '56', national: 9, label: '🇨🇱 +56' },
+  { ddi: '34', national: 9, label: '🇪🇸 +34' },
+  { ddi: '39', national: 11, label: '🇮🇹 +39' },
+  { ddi: '44', national: 10, label: '🇬🇧 +44' },
+  { ddi: '49', national: 11, label: '🇩🇪 +49' },
+  { ddi: '33', national: 9, label: '🇫🇷 +33' },
 ]
 
 const onlyDigits = (value: string) => value.replace(/\D/g, '')
+
+// O número só tem o DDI repetido na frente quando passa do tamanho máximo do país. Assim um celular
+// italiano 393… ou um fixo alemão 491… (que começam com os dígitos do próprio DDI) não perdem dígitos.
+function stripRepeatedDdi(ddi: string, digits: string) {
+  const max = DDI_OPTIONS.find(option => option.ddi === ddi)?.national ?? 15 - ddi.length
+  return ddi && digits.startsWith(ddi) && digits.length > max ? digits.slice(ddi.length) : digits
+}
 
 export const isValidDdi = (ddi: string) => /^[1-9]\d{0,2}$/.test(ddi)
 
@@ -58,8 +66,8 @@ function stripPastedPrefixes(ddi: string, digits: string, hasPlus: boolean): { d
   } else if (target === BRAZIL_DDI) {
     d = d.replace(/^0+/, '')
     if (d.length > 11 && d.startsWith(BRAZIL_DDI)) d = d.slice(2)
-  } else if (d.startsWith(target) && d.length - target.length >= 8) {
-    d = d.slice(target.length)
+  } else {
+    d = stripRepeatedDdi(target, d)
   }
   d = stripTrunkPrefix(target, d)
   // 0 + operadora (2 dígitos) + DDD + número: "0 21 11 98765-4321".
@@ -100,7 +108,7 @@ export function applyPhoneEdit(selectedDdi: string, previous: string, next: stri
 
   // Colar ou preencher o campo todo limpa prefixos. Qualquer outra edição (digitar, teclado do Android,
   // autocompletar um dígito) segue a regra de digitar: só tira o 0 de discagem e recusa o que passar do limite.
-  const replacedAll = inputType !== 'insertText' && !inputType.startsWith('delete') && (previousDigits === '' || insertedDigits(previousDigits, digits) > 1)
+  const replacedAll = inputType !== 'insertText' && !inputType.startsWith('delete') && (previousDigits === '' || next.trimStart().startsWith('+') || insertedDigits(previousDigits, digits) > 1)
   if (replacedAll) {
     const pasted = stripPastedPrefixes(ddi, digits, next.trimStart().startsWith('+'))
     if (!pasted) return null
@@ -132,7 +140,6 @@ export function toStoredPhone(ddi: string, national: string): string | null {
     return /^[1-9]{2}(?:9\d{8}|[2-8]\d{7})$/.test(digits) ? ddi + digits : null
   }
   // DDI digitado de novo no campo do número ("+351 912 345 678" com +351 selecionado).
-  const local = digits.startsWith(ddi) && digits.length - ddi.length >= 8 ? digits.slice(ddi.length) : digits
-  const full = ddi + local
+  const full = ddi + stripRepeatedDdi(ddi, digits)
   return full.length >= 10 && full.length <= 15 ? full : null
 }
