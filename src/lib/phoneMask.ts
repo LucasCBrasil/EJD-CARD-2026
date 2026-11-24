@@ -36,24 +36,46 @@ export function formatBrazilPhone(value: string) {
 export const formatNational = (ddi: string, digits: string) =>
   ddi === BRAZIL_DDI ? formatBrazilPhone(digits) : onlyDigits(digits).slice(0, maxNationalLength(ddi))
 
-// Um número colado ou preenchido pode vir com DDI, com 0 de discagem ou com código de operadora.
-function stripPastedPrefixes(ddi: string, digits: string, hasPlus: boolean) {
-  const max = maxNationalLength(ddi)
-  if (ddi !== BRAZIL_DDI) return (hasPlus || digits.length > max) && digits.startsWith(ddi) ? digits.slice(ddi.length) : digits
-  let d = digits.replace(/^0+/, '')
-  if (d.length > 11 && d.startsWith(BRAZIL_DDI)) d = d.slice(2).replace(/^0+/, '')
-  // 0 + operadora (2 dígitos) + DDD + número: "0 21 11 98765-4321".
-  if (d.length === 12 || d.length === 13) d = d.slice(2)
-  return d
+// Prefixo de discagem nacional: 0 na maioria dos países, 0 ou 1 nos EUA/Canadá (DDD de lá nunca começa com 0 ou 1).
+// Na Itália o 0 faz parte do número fixo, então fica.
+function stripTrunkPrefix(ddi: string, digits: string) {
+  if (ddi === '39') return digits
+  return digits.replace(ddi === '1' ? /^[01]+/ : /^0+/, '')
 }
 
-export type PhoneEdit = { value: string; caret: number }
+// Número colado ou preenchido no campo todo: pode vir com DDI, com 0 de discagem ou com código de operadora.
+// Um "+" de outro país troca o DDI selecionado; um país fora da lista é recusado.
+function stripPastedPrefixes(ddi: string, digits: string, hasPlus: boolean): { ddi: string; digits: string } | null {
+  let target = ddi
+  let d = digits
+  if (hasPlus) {
+    if (!d.startsWith(ddi)) {
+      const match = DDI_OPTIONS.map(option => option.ddi).filter(code => d.startsWith(code)).sort((a, b) => b.length - a.length)[0]
+      if (!match) return null
+      target = match
+    }
+    d = d.slice(target.length)
+  } else if (target === BRAZIL_DDI) {
+    d = d.replace(/^0+/, '')
+    if (d.length > 11 && d.startsWith(BRAZIL_DDI)) d = d.slice(2)
+  } else if (d.startsWith(target) && d.length - target.length >= 8) {
+    d = d.slice(target.length)
+  }
+  d = stripTrunkPrefix(target, d)
+  // 0 + operadora (2 dígitos) + DDD + número: "0 21 11 98765-4321".
+  if (target === BRAZIL_DDI && (d.length === 12 || d.length === 13)) d = d.slice(2)
+  return { ddi: target, digits: d }
+}
+
+/** `ddi` vem preenchido quando um número colado com "+" de outro país troca o DDI. */
+export type PhoneEdit = { value: string; caret: number; ddi?: string }
 
 /**
  * Aplica a edição do usuário ao campo do número.
  * Retorna null quando a edição deve ser recusada (número longo demais), mantendo o valor anterior.
  */
-export function applyPhoneEdit(ddi: string, previous: string, next: string, caret: number, inputType = ''): PhoneEdit | null {
+export function applyPhoneEdit(selectedDdi: string, previous: string, next: string, caret: number, inputType = ''): PhoneEdit | null {
+  let ddi = selectedDdi
   const previousDigits = onlyDigits(previous)
   let digits = onlyDigits(next)
   let caretDigits = onlyDigits(next.slice(0, caret)).length
@@ -67,19 +89,19 @@ export function applyPhoneEdit(ddi: string, previous: string, next: string, care
     }
   }
 
-  if (inputType === 'insertText') {
-    // DDD nunca começa com 0: um 0 digitado no início é descartado.
-    if (ddi === BRAZIL_DDI && digits.startsWith('0')) {
-      const stripped = digits.replace(/^0+/, '')
-      caretDigits = Math.max(0, caretDigits - (digits.length - stripped.length))
-      digits = stripped
-    }
+  // Colar ou preencher o campo todo limpa prefixos. Qualquer outra edição (digitar, teclado do Android,
+  // autocompletar um dígito) segue a regra de digitar: só tira o 0 de discagem e recusa o que passar do limite.
+  const replacedAll = inputType !== 'insertText' && !inputType.startsWith('delete') && (previousDigits === '' || !digits.includes(previousDigits))
+  if (replacedAll) {
+    const pasted = stripPastedPrefixes(ddi, digits, next.trimStart().startsWith('+'))
+    if (!pasted) return null
+    if (pasted.digits !== digits || pasted.ddi !== ddi) caretDigits = pasted.digits.length
+    ddi = pasted.ddi
+    digits = pasted.digits
   } else {
-    const stripped = stripPastedPrefixes(ddi, digits, next.includes('+'))
-    if (stripped !== digits) {
-      digits = stripped
-      caretDigits = digits.length
-    }
+    const stripped = stripTrunkPrefix(ddi, digits)
+    caretDigits = Math.max(0, caretDigits - (digits.length - stripped.length))
+    digits = stripped
   }
   if (digits.length > maxNationalLength(ddi)) return null
 
@@ -88,7 +110,7 @@ export function applyPhoneEdit(ddi: string, previous: string, next: string, care
   for (let seen = 0; position < value.length && seen < caretDigits; position++) {
     if (/\d/.test(value[position])) seen++
   }
-  return { value, caret: position }
+  return ddi === selectedDdi ? { value, caret: position } : { value, caret: position, ddi }
 }
 
 /** DDI + número só com dígitos, pronto para salvar, ou null se o número não for válido. */

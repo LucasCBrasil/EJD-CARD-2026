@@ -44,6 +44,7 @@ export default function ContactGate() {
     const input = event.target
     const edit = applyPhoneEdit(ddi, number, input.value, input.selectionStart ?? input.value.length, (event.nativeEvent as InputEvent).inputType)
     if (!edit) return
+    if (edit.ddi) setDdiChoice(edit.ddi)
     setNumber(edit.value)
     requestAnimationFrame(() => inputRef.current?.setSelectionRange(edit.caret, edit.caret))
   }
