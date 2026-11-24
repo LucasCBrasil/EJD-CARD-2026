@@ -25,6 +25,7 @@ const CreateProductPage = () => {
     name: '',
     price: '',
     stock: '',
+    isConsigned: false,
     image: null as File | string | null
   })
   
@@ -67,6 +68,7 @@ const CreateProductPage = () => {
             name: data.name ?? '',
             price: (Number(data.price) || 0).toFixed(2).replace('.', ','),
             stock: String(data.stock ?? 0),
+            isConsigned: data.is_consigned === true,
             image: (data as any).image_url ?? data.image ?? null
           })
           const imageUrl = (data as any).image_url ?? data.image ?? null
@@ -192,6 +194,7 @@ const CreateProductPage = () => {
           stock: parseInt(formData.stock, 10),
           category: context,
           description: formData.name,
+          is_consigned: context === 'lojinha' && formData.isConsigned,
         },
         formData.image instanceof File ? formData.image : null,
         existingUrl
@@ -249,6 +252,26 @@ const CreateProductPage = () => {
               placeholder={currentConfig.namePlaceholder}
             />
           </div>
+
+          {context === 'lojinha' && (
+            <label className="flex items-start gap-3 rounded-xl border border-ferro-200 bg-creme-100 p-4 text-ferro-800">
+              <input
+                type="checkbox"
+                checked={formData.isConsigned}
+                onChange={(event) => setFormData((previous) => ({
+                  ...previous,
+                  isConsigned: event.target.checked,
+                }))}
+                className="mt-1 h-4 w-4 accent-vagao-600"
+              />
+              <span>
+                <span className="block font-display font-semibold">Produto consignado</span>
+                <span className="mt-1 block text-sm text-ferro-600">
+                  Marque para identificar este produto como consignado na gestão da lojinha.
+                </span>
+              </span>
+            </label>
+          )}
 
           {/* Valor, Quantidade e Imagem */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

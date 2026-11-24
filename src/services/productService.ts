@@ -39,6 +39,7 @@ export const productService = {
         image_url: product.image_url || product.image || null,
         image: product.image_url || product.image || null,
         is_combo: product.is_combo === true,
+        is_consigned: product.is_consigned === true,
         combo_items: product.combo_items || [],
       } as Product))
 
@@ -100,6 +101,7 @@ export const productService = {
         image_url: product.image_url || product.image || null,
         image: product.image_url || product.image || null,
         is_combo: product.is_combo === true,
+        is_consigned: product.is_consigned === true,
         combo_items: product.combo_items || [],
       } as Product
     } catch (err) {
@@ -186,6 +188,7 @@ export const productService = {
         image_url: imageUrl || product.image || null,
         category,
         active: product.id ? (typeof product.active === 'boolean' ? product.active : true) : true,
+        is_consigned: category === 'lojinha' && product.is_consigned === true,
       }
 
       const method = product.id ? 'PUT' : 'POST'
@@ -215,6 +218,7 @@ export const productService = {
         createdAt: savedProduct.created_at,
         image_url: savedProduct.image_url || savedProduct.image || null,
         image: savedProduct.image_url || savedProduct.image || null,
+        is_consigned: savedProduct.is_consigned === true,
       } as Product
     } catch (error: any) {
       console.error('Product save failed:', error);

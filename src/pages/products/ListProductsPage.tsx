@@ -204,9 +204,16 @@ const ListProductsPage = () => {
                   />
                   {/* Informações do Produto */}
                   <div className="picote-horizontal p-4">
-                    <h3 className="text-lg font-display font-semibold text-ferro-900 mb-2 truncate" title={product.name}>
-                      {product.name}
-                    </h3>
+                    <div className="mb-2 flex min-w-0 items-center gap-2">
+                      <h3 className="min-w-0 flex-1 truncate text-lg font-display font-semibold text-ferro-900" title={product.name}>
+                        {product.name}
+                      </h3>
+                      {context === 'lojinha' && product.is_consigned && (
+                        <span className="inline-flex shrink-0 rounded-full bg-latao-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-latao-800">
+                          Consignado
+                        </span>
+                      )}
+                    </div>
                     
                     <div className="bg-creme-100 border border-ferro-200 rounded-xl px-3 py-2 space-y-1 mb-4">
                       <div className="flex justify-between items-center">
