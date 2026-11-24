@@ -11,14 +11,13 @@ export default function PixRefundCheckbox() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [pix, setPix] = useState('')
-  const [whatsapp, setWhatsapp] = useState('')
   if (!data || (!data.enabled && !data.pending)) return null
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setBusy(true); setError('')
-    const result = data!.eligible ? await api.requestOriginalPixRefund() : await api.requestRefund(pix, whatsapp)
+    const result = data!.eligible ? await api.requestOriginalPixRefund() : await api.requestRefund(pix)
     if (!result.success) { setError(result.error || 'Não foi possível enviar a solicitação.'); setBusy(false); return }
-    setOpen(false); setBusy(false); setPix(''); setWhatsapp('')
+    setOpen(false); setBusy(false); setPix('')
     await queryClient.invalidateQueries({ queryKey: ['pix-refund-eligibility'] })
   }
   return <>
@@ -28,12 +27,11 @@ export default function PixRefundCheckbox() {
       <form onSubmit={submit} className="painel w-full max-w-md p-6 text-left space-y-4">
         <h2 id="original-pix-refund-title" className="text-xl font-semibold">Solicitar ressarcimento</h2>
         {data.eligible ? <>
-          <p>Após análise e autorização, o valor Pix elegível será devolvido à conta que realizou o pagamento original.</p>
+          <p>Após análise e autorização, o saldo poderá ser devolvido à conta que realizou a maior recarga Pix elegível, inclusive quando houver créditos manuais.</p>
           <p className="text-sm">A solicitação não envia dinheiro imediatamente. O valor disponível é conferido antes da devolução.</p>
         </> : <>
-          <p className="text-sm">A solicitação será analisada pela administração. Informe a chave Pix e um contato para o tratamento do ressarcimento.</p>
+          <p className="text-sm">A solicitação será analisada pela administração. Informe a chave Pix para o tratamento do ressarcimento.</p>
           <label className="block">Chave Pix<input required maxLength={200} value={pix} onChange={e => setPix(e.target.value)} className="mt-1 w-full rounded border border-ferro-300 p-2" /></label>
-          <label className="block">Contato WhatsApp<input required minLength={8} maxLength={40} type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="mt-1 w-full rounded border border-ferro-300 p-2" /></label>
         </>}
         {error && <p role="alert" className="text-vagao-700">{error}</p>}
         <div className="flex flex-wrap gap-2"><Button type="submit" disabled={busy}>Confirmar solicitação</Button><Button type="button" variant="secondary" disabled={busy} onClick={() => setOpen(false)}>Cancelar</Button></div>
