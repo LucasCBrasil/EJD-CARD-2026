@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api-client'
-import { applyPhoneEdit, isValidPhone } from '../lib/phoneMask'
+import { applyPhoneEdit, toNationalDigits } from '../lib/phoneMask'
 
 export default function ContactGate() {
   const { user, logout } = useAuth()
@@ -26,8 +26,8 @@ export default function ContactGate() {
   if (!user || state === 'done') return null
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
-    const digits = number.replace(/\D/g, '')
-    if (!isValidPhone(digits)) { setError('Informe um número válido com DDD.'); return }
+    const digits = toNationalDigits(number)
+    if (!digits) { setError('Informe um número brasileiro válido com DDD.'); return }
     setSaving(true)
     const result = await api.saveContact(digits)
     setSaving(false)
