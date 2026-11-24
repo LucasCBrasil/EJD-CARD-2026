@@ -5,6 +5,7 @@ import { GlobalLoading } from '../shared/GlobalLoading'
 import { TabNavigation } from '../ui'
 import { useAuth } from '../../contexts/AuthContext'
 import AccountBalance from '../shared/AccountBalance'
+import { api } from '../../lib/api-client'
 
 const AppLayout = () => {
   const navigate = useNavigate()
@@ -12,6 +13,8 @@ const AppLayout = () => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const [contact, setContact] = useState<string | null>(null)
+  const [contactStatus, setContactStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
   // Fechar menu ao clicar fora
   useEffect(() => {
@@ -37,6 +40,20 @@ const AppLayout = () => {
     // AuthContext não disponível - isso não deveria acontecer, mas tratamos graciosamente
     console.warn('AuthContext não disponível no AppLayout')
   }
+
+  useEffect(() => {
+    if (!showUserMenu || !user?.id) return
+    let active = true
+    setContactStatus('loading')
+    api.getContactStatus().then(result => {
+      if (!active) return
+      if (result.success && result.data) {
+        setContact(result.data.whatsapp)
+        setContactStatus('ready')
+      } else setContactStatus('error')
+    })
+    return () => { active = false }
+  }, [showUserMenu, user?.id])
 
   const pathname = routerState.location.pathname
   const isHomePage = pathname === '/' || pathname === ''
@@ -210,6 +227,13 @@ const AppLayout = () => {
                     </div>
                     <div className="break-all pl-5 text-sm font-medium text-ferro-900">
                       {user?.email || 'Não informado'}
+                    </div>
+                  </div>
+
+                  <div className="pt-3">
+                    <div className="flex items-center gap-2 mb-1 text-xs text-ferro-600 uppercase tracking-wider font-display">WhatsApp</div>
+                    <div className="pl-5 text-sm font-medium text-ferro-900">
+                      {contactStatus === 'loading' ? 'Carregando...' : contactStatus === 'error' ? 'Não foi possível carregar' : contact || 'Não informado'}
                     </div>
                   </div>
 

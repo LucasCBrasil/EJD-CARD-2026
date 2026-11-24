@@ -154,6 +154,9 @@ async function request<T = any>(
 
 // API pública - métodos genéricos que não expõem estrutura
 export const api = {
+  verifySaleSecurityCode: (userId: string, code: string) => request<ApiResult<never>>('user-contact', { method: 'POST', body: { userId, code } }),
+  getContactStatus: () => request<ApiResult<{ required: boolean; whatsapp: string | null }>>('user-contact'),
+  saveContact: (whatsapp: string) => request<ApiResult<never>>('user-contact', { method: 'PUT', body: { whatsapp } }),
   listRefunds: () => request<any>('refunds'),
   requestRefund: (pix_key: string, whatsapp: string) => request<any>('refunds', { method: 'POST', body: { pix_key, whatsapp, confirmed: true } }),
   getMyPixRefundEligibility: () => request<any>('refunds', { query: { view: 'mine' } }),

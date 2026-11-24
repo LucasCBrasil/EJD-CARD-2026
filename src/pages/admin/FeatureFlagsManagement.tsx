@@ -29,7 +29,7 @@ const FeatureFlagsManagement: React.FC = () => {
       const json = await api.listFeatureFlags()
 
       if (json.success && json.data) {
-        setFlags(json.data)
+        setFlags(json.data.filter((flag: FeatureFlag) => !['require_whatsapp_contact', 'require_security_code'].includes(flag.key)))
       } else {
         setError(json.error || 'Erro ao carregar flags')
       }

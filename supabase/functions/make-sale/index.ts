@@ -152,6 +152,21 @@ Deno.serve(async (req: Request) => {
     // 5. CRIAR CLIENTE SUPABASE
     const supabase = createSupabaseClient();
 
+    const { data: securityFlag, error: securityFlagError } = await supabase
+      .from('feature_flags').select('enabled').eq('key', 'require_security_code').maybeSingle();
+    if (securityFlagError) throw securityFlagError;
+    if (securityFlag?.enabled !== false) {
+    const { data: authorization, error: authorizationError } = await supabase
+      .from('sale_security_authorizations').select('authorized_until')
+      .eq('seller_id', user.id).eq('customer_id', userId)
+      .gt('authorized_until', new Date().toISOString()).maybeSingle();
+    if (authorizationError || !authorization) {
+      return new Response(JSON.stringify({ success: false, error: 'Código de segurança necessário ou expirado. Selecione o cliente novamente.' }), {
+        status: 403, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+      });
+    }
+    }
+
     // O estoque da lojinha já foi reservado ao adicionar os itens no carrinho.
     // O RPC conclui venda, débito, pedido e carrinho na mesma transação.
     if (category === 'lojinha') {

@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import UserManagement from './UserManagement'
+import ContactSetting from './ContactSetting'
 import FeatureFlagsManagement from './FeatureFlagsManagement'
 
 const AdminPage: React.FC = () => {
@@ -72,6 +73,7 @@ const AdminPage: React.FC = () => {
       </div>
 
       {/* Feature Flags */}
+      <ContactSetting />
       <FeatureFlagsManagement />
 
       {/* Gerenciamento de Usuários */}
