@@ -33,7 +33,13 @@ Deno.serve(async (req) => {
         if (result.error) throw result.error
         operations = result.data || []
       }
-      return reply({ success: true, data: (data || []).map((row: any) => ({ ...row, manual_claim_mine: row.manual_claimed_by === user.id, credits: credits.filter(c => c.user_id === row.user_id), operations: operations.filter(o => o.refund_request_id === row.id), account_operations: operations.filter(o => (data || []).some((request: any) => request.id === o.refund_request_id && request.user_id === row.user_id)) })) })
+      const eligibility = new Map<string, boolean>()
+      for (let i = 0; i < ids.length; i += 5) {
+        const batch = ids.slice(i, i + 5) as string[]
+        const results = await Promise.all(batch.map(userId => getOriginalPixRefundEligibility(db, userId)))
+        batch.forEach((userId, index) => eligibility.set(userId, results[index].refundable))
+      }
+      return reply({ success: true, data: (data || []).map((row: any) => ({ ...row, mercado_pago_eligible: eligibility.get(row.user_id) === true, manual_claim_mine: row.manual_claimed_by === user.id, credits: credits.filter(c => c.user_id === row.user_id), operations: operations.filter(o => o.refund_request_id === row.id), account_operations: operations.filter(o => (data || []).some((request: any) => request.id === o.refund_request_id && request.user_id === row.user_id)) })) })
     }
     if (req.method === 'POST') {
       const body = await req.json()
@@ -48,12 +54,13 @@ Deno.serve(async (req) => {
         return reply({ success: true })
       }
       const pix = typeof body.pix_key === 'string' ? body.pix_key.trim() : ''
-      const whatsapp = typeof body.whatsapp === 'string' ? body.whatsapp.trim() : ''
-      if (!pix || pix.length > 200 || whatsapp.length < 8 || whatsapp.length > 40 || body.confirmed !== true) return reply({ success: false, error: 'Preencha os dados e confirme a solicitação.' }, 400)
+      if (!pix || pix.length > 200 || body.confirmed !== true) return reply({ success: false, error: 'Preencha os dados e confirme a solicitação.' }, 400)
       const { data: flag, error: flagError } = await db.from('feature_flags').select('enabled').eq('key', 'refunds_enabled').maybeSingle()
       if (flagError) throw flagError
       if (!flag?.enabled) return reply({ success: false, error: 'Solicitações de ressarcimento estão desativadas.' }, 403)
-      const { error } = await db.from('refund_requests').insert({ user_id: user.id, pix_key: pix, whatsapp })
+      const { data: profile, error: profileError } = await db.from('app_users').select('whatsapp').eq('id', user.id).maybeSingle()
+      if (profileError) throw profileError
+      const { error } = await db.from('refund_requests').insert({ user_id: user.id, pix_key: pix, whatsapp: profile?.whatsapp || null })
       if (error?.code === '23505') return reply({ success: false, error: 'Você já possui uma solicitação pendente.' }, 409)
       if (error) throw error
       return reply({ success: true })
