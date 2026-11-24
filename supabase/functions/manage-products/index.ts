@@ -294,7 +294,8 @@ Deno.serve(async (req) => {
           category,
           description,
           stock,
-          image_url
+          image_url,
+          is_consigned
         }: {
           name: string
           price: number
@@ -302,10 +303,11 @@ Deno.serve(async (req) => {
           description?: string
           stock?: number
           image_url?: string | null
+          is_consigned?: boolean
         } = await req.json()
 
         // Validações básicas
-        if (!name || price === undefined || !category) {
+        if (!name || price === undefined || !['lojinha', 'lanchonete'].includes(category)) {
           return new Response(
             JSON.stringify({
               success: false,
@@ -315,6 +317,16 @@ Deno.serve(async (req) => {
               status: 400,
               headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
             }
+          )
+        }
+
+        if (
+          (is_consigned !== undefined && typeof is_consigned !== 'boolean')
+          || (category !== 'lojinha' && is_consigned === true)
+        ) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'A identificação de consignado só pode ser usada em produtos da lojinha.' } as ApiResponse),
+            { status: 400, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
           )
         }
 
@@ -361,6 +373,7 @@ Deno.serve(async (req) => {
             description,
             stock,
             image_url,
+            is_consigned: category === 'lojinha' && is_consigned === true,
             active: true
           })
           .select()
@@ -401,7 +414,8 @@ Deno.serve(async (req) => {
           description,
           stock,
           image_url,
-          active
+          active,
+          is_consigned
         } = await req.json()
 
         if (!id) {
@@ -419,7 +433,7 @@ Deno.serve(async (req) => {
 
         const { data: currentProduct, error: currentProductError } = await supabase
           .from('products')
-          .select('is_combo')
+          .select('is_combo, category')
           .eq('id', id)
           .maybeSingle()
 
@@ -441,6 +455,16 @@ Deno.serve(async (req) => {
         if (currentProduct.is_combo) {
           return new Response(
             JSON.stringify({ success: false, error: 'Combos devem ser gerenciados pela tela de combos.' } as ApiResponse),
+            { status: 400, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+          )
+        }
+
+        if (
+          (is_consigned !== undefined && typeof is_consigned !== 'boolean')
+          || (currentProduct.category !== 'lojinha' && is_consigned === true)
+        ) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'A identificação de consignado só pode ser usada em produtos da lojinha.' } as ApiResponse),
             { status: 400, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
           )
         }
@@ -469,6 +493,7 @@ Deno.serve(async (req) => {
         if (stock !== undefined) updates.stock = stock
         if (image_url !== undefined) updates.image_url = image_url
         if (active !== undefined) updates.active = active
+        if (is_consigned !== undefined) updates.is_consigned = currentProduct.category === 'lojinha' && is_consigned
 
         const { data: product, error } = await supabase
           .from('products')

@@ -26,6 +26,17 @@ INSERT INTO public.products (id, name, price, category, stock, active) VALUES
   ('aaaaaaaa-0000-0000-0000-000000000006', 'Pão combo teste', 3.00, 'lanchonete', 3, TRUE),
   ('aaaaaaaa-0000-0000-0000-000000000007', 'Suco combo teste', 5.00, 'lanchonete', 5, TRUE);
 
+SELECT is((SELECT is_consigned FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000004'),
+  FALSE, 'produto da lojinha e nao consignado por padrao');
+UPDATE public.products SET is_consigned = TRUE WHERE id = 'aaaaaaaa-0000-0000-0000-000000000004';
+SELECT is((SELECT is_consigned FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000004'),
+  TRUE, 'produto da lojinha pode ser marcado como consignado');
+SELECT throws_ok(
+  $$INSERT INTO public.products (name, price, category, stock, is_consigned)
+    VALUES ('Consignado indevido', 2.00, 'lanchonete', 1, TRUE)$$,
+  '23514', 'new row for relation "products" violates check constraint "products_consigned_only_lojinha_check"',
+  'produto de lanchonete nao pode ser marcado como consignado');
+
 -- ---------------------------------------------------------------------------
 -- Privilegios: so service_role executa
 -- ---------------------------------------------------------------------------
