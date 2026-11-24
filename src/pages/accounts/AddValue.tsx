@@ -3,6 +3,7 @@ import { Button, Header, ConfirmationModal } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { UserAccount } from '../../types'
+import { api } from '../../lib/api-client'
 
 interface AddBalanceProps {
   onBack?: () => void
@@ -11,6 +12,10 @@ interface AddBalanceProps {
 const AddBalancePage: React.FC<AddBalanceProps> = ({ onBack: _onBack }) => {
   const { searchAccountsByName, updateUserBalance } = useSupabaseData()
   const [selectedAccount, setSelectedAccount] = useState<UserAccount | null>(null)
+  const [pendingAccount, setPendingAccount] = useState<UserAccount | null>(null)
+  const [securityCode, setSecurityCode] = useState('')
+  const [securityError, setSecurityError] = useState('')
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false)
   const [amount, setAmount] = useState('')
   const [formattedAmount, setFormattedAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -117,6 +122,44 @@ const AddBalancePage: React.FC<AddBalanceProps> = ({ onBack: _onBack }) => {
     setError(null)
   }
 
+  const handleAccountChoice = async (account: UserAccount) => {
+    setShowDropdown(false)
+    const setting = await api.getFeatureFlag('require_security_code')
+    if (!setting.success) {
+      setError('Não foi possível verificar a configuração de segurança. Tente novamente.')
+      return
+    }
+    if (!setting.data.enabled) {
+      handleSelectAccount(account)
+      return
+    }
+    setSecurityCode('')
+    setSecurityError('')
+    setPendingAccount(account)
+  }
+
+  const handleVerifyCode = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!pendingAccount || !/^\d{4}$/.test(securityCode) || isVerifyingCode) return
+    setIsVerifyingCode(true)
+    setSecurityError('')
+    try {
+      const response = await api.verifySaleSecurityCode(pendingAccount.id, securityCode)
+      if (!response.success) {
+        setSecurityError(response.error || 'Não foi possível verificar o código.')
+        setSecurityCode('')
+        return
+      }
+      handleSelectAccount(pendingAccount)
+      setPendingAccount(null)
+      setSecurityCode('')
+    } catch {
+      setSecurityError('Não foi possível verificar o código. Tente novamente.')
+    } finally {
+      setIsVerifyingCode(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedAccount) return
@@ -202,7 +245,7 @@ const AddBalancePage: React.FC<AddBalanceProps> = ({ onBack: _onBack }) => {
                       <button
                         key={account.id}
                         type="button"
-                        onClick={() => handleSelectAccount(account)}
+                        onClick={() => void handleAccountChoice(account)}
                         className="w-full !px-4 !py-3 text-left hover:bg-creme-200 transition-colors border-b border-ferro-100 last:border-b-0 focus:bg-creme-200 focus:outline-none"
                       >
                         <div className="font-semibold text-ferro-900">{account.name || 'Sem nome'}</div>
@@ -287,6 +330,23 @@ const AddBalancePage: React.FC<AddBalanceProps> = ({ onBack: _onBack }) => {
       </div>
 
       {/* Modal de Confirmação */}
+      {pendingAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="credit-security-title">
+          <form onSubmit={handleVerifyCode} className="w-full max-w-sm rounded-xl border-2 border-ferro-800 bg-creme-100 p-5 shadow-xl">
+            <h2 id="credit-security-title" className="text-lg font-display font-semibold text-ferro-900">Código de segurança</h2>
+            <p className="mt-2 text-sm text-ferro-700">Informe os 4 últimos números do WhatsApp cadastrado de {pendingAccount.name || pendingAccount.email}.</p>
+            <label htmlFor="credit-security-code" className="mt-4 block text-sm font-semibold text-ferro-700">Código de segurança</label>
+            <input id="credit-security-code" type="password" inputMode="numeric" autoComplete="off" maxLength={4} autoFocus value={securityCode}
+              onChange={(event) => { setSecurityCode(event.target.value.replace(/\D/g, '').slice(0, 4)); setSecurityError('') }}
+              className="mt-1 w-full" placeholder="4 dígitos" disabled={isVerifyingCode} />
+            {securityError && <p role="alert" className="mt-2 text-sm text-vagao-600">{securityError}</p>}
+            <div className="mt-5 flex gap-2">
+              <button type="button" disabled={isVerifyingCode} onClick={() => { setPendingAccount(null); setSecurityCode(''); setSecurityError('') }} className="flex-1 rounded-lg border border-ferro-300 bg-creme-200 px-3 py-2 text-ferro-800">Cancelar</button>
+              <button type="submit" disabled={isVerifyingCode || securityCode.length !== 4} className="flex-1 rounded-lg bg-vagao-600 px-3 py-2 text-creme-50 disabled:opacity-50">{isVerifyingCode ? 'Verificando...' : 'Confirmar'}</button>
+            </div>
+          </form>
+        </div>
+      )}
       <ConfirmationModal
         isOpen={showConfirmation}
         onClose={handleCancelConfirmation}

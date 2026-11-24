@@ -18,10 +18,6 @@ interface CartItemSnapshot {
   image_url: string | null
 }
 
-const isFullEmail = (value: string): boolean => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())
-}
-
 const SalesPage: React.FC = () => {
   const { searchAccountsByName, makeSale, getCoupons } = useSupabaseData()
   const location = useLocation()
@@ -46,6 +42,12 @@ const SalesPage: React.FC = () => {
   const [showCancelCartConfirmation, setShowCancelCartConfirmation] = useState(false)
   const [accountSearch, setAccountSearch] = useState('')
   const [selectedAccount, setSelectedAccount] = useState<UserAccount | null>(null)
+  const [accountSuggestions, setAccountSuggestions] = useState<UserAccount[]>([])
+  const [pendingAccount, setPendingAccount] = useState<UserAccount | null>(null)
+  const [securityCode, setSecurityCode] = useState('')
+  const [securityError, setSecurityError] = useState('')
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false)
+  const [isSearchingAccounts, setIsSearchingAccounts] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [searchFilter, setSearchFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -482,6 +484,11 @@ const SalesPage: React.FC = () => {
   const currentInputRef = React.useRef<string>('')
 
   const handleSelectAccount = async (account: UserAccount) => {
+    currentInputRef.current = ''
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    setAccountSearch(account.name || account.email)
+    setAccountSuggestions([])
+    setIsSearchingAccounts(false)
     setSelectedAccount(account)
     setError(null)
     setShowCancelCartConfirmation(false)
@@ -496,11 +503,53 @@ const SalesPage: React.FC = () => {
     }
   }
 
-  const handleAccountSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAccountChoice = async (account: UserAccount) => {
+    const setting = await api.getFeatureFlag('require_security_code')
+    if (!setting.success) {
+      setError('Não foi possível verificar a configuração de segurança. Tente novamente.')
+      return
+    }
+    if (!setting.data.enabled) {
+      await handleSelectAccount(account)
+      return
+    }
+    setPendingAccount(account)
+    setSecurityCode('')
+    setSecurityError('')
+  }
+
+  const handleVerifySecurityCode = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!pendingAccount || !/^\d{4}$/.test(securityCode) || isVerifyingCode) return
+    setIsVerifyingCode(true)
+    setSecurityError('')
+    try {
+      const response = await api.verifySaleSecurityCode(pendingAccount.id, securityCode)
+      if (!response.success) {
+        setSecurityError(response.error || 'Não foi possível verificar o código.')
+        setSecurityCode('')
+        return
+      }
+      const account = pendingAccount
+      setPendingAccount(null)
+      setSecurityCode('')
+      await handleSelectAccount(account)
+    } catch {
+      setSecurityError('Não foi possível verificar o código. Tente novamente.')
+    } finally {
+      setIsVerifyingCode(false)
+    }
+  }
+
+  const handleAccountSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value
-    const normalizedEmail = rawValue.trim().toLowerCase()
+    const searchValue = rawValue.trim()
+    currentInputRef.current = searchValue
     setAccountSearch(rawValue)
     setSelectedAccount(null)
+    setAccountSuggestions([])
+    setIsSearchingAccounts(false)
+    setError(null)
 
     if (context === 'lojinha') {
       cartLoadRequestRef.current += 1
@@ -512,64 +561,21 @@ const SalesPage: React.FC = () => {
       setShowCancelCartConfirmation(false)
     }
 
-    currentInputRef.current = normalizedEmail
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    if (searchValue.length < 2) return
 
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
-    }
-
-    if (!normalizedEmail) {
-      setSelectedAccount(null)
-      setError(null)
-      lastSearchRef.current = ''
-      return
-    }
-
-    // Só consulta o servidor quando o e-mail completo for digitado
-    if (!isFullEmail(normalizedEmail)) {
-      setError(null)
-      lastSearchRef.current = ''
-      return
-    }
-
+    setIsSearchingAccounts(true)
     searchTimeoutRef.current = setTimeout(async () => {
-      const searchValue = currentInputRef.current
-
-      if (!searchValue || searchValue !== normalizedEmail || !isFullEmail(searchValue)) {
-        return
-      }
-
-      if (searchValue === lastSearchRef.current) {
-        return
-      }
-
-      lastSearchRef.current = searchValue
-
       try {
-        setError(null)
         const accounts = await searchAccountsByName(searchValue)
-
-        if (currentInputRef.current !== searchValue) {
-          return
-        }
-
-        const exactMatch = accounts.find(
-          (acc) => acc.email && acc.email.trim().toLowerCase() === searchValue
-        )
-
-        if (exactMatch) {
-          await handleSelectAccount(exactMatch)
-        } else {
-          setSelectedAccount(null)
-          setError('Nenhuma conta encontrada com este e-mail')
-        }
-      } catch (err: any) {
-        if (currentInputRef.current !== searchValue) {
-          return
-        }
-        console.error('Erro ao buscar conta:', err)
+        if (currentInputRef.current !== searchValue) return
+        setAccountSuggestions(accounts)
+        if (accounts.length === 0) setError('Nenhuma conta encontrada.')
+      } catch (err) {
+        if (currentInputRef.current !== searchValue) return
         setError(err instanceof Error ? err.message : 'Erro ao buscar conta')
-        setSelectedAccount(null)
+      } finally {
+        if (currentInputRef.current === searchValue) setIsSearchingAccounts(false)
       }
     }, 400)
   }
@@ -890,16 +896,29 @@ const SalesPage: React.FC = () => {
 
             {/* Conta a debitar */}
             <div className="mb-3 space-y-2">
-              <label className="block text-sm font-semibold text-ferro-700 mb-1">E-mail do cliente</label>
+              <label htmlFor="account-search" className="block text-sm font-semibold text-ferro-700 mb-1">Nome ou e-mail do cliente</label>
               <input
-                type="email"
+                id="account-search"
+                type="text"
                 value={accountSearch}
                 onChange={handleAccountSearchChange}
                 className="w-full"
-                placeholder="Digite o e-mail completo do cliente"
+                placeholder="Digite o nome ou e-mail"
                 autoComplete="off"
               />
 
+              {accountSuggestions.length > 0 && !selectedAccount && (
+                <ul aria-label="Sugestões de clientes" className="max-h-48 overflow-y-auto rounded-lg border border-ferro-200 bg-creme-50">
+                  {accountSuggestions.map((account) => (
+                    <li key={account.id}>
+                      <button type="button" onClick={() => void handleAccountChoice(account)} className="w-full px-3 py-2 text-left hover:bg-creme-200 focus:bg-creme-200">
+                        <span className="block text-sm font-semibold text-ferro-900">{account.name || 'Sem nome'}</span>
+                        <span className="block break-all text-xs text-ferro-600">{account.email}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {selectedAccount ? (
                 <div className="bg-creme-200 rounded-lg p-3 border border-ferro-200 space-y-0.5">
                   <p className="text-sm text-ferro-900">
@@ -916,7 +935,7 @@ const SalesPage: React.FC = () => {
                 </div>
               ) : (
                 <p className={`text-sm ${error ? 'text-vagao-600' : 'text-ferro-500'}`}>
-                  {error || 'Digite o e-mail completo para localizar a conta'}
+                  {error || (isSearchingAccounts ? 'Buscando clientes...' : accountSuggestions.length ? 'Selecione um cliente da lista.' : 'Digite pelo menos 2 caracteres para localizar a conta.')}
                 </p>
               )}
             </div>
@@ -929,7 +948,7 @@ const SalesPage: React.FC = () => {
                     ? 'Carrinho compartilhado: alterações de outros vendedores são sincronizadas automaticamente.'
                     : selectedAccount
                       ? error || 'Carrinho encerrado. Um novo será criado ao adicionar um produto.'
-                      : 'Digite o e-mail completo para carregar ou criar o carrinho compartilhado.'}
+                      : 'Selecione um cliente para carregar ou criar o carrinho compartilhado.'}
               </p>
             )}
 
@@ -1255,6 +1274,23 @@ const SalesPage: React.FC = () => {
       )}
 
       {/* Modal de Confirmação */}
+      {pendingAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="security-code-title">
+          <form onSubmit={handleVerifySecurityCode} className="w-full max-w-sm rounded-xl border-2 border-ferro-800 bg-creme-100 p-5 shadow-xl">
+            <h2 id="security-code-title" className="text-lg font-display font-semibold text-ferro-900">Código de segurança</h2>
+            <p className="mt-2 text-sm text-ferro-700">Informe os 4 últimos números do WhatsApp cadastrado de {pendingAccount.name || pendingAccount.email}.</p>
+            <label htmlFor="security-code" className="mt-4 block text-sm font-semibold text-ferro-700">Código de segurança</label>
+            <input id="security-code" type="password" inputMode="numeric" autoComplete="off" maxLength={4} autoFocus value={securityCode}
+              onChange={(event) => { setSecurityCode(event.target.value.replace(/\D/g, '').slice(0, 4)); setSecurityError('') }}
+              className="mt-1 w-full" placeholder="4 dígitos" disabled={isVerifyingCode} />
+            {securityError && <p role="alert" className="mt-2 text-sm text-vagao-600">{securityError}</p>}
+            <div className="mt-5 flex gap-2">
+              <button type="button" disabled={isVerifyingCode} onClick={() => { setPendingAccount(null); setSecurityCode(''); setSecurityError('') }} className="flex-1 rounded-lg border border-ferro-300 bg-creme-200 px-3 py-2 text-ferro-800">Cancelar</button>
+              <button type="submit" disabled={isVerifyingCode || securityCode.length !== 4} className="flex-1 rounded-lg bg-vagao-600 px-3 py-2 text-creme-50 disabled:opacity-50">{isVerifyingCode ? 'Verificando...' : 'Confirmar'}</button>
+            </div>
+          </form>
+        </div>
+      )}
       <ConfirmationModal
         isOpen={showConfirmation}
         onClose={handleCancelConfirmation}
