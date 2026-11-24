@@ -8,6 +8,7 @@ import { api } from '../lib/api-client'
 import { UserAccount } from '../types'
 import PixRefundCheckbox from '../components/PixRefundCheckbox'
 import { useAccountByUserId } from '../hooks/useAccounts'
+import { useFeatureFlag } from '../hooks/useFeatureFlag'
 
 type HistoryItem = {
   id: string
@@ -132,7 +133,7 @@ const AccountPage: React.FC = () => {
   const currentAccount = useAccountByUserId(user?.id || '', isSupabaseConfigured())
   const [account, setAccount] = useState<UserAccount | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
-  const [pixEnabled, setPixEnabled] = useState(false)
+  const pixEnabled = useFeatureFlag('pix_enabled', isSupabaseConfigured()).data === true
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -178,9 +179,6 @@ const AccountPage: React.FC = () => {
         setHistory([...saleHistory, ...transactions].filter((item) => item.date).sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         ).slice(0, 30))
-
-        const flag = await api.getFeatureFlag('pix_enabled')
-        if (!cancelled) setPixEnabled(flag.success && flag.data?.enabled === true)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Erro ao carregar sua conta')
       } finally {
