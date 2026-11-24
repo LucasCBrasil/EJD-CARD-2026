@@ -2,6 +2,17 @@
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api-client'
 
+// (11) 98765-4321 para celular, (11) 3456-7890 para fixo
+function formatPhone(value: string) {
+  let digits = value.replace(/\D/g, '')
+  if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2) // número colado com +55
+  digits = digits.slice(0, 11)
+  if (digits.length <= 2) return digits.length ? `(${digits}` : ''
+  const split = digits.length === 11 ? 7 : 6
+  if (digits.length <= split) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, split)}-${digits.slice(split)}`
+}
+
 export default function ContactGate() {
   const { user, logout } = useAuth()
   const [state, setState] = useState<'loading' | 'required' | 'done' | 'error'>('loading')
@@ -25,7 +36,7 @@ export default function ContactGate() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     const digits = number.replace(/\D/g, '')
-    if (digits.length < 10 || digits.length > 15) { setError('Informe um número válido com DDD.'); return }
+    if (digits.length < 10 || digits.length > 11) { setError('Informe um número válido com DDD.'); return }
     setSaving(true)
     const result = await api.saveContact(digits)
     setSaving(false)
@@ -37,7 +48,7 @@ export default function ContactGate() {
       <h2 id="contact-title" className="text-xl font-display font-semibold uppercase">Contato de WhatsApp</h2>
       {state === 'loading' ? <p className="mt-3">Verificando informações de contato...</p> : state === 'error' ? <div className="mt-3"><p role="alert">Não foi possível verificar suas informações de contato.</p><button type="button" onClick={() => setAttempt(x => x + 1)}>Tentar novamente</button></div> : <form onSubmit={submit} className="mt-3 space-y-4">
         <p>Informe seu número de WhatsApp com DDD para continuar.</p>
-        <label className="block">WhatsApp<input autoFocus type="tel" autoComplete="tel" required maxLength={25} value={number} onChange={e => setNumber(e.target.value)} className="mt-1 w-full" /></label>
+        <label className="block">WhatsApp<input autoFocus type="tel" inputMode="numeric" autoComplete="tel-national" required placeholder="(11) 98765-4321" value={number} onChange={e => setNumber(formatPhone(e.target.value))} className="mt-1 w-full" /></label>
         {error && <p role="alert" className="text-vagao-700">{error}</p>}
         <button type="submit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar e continuar'}</button>
       </form>}
