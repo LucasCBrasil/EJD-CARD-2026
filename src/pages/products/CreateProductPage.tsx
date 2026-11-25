@@ -4,7 +4,7 @@ import { useNavigate, useLocation, useParams } from '@tanstack/react-router'
 import { Button, Header } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { productService } from '../../services'
-import type { ProductCategory } from '../../types'
+import { LANCHONETE_MENU_CATEGORIES, type ProductCategory } from '../../types'
 
 const CreateProductPage = () => {
   const navigate = useNavigate()
@@ -26,6 +26,7 @@ const CreateProductPage = () => {
     price: '',
     stock: '',
     isConsigned: false,
+    menuCategory: 'Outros',
     image: null as File | string | null
   })
   
@@ -69,6 +70,7 @@ const CreateProductPage = () => {
             price: (Number(data.price) || 0).toFixed(2).replace('.', ','),
             stock: String(data.stock ?? 0),
             isConsigned: data.is_consigned === true,
+            menuCategory: data.menu_category || 'Outros',
             image: (data as any).image_url ?? data.image ?? null
           })
           const imageUrl = (data as any).image_url ?? data.image ?? null
@@ -195,6 +197,7 @@ const CreateProductPage = () => {
           category: context,
           description: formData.name,
           is_consigned: context === 'lojinha' && formData.isConsigned,
+          menu_category: context === 'lanchonete' ? formData.menuCategory : undefined,
         },
         formData.image instanceof File ? formData.image : null,
         existingUrl
@@ -271,6 +274,25 @@ const CreateProductPage = () => {
                 </span>
               </span>
             </label>
+          )}
+
+          {context === 'lanchonete' && (
+            <div>
+              <label htmlFor="menu-category" className={labelClass}>Categoria do cardápio</label>
+              <select
+                id="menu-category"
+                value={formData.menuCategory}
+                onChange={(event) => setFormData((previous) => ({
+                  ...previous,
+                  menuCategory: event.target.value,
+                }))}
+                className="w-full"
+              >
+                {LANCHONETE_MENU_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
           )}
 
           {/* Valor, Quantidade e Imagem */}

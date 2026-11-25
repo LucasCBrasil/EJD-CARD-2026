@@ -34,6 +34,7 @@ const unwrap = <T,>(response: ApiResult<T>, fallback: string): T => {
 export interface MenuProduct {
   id: string
   name: string
+  menuCategory: string
   description: string | null
   price: number
   stock: number | null // null = sem controle de estoque
@@ -62,6 +63,7 @@ export function useLanchoneteMenu() {
         .map((product) => ({
           id: product.id,
           name: product.name,
+          menuCategory: product.menu_category || 'Outros',
           description: product.description || null,
           price: Number(product.price) || 0,
           stock: product.stock === null || product.stock === undefined ? null : Number(product.stock),

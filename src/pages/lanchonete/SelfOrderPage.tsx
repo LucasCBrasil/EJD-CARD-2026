@@ -4,6 +4,7 @@ import { TrainLoader } from '../../components/shared'
 import OptimizedImage from '../../components/ui/OptimizedImage'
 import { useToastContext } from '../../contexts/ToastContext'
 import { useAuth } from '../../contexts/AuthContext'
+import { LANCHONETE_MENU_CATEGORIES } from '../../types'
 import {
   LanchoneteOrderError,
   useCreateSelfOrder,
@@ -51,6 +52,13 @@ const SelfOrderPage: React.FC = () => {
     const term = search.trim().toLowerCase()
     return term ? products.filter((p) => p.name.toLowerCase().includes(term)) : products
   }, [products, search])
+  const groupedProducts = useMemo(
+    () => LANCHONETE_MENU_CATEGORIES.map((category) => ({
+      category,
+      products: filteredProducts.filter((product) => product.menuCategory === category),
+    })).filter((group) => group.products.length > 0),
+    [filteredProducts],
+  )
 
   const cartLines = useMemo(
     () => Object.entries(cart)
@@ -275,11 +283,20 @@ const SelfOrderPage: React.FC = () => {
           <p className="text-ferro-600">{search ? 'Nenhum item encontrado.' : 'Nenhum item disponível no momento.'}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-          {filteredProducts.map((product) => {
-            const quantity = cart[product.id] || 0
-            const soldOut = product.stock !== null && product.stock <= 0
-            return (
+        <div className="space-y-6">
+          {groupedProducts.map(({ category, products: categoryProducts }) => (
+            <section key={category} aria-labelledby={`menu-category-${category}`}>
+              <h3
+                id={`menu-category-${category}`}
+                className="mb-3 border-b-2 border-ferro-300 pb-2 font-display text-lg font-semibold uppercase tracking-wide text-ferro-900"
+              >
+                {category}
+              </h3>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                {categoryProducts.map((product) => {
+                  const quantity = cart[product.id] || 0
+                  const soldOut = product.stock !== null && product.stock <= 0
+                  return (
               <div
                 key={product.id}
                 className={`flex flex-col bg-creme-50 rounded-xl border-2 overflow-hidden shadow-sm ${
@@ -335,8 +352,11 @@ const SelfOrderPage: React.FC = () => {
                   )}
                 </div>
               </div>
-            )
-          })}
+                  )
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       )}
 

@@ -214,6 +214,11 @@ const ListProductsPage = () => {
                         </span>
                       )}
                     </div>
+                    {context === 'lanchonete' && (
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ferro-600">
+                        {product.menu_category || 'Outros'}
+                      </p>
+                    )}
                     
                     <div className="bg-creme-100 border border-ferro-200 rounded-xl px-3 py-2 space-y-1 mb-4">
                       <div className="flex justify-between items-center">

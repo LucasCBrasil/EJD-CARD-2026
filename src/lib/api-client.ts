@@ -260,6 +260,7 @@ export const api = {
   createLanchoneteCombo: (data: {
     name: string
     price: number
+    menuCategory: string
     components: { productId: string; quantity: number }[]
   }) =>
     request<ApiResult<unknown>>('manage-lanchonete-combos', {

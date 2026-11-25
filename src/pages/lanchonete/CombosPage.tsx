@@ -7,6 +7,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 import { productKeys, useProducts } from '../../hooks/useProducts'
 import { lanchoneteOrderKeys } from '../../hooks/useLanchoneteOrders'
 import { api } from '../../lib/api-client'
+import { LANCHONETE_MENU_CATEGORIES, type LanchoneteMenuCategory } from '../../types'
 
 interface ComboComponent {
   productId: string
@@ -23,6 +24,7 @@ const CombosPage = () => {
 
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
+  const [menuCategory, setMenuCategory] = useState<LanchoneteMenuCategory>('Outros')
   const [componentToAdd, setComponentToAdd] = useState('')
   const [components, setComponents] = useState<ComboComponent[]>([])
   const [isSaving, setIsSaving] = useState(false)
@@ -73,6 +75,7 @@ const CombosPage = () => {
       const response = await api.createLanchoneteCombo({
         name: name.trim(),
         price: parsedPrice,
+        menuCategory,
         components,
       })
       if (!response.success) {
@@ -141,6 +144,18 @@ const CombosPage = () => {
                 placeholder="0,00"
                 className="mt-1 w-full"
               />
+            </label>
+            <label className="block text-sm font-medium text-ferro-800">
+              Categoria do cardápio
+              <select
+                value={menuCategory}
+                onChange={(event) => setMenuCategory(event.target.value as LanchoneteMenuCategory)}
+                className="mt-1 w-full"
+              >
+                {LANCHONETE_MENU_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
             </label>
           </div>
 
