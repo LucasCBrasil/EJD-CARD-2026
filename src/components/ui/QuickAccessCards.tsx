@@ -10,6 +10,7 @@ const QuickAccessCards: React.FC = () => {
     userRole,
     canViewAdmin,
     canSellLojinha,
+    canViewLojinhaCatalog,
     canSellLanchonete,
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
@@ -45,11 +46,11 @@ const QuickAccessCards: React.FC = () => {
     })
   }
 
-  // Card: Lojinha (se tiver permissão)
-  if (canSellLojinha && userRole !== 'encontrista') {
+  // Card: Lojinha (vitrine para todos; vendas para equipe da lojinha)
+  if (canViewLojinhaCatalog || canSellLojinha) {
     cards.push({
       title: '🏪 Lojinha',
-      description: 'Realizar vendas',
+      description: canSellLojinha ? 'Realizar vendas' : 'Ver itens da lojinha',
       path: '/lojinha',
       color: 'bg-vagao-600',
       buttonColor: 'bg-vagao-600 hover:bg-vagao-700'

@@ -16,6 +16,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
     userRole,
     canViewAdmin,
     canSellLojinha,
+    canViewLojinhaCatalog,
     canSellLanchonete,
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
@@ -51,7 +52,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
               💰 Contas e Saldos
             </button>
           )}
-          {userRole !== 'encontrista' && canSellLojinha && (
+          {(canViewLojinhaCatalog || canSellLojinha) && (
             <button
               onClick={() => onTabChange('lojinha')}
               className={tabClass(activeTab === 'lojinha')}

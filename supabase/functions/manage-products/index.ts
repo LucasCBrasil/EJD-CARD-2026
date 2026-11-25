@@ -277,10 +277,23 @@ Deno.serve(async (req) => {
           )
         }
 
+        const userRole = await getUserRole(authResult.id)
+        const canSeeLojinhaStock = userRole === 'admin' || userRole === 'lojinha' || userRole === 'coordLojinha'
+        const safeProducts = (products || []).map((product: Record<string, unknown>) => {
+          if (product.category !== 'lojinha' || canSeeLojinhaStock) {
+            return product
+          }
+          const rawStock = product.stock
+          const numericStock = rawStock === null || rawStock === undefined || rawStock === '' ? NaN : Number(rawStock)
+          const outOfStock = Number.isFinite(numericStock) && numericStock <= 0
+          const { stock: _stock, is_consigned: _isConsigned, ...safeProduct } = product
+          return { ...safeProduct, out_of_stock: outOfStock }
+        })
+
         return new Response(
           JSON.stringify({
             success: true,
-            data: products
+            data: safeProducts
           } as ApiResponse),
           {
             status: 200,

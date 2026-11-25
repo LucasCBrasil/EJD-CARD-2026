@@ -33,6 +33,8 @@ const HomePage: React.FC = () => {
     canSellLanchonete,
     canManageProductsLojinha,
     canManageProductsLanchonete,
+    canViewLojinhaCatalog,
+    isLojinhaStaff,
     canViewSalesHistoryLojinha,
     canViewSalesHistoryLanchonete,
     canViewOpenOrders,
@@ -78,10 +80,12 @@ const HomePage: React.FC = () => {
       id: 'lojinha',
       title: 'LOJINHA',
       icon: '🏪',
-      description: 'Vendas, produtos, histórico e pedidos da lojinha',
+      description: isLojinhaStaff
+        ? 'Vendas, produtos, histórico e pedidos da lojinha'
+        : 'Confira os itens da lojinha. A compra é feita presencialmente na lojinha',
       accent: 'bg-vagao-600',
       path: '/lojinha',
-      canAccess: canSellLojinha || canManageProductsLojinha || canViewSalesHistoryLojinha || canViewOpenOrders
+      canAccess: isLojinhaStaff || canViewLojinhaCatalog
     },
     {
       id: 'lanchonete',
@@ -153,6 +157,13 @@ const HomePage: React.FC = () => {
       
       case 'lojinha':
         return [
+          {
+            icon: '🛍️',
+            title: 'Vitrine da Lojinha',
+            description: 'Ver itens disponíveis na lojinha',
+            path: '/lojinha/catalogo',
+            canAccess: canViewLojinhaCatalog
+          },
           {
             icon: '🛒',
             title: 'Realizar Venda',
