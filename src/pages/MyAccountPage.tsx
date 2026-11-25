@@ -161,14 +161,6 @@ const AccountPage: React.FC = () => {
           createdAt: accountData.created_at || '',
         })
 
-        const saleHistory: HistoryItem[] = (response.data.sales || []).map((sale: any) => ({
-          id: sale.id,
-          date: sale.created_at || sale.createdAt,
-          label: ((sale.sale_items || []).map((item: any) => item.product_name).filter(Boolean).join(', ') || 'Compra')
-            + (sale.status === 'cancelled' ? ' (cancelado e estornado)' : ''),
-          amount: Number(sale.total) || 0,
-          type: sale.category || 'lojinha',
-        }))
         const transactions: HistoryItem[] = (response.data.transactions || []).map((transaction: any) => ({
           id: transaction.id,
           date: transaction.created_at || transaction.createdAt,
@@ -176,7 +168,7 @@ const AccountPage: React.FC = () => {
           amount: Math.abs(Number(transaction.amount) || 0),
           type: transaction.type === 'credit' ? 'credit' : 'debit',
         }))
-        setHistory([...saleHistory, ...transactions].filter((item) => item.date).sort(
+        setHistory(transactions.filter((item) => item.date).sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         ).slice(0, 30))
       } catch (err) {
