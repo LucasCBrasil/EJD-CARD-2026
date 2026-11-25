@@ -12,12 +12,15 @@ export interface Transaction {
 }
 
 export type ProductCategory = 'lojinha' | 'lanchonete'
+export const LANCHONETE_MENU_CATEGORIES = ['Salgados', 'Sobremesas', 'Bebidas', 'Outros'] as const
+export type LanchoneteMenuCategory = typeof LANCHONETE_MENU_CATEGORIES[number]
 
 export interface Product {
   id: string
   name: string
   price: number
   category: ProductCategory
+  menu_category?: LanchoneteMenuCategory
   description?: string
   stock?: number
   active: boolean

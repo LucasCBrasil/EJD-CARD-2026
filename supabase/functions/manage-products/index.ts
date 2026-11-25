@@ -76,6 +76,9 @@ const getAuthUser = async (req: Request) => {
   }
 }
 
+const menuCategories = ['Salgados', 'Sobremesas', 'Bebidas', 'Outros']
+
+
 const requireAuth = async (req: Request) => {
   const user = await getAuthUser(req)
   
@@ -122,7 +125,7 @@ const hasPermission = (userRole: UserRole, permission: 'canManageProductsLojinha
   if (permission === 'canManageProductsLojinha') {
     return userRole === 'coordLojinha'
   }
-  
+
   if (permission === 'canManageProductsLanchonete') {
     return userRole === 'coordLanchonete'
   }
@@ -295,7 +298,8 @@ Deno.serve(async (req) => {
           description,
           stock,
           image_url,
-          is_consigned
+          is_consigned,
+          menu_category
         }: {
           name: string
           price: number
@@ -304,6 +308,7 @@ Deno.serve(async (req) => {
           stock?: number
           image_url?: string | null
           is_consigned?: boolean
+          menu_category?: string
         } = await req.json()
 
         // Validações básicas
@@ -323,6 +328,7 @@ Deno.serve(async (req) => {
         if (
           (is_consigned !== undefined && typeof is_consigned !== 'boolean')
           || (category !== 'lojinha' && is_consigned === true)
+          || (menu_category !== undefined && !menuCategories.includes(menu_category))
         ) {
           return new Response(
             JSON.stringify({ success: false, error: 'A identificação de consignado só pode ser usada em produtos da lojinha.' } as ApiResponse),
@@ -374,6 +380,7 @@ Deno.serve(async (req) => {
             stock,
             image_url,
             is_consigned: category === 'lojinha' && is_consigned === true,
+            menu_category: category === 'lanchonete' ? menu_category || 'Outros' : 'Outros',
             active: true
           })
           .select()
@@ -415,7 +422,8 @@ Deno.serve(async (req) => {
           stock,
           image_url,
           active,
-          is_consigned
+          is_consigned,
+          menu_category
         } = await req.json()
 
         if (!id) {
@@ -462,6 +470,7 @@ Deno.serve(async (req) => {
         if (
           (is_consigned !== undefined && typeof is_consigned !== 'boolean')
           || (currentProduct.category !== 'lojinha' && is_consigned === true)
+          || (menu_category !== undefined && !menuCategories.includes(menu_category))
         ) {
           return new Response(
             JSON.stringify({ success: false, error: 'A identificação de consignado só pode ser usada em produtos da lojinha.' } as ApiResponse),
@@ -494,6 +503,15 @@ Deno.serve(async (req) => {
         if (image_url !== undefined) updates.image_url = image_url
         if (active !== undefined) updates.active = active
         if (is_consigned !== undefined) updates.is_consigned = currentProduct.category === 'lojinha' && is_consigned
+        if (menu_category !== undefined) {
+          if (currentProduct.category !== 'lanchonete') {
+            return new Response(
+              JSON.stringify({ success: false, error: 'A categoria do cardápio só pode ser usada em itens da lanchonete.' } as ApiResponse),
+              { status: 400, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+            )
+          }
+          updates.menu_category = menu_category
+        }
 
         const { data: product, error } = await supabase
           .from('products')

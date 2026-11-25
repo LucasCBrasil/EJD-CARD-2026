@@ -28,6 +28,12 @@ INSERT INTO public.products (id, name, price, category, stock, active) VALUES
 
 SELECT is((SELECT is_consigned FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000004'),
   FALSE, 'produto da lojinha e nao consignado por padrao');
+SELECT is((SELECT menu_category FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000001'),
+  'Outros', 'produto existente inicia na categoria Outros');
+SELECT throws_ok(
+  $$UPDATE public.products SET menu_category = 'Categoria invalida' WHERE id = 'aaaaaaaa-0000-0000-0000-000000000001'$$,
+  '23514', 'new row for relation "products" violates check constraint "products_menu_category_check"',
+  'categoria do cardapio aceita apenas valores conhecidos');
 UPDATE public.products SET is_consigned = TRUE WHERE id = 'aaaaaaaa-0000-0000-0000-000000000004';
 SELECT is((SELECT is_consigned FROM public.products WHERE id = 'aaaaaaaa-0000-0000-0000-000000000004'),
   TRUE, 'produto da lojinha pode ser marcado como consignado');
@@ -52,6 +58,8 @@ SELECT ok(has_function_privilege('service_role', 'public.create_lanchonete_self_
   'service_role executa create_lanchonete_self_order');
 SELECT ok(has_table_privilege('service_role', 'public.product_combo_items', 'SELECT'),
   'service_role pode ler os componentes dos combos no cardapio');
+SELECT ok(NOT has_function_privilege('authenticated', 'public.create_lanchonete_combo_with_category(text,numeric,jsonb,text)', 'EXECUTE'),
+  'authenticated nao executa criacao categorizada de combos');
 
 -- ---------------------------------------------------------------------------
 -- Feature flag
@@ -319,15 +327,18 @@ SELECT throws_ok(
 -- Combos consomem e devolvem o estoque dos componentes
 -- ---------------------------------------------------------------------------
 CREATE TEMP TABLE combo1 AS
-SELECT id FROM public.create_lanchonete_combo(
+SELECT id FROM public.create_lanchonete_combo_with_category(
   'Combo teste',
   6.50,
   '[{"productId":"aaaaaaaa-0000-0000-0000-000000000006","quantity":1},
-    {"productId":"aaaaaaaa-0000-0000-0000-000000000007","quantity":1}]'
+    {"productId":"aaaaaaaa-0000-0000-0000-000000000007","quantity":1}]',
+  'Salgados'
 );
 
 SELECT is((SELECT is_combo FROM public.products WHERE id = (SELECT id FROM combo1)), TRUE,
   'combo e gravado como produto do cardapio');
+SELECT is((SELECT menu_category FROM public.products WHERE id = (SELECT id FROM combo1)), 'Salgados',
+  'combo recebe a categoria selecionada');
 SELECT is(
   (SELECT LEAST(MIN(product.stock / component.quantity), 999)::INTEGER
    FROM public.product_combo_items AS component

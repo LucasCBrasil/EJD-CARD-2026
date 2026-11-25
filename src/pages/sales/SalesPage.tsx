@@ -8,6 +8,7 @@ import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { UserAccount } from '../../types'
 import OptimizedImage from '../../components/ui/OptimizedImage'
 import { api, type AmbulanteBagItem } from '../../lib/api-client'
+import { LANCHONETE_MENU_CATEGORIES } from '../../types'
 
 type ContextType = 'lojinha' | 'lanchonete'
 type BagModalMode = 'take' | 'return' | null
@@ -187,6 +188,7 @@ const SalesPage: React.FC = () => {
         name: entry.product.name,
         price: entry.product.price,
         category: 'lanchonete',
+        menu_category: catalogItem?.menu_category || 'Outros',
         description: entry.product.description || catalogItem?.description || null,
         stock: entry.quantity,
         active: entry.product.active,
@@ -321,15 +323,31 @@ const SalesPage: React.FC = () => {
 
   const filteredProducts = useMemo(() => {
     if (!products || !Array.isArray(products)) return []
-    if (!searchFilter.trim()) return products
     const filterLower = searchFilter.toLowerCase().trim()
-    return products.filter(p => p && p.name && p.name.toLowerCase().includes(filterLower))
-  }, [products, searchFilter])
+    const matchingProducts = filterLower
+      ? products.filter(p => p && p.name && p.name.toLowerCase().includes(filterLower))
+      : products
+    if (context !== 'lanchonete') return matchingProducts
+    const categoryOrder = new Map(LANCHONETE_MENU_CATEGORIES.map((category, index) => [category, index]))
+    return [...matchingProducts].sort((a, b) => {
+      const aOrder = categoryOrder.get(a.menu_category || 'Outros') ?? categoryOrder.get('Outros')!
+      const bOrder = categoryOrder.get(b.menu_category || 'Outros') ?? categoryOrder.get('Outros')!
+      return aOrder - bOrder || a.name.localeCompare(b.name)
+    })
+  }, [products, searchFilter, context])
 
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
     return filteredProducts.slice(startIndex, startIndex + itemsPerPage)
   }, [filteredProducts, currentPage, itemsPerPage])
+
+  const paginatedProductGroups = useMemo(() => {
+    if (context !== 'lanchonete') return [{ category: null, products: paginatedProducts }]
+    return LANCHONETE_MENU_CATEGORIES.map((category) => ({
+      category,
+      products: paginatedProducts.filter((product) => (product.menu_category || 'Outros') === category),
+    })).filter((group) => group.products.length > 0)
+  }, [context, paginatedProducts])
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
 
@@ -806,8 +824,16 @@ const SalesPage: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                {paginatedProducts.map(p => (
+              <div className="space-y-5">
+                {paginatedProductGroups.map(({ category, products: categoryProducts }) => (
+                  <section key={category || 'products'}>
+                    {category && (
+                      <h3 className="mb-3 border-b-2 border-ferro-300 pb-2 font-display text-sm font-semibold uppercase tracking-wide text-ferro-800">
+                        {category}
+                      </h3>
+                    )}
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                {categoryProducts.map(p => (
                   <div key={p.id} className="flex flex-col bg-creme-50 rounded-xl border-2 border-ferro-800 overflow-hidden shadow-sm hover:shadow-bilhete transition-shadow">
                     <div className="h-28 sm:h-36 bg-creme-200 flex items-center justify-center">
                       <OptimizedImage
@@ -832,6 +858,9 @@ const SalesPage: React.FC = () => {
                       </button>
                     </div>
                   </div>
+                ))}
+                    </div>
+                  </section>
                 ))}
               </div>
 

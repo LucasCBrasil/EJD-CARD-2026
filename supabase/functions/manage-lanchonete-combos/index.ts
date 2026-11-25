@@ -4,6 +4,8 @@ import { hasPermission } from '../_shared/roles.ts'
 import { getCorsHeaders } from '../_shared/cors.ts'
 import { isUuid, jsonResponse } from '../_shared/lanchonete-orders.ts'
 
+const menuCategories = ['Salgados', 'Sobremesas', 'Bebidas', 'Outros']
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin')
 
@@ -49,6 +51,7 @@ Deno.serve(async (req) => {
       || !Number.isFinite(body.price)
       || body.price <= 0
       || body.price >= 100000000
+      || (body.menuCategory !== undefined && !menuCategories.includes(String(body.menuCategory)))
       || !Array.isArray(body.components)
       || body.components.some((component) => {
         if (typeof component !== 'object' || component === null) return true
@@ -63,10 +66,11 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createSupabaseClient()
-    const { data, error } = await supabase.rpc('create_lanchonete_combo', {
+    const { data, error } = await supabase.rpc('create_lanchonete_combo_with_category', {
       p_name: body.name.trim(),
       p_price: body.price,
       p_components: body.components,
+      p_menu_category: body.menuCategory || 'Outros',
     }).single()
 
     if (error) {
