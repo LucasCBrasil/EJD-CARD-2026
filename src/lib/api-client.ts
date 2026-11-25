@@ -347,7 +347,6 @@ export const api = {
       data: { 
         account: any | null;
         transactions: any[];
-        sales: any[];
       } 
     }>('my-account-history', {
       method: 'GET',
