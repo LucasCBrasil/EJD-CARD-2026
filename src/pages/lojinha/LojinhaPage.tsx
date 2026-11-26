@@ -1,16 +1,32 @@
 import React from 'react'
 import { InternalCard } from '../../components/shared'
 import { usePermissions } from '../../hooks/usePermissions'
+import LojinhaCatalogPage from './LojinhaCatalogPage'
 
 const LojinhaPage = () => {
   const {
     canSellLojinha,
     canManageProductsLojinha,
     canViewSalesHistoryLojinha,
-    canViewOpenOrders
+    canViewOpenOrders,
+    canViewLojinhaCatalog,
+    isLojinhaStaff,
   } = usePermissions()
 
+  if (!isLojinhaStaff) {
+    return <LojinhaCatalogPage />
+  }
+
   const cards = [
+    {
+      icon: '🛍️',
+      title: 'Vitrine da Lojinha',
+      description: 'Ver os itens como os encontristas visualizam',
+      path: '/lojinha/catalogo',
+      color: 'from-anil-600 to-anil-800',
+      gradient: 'border-anil-300',
+      canAccess: canViewLojinhaCatalog
+    },
     {
       icon: '🛒',
       title: 'Realizar Venda',

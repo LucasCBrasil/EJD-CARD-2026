@@ -21,6 +21,7 @@ export interface RolePermissions {
   // Produtos
   canManageProductsLojinha: boolean
   canManageProductsLanchonete: boolean
+  canViewLojinhaCatalog: boolean
   
   // Vendas (realizar vendas)
   canSellLojinha: boolean
@@ -55,6 +56,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllBalances: true,
     canManageProductsLojinha: true,
     canManageProductsLanchonete: true,
+    canViewLojinhaCatalog: true,
     canSellLojinha: true,
     canSellLanchonete: true,
     canViewSalesHistoryLojinha: true,
@@ -77,6 +79,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllBalances: true,
     canManageProductsLojinha: false,
     canManageProductsLanchonete: false,
+    canViewLojinhaCatalog: true,
     canSellLojinha: true,
     canSellLanchonete: false,
     canViewSalesHistoryLojinha: true,
@@ -99,6 +102,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllBalances: true,
     canManageProductsLojinha: true,
     canManageProductsLanchonete: false,
+    canViewLojinhaCatalog: true,
     canSellLojinha: true,
     canSellLanchonete: false,
     canViewSalesHistoryLojinha: true,
@@ -121,6 +125,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllBalances: true,
     canManageProductsLojinha: false,
     canManageProductsLanchonete: false,
+    canViewLojinhaCatalog: true,
     canSellLojinha: false,
     canSellLanchonete: true,
     canViewSalesHistoryLojinha: false,
@@ -143,6 +148,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllBalances: true,
     canManageProductsLojinha: false,
     canManageProductsLanchonete: true,
+    canViewLojinhaCatalog: true,
     canSellLojinha: false,
     canSellLanchonete: true,
     canViewSalesHistoryLojinha: false,
@@ -165,6 +171,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllBalances: true,
     canManageProductsLojinha: false,
     canManageProductsLanchonete: false,
+    canViewLojinhaCatalog: true,
     canSellLojinha: false,
     canSellLanchonete: false,
     canViewSalesHistoryLojinha: false,
@@ -187,6 +194,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllBalances: false,
     canManageProductsLojinha: false,
     canManageProductsLanchonete: false,
+    canViewLojinhaCatalog: true,
     canSellLojinha: false,
     canSellLanchonete: false,
     canViewSalesHistoryLojinha: false,
@@ -209,6 +217,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllBalances: false,
     canManageProductsLojinha: false,
     canManageProductsLanchonete: false,
+    canViewLojinhaCatalog: true,
     canSellLojinha: false,
     canSellLanchonete: false,
     canViewSalesHistoryLojinha: false,

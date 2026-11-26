@@ -7,7 +7,8 @@
  */
 
 import { createSupabaseClient } from '../_shared/supabase.ts'
-import { requireAuth } from '../_shared/auth.ts'
+import { getUserRole, requireAuth } from '../_shared/auth.ts'
+import { sanitizeProductForRole } from '../_shared/lojinha-catalog.ts'
 import type { ApiResponse } from '../_shared/types.ts'
 import { getCorsHeaders } from '../_shared/cors.ts'
 
@@ -134,10 +135,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    const userRole = await getUserRole(authResult.id)
+    const sanitizedProducts = (products || []).map((product) =>
+      sanitizeProductForRole(product, userRole),
+    )
+
     return new Response(
       JSON.stringify({
         success: true,
-        data: products || []
+        data: sanitizedProducts
       } as ApiResponse),
       {
         status: 200,

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api-client'
+import { toLojinhaCatalogItems, type LojinhaCatalogItem } from '../lib/lojinhaCatalog'
 import type { ProductCategory } from '../types'
 import { useToastContext } from '../contexts/ToastContext'
 
@@ -8,6 +9,23 @@ export const productKeys = {
   lists: () => [...productKeys.all, 'list'] as const,
   list: (category?: ProductCategory) => 
     [...productKeys.lists(), { category }] as const,
+  lojinhaCatalog: () => [...productKeys.all, 'lojinha-catalog'] as const,
+}
+
+export function useLojinhaCatalog() {
+  return useQuery<LojinhaCatalogItem[]>({
+    queryKey: productKeys.lojinhaCatalog(),
+    queryFn: async () => {
+      const response = await api.listProducts('lojinha')
+      if (!response.success) {
+        throw new Error((response as any).error || 'Erro ao buscar produtos da lojinha')
+      }
+      return toLojinhaCatalogItems(response.data || [])
+    },
+    staleTime: 1000 * 30,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  })
 }
 
 export function useProducts(category?: ProductCategory) {
@@ -39,7 +57,7 @@ export function useCreateProduct() {
       return response.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productKeys.all })
       showSuccess('Sucesso', 'Produto criado com sucesso')
     },
     onError: (error: any) => {
@@ -61,7 +79,7 @@ export function useUpdateProduct() {
       return response.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productKeys.all })
       showSuccess('Sucesso', 'Produto atualizado com sucesso')
     },
     onError: (error: any) => {
@@ -83,7 +101,7 @@ export function useDeleteProduct() {
       return response.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productKeys.all })
       showSuccess('Sucesso', 'Produto removido com sucesso')
     },
     onError: (error: any) => {

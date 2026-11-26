@@ -30,6 +30,12 @@ export const usePermissions = () => {
     // Produtos
     canManageProductsLojinha: hasPermission(userRole, 'canManageProductsLojinha'),
     canManageProductsLanchonete: hasPermission(userRole, 'canManageProductsLanchonete'),
+    canViewLojinhaCatalog: hasPermission(userRole, 'canViewLojinhaCatalog'),
+    isLojinhaStaff:
+      hasPermission(userRole, 'canSellLojinha') ||
+      hasPermission(userRole, 'canManageProductsLojinha') ||
+      hasPermission(userRole, 'canViewSalesHistoryLojinha') ||
+      hasPermission(userRole, 'canViewOpenOrders'),
     
     // Vendas
     canSellLojinha: hasPermission(userRole, 'canSellLojinha'),

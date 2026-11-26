@@ -27,6 +27,7 @@ import { Route as LayoutVendasLojinhaRouteImport } from './routes/_layout/vendas
 import { Route as LayoutVendasLanchoneteRouteImport } from './routes/_layout/vendas/lanchonete'
 import { Route as LayoutPixPaymentIdRouteImport } from './routes/_layout/pix/$paymentId'
 import { Route as LayoutLojinhaSelectRouteImport } from './routes/_layout/lojinha/select'
+import { Route as LayoutLojinhaCatalogoRouteImport } from './routes/_layout/lojinha/catalogo'
 import { Route as LayoutLanchoneteSelectRouteImport } from './routes/_layout/lanchonete/select'
 import { Route as LayoutLanchonetePedirRouteImport } from './routes/_layout/lanchonete/pedir'
 import { Route as LayoutLanchoneteMeusPedidosRouteImport } from './routes/_layout/lanchonete/meus-pedidos'
@@ -132,6 +133,11 @@ const LayoutPixPaymentIdRoute = LayoutPixPaymentIdRouteImport.update({
 const LayoutLojinhaSelectRoute = LayoutLojinhaSelectRouteImport.update({
   id: '/lojinha/select',
   path: '/lojinha/select',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutLojinhaCatalogoRoute = LayoutLojinhaCatalogoRouteImport.update({
+  id: '/lojinha/catalogo',
+  path: '/lojinha/catalogo',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutLanchoneteSelectRoute = LayoutLanchoneteSelectRouteImport.update({
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/lanchonete/meus-pedidos': typeof LayoutLanchoneteMeusPedidosRoute
   '/lanchonete/pedir': typeof LayoutLanchonetePedirRoute
   '/lanchonete/select': typeof LayoutLanchoneteSelectRoute
+  '/lojinha/catalogo': typeof LayoutLojinhaCatalogoRoute
   '/lojinha/select': typeof LayoutLojinhaSelectRoute
   '/pix/$paymentId': typeof LayoutPixPaymentIdRoute
   '/vendas/lanchonete': typeof LayoutVendasLanchoneteRoute
@@ -286,6 +293,7 @@ export interface FileRoutesByTo {
   '/lanchonete/meus-pedidos': typeof LayoutLanchoneteMeusPedidosRoute
   '/lanchonete/pedir': typeof LayoutLanchonetePedirRoute
   '/lanchonete/select': typeof LayoutLanchoneteSelectRoute
+  '/lojinha/catalogo': typeof LayoutLojinhaCatalogoRoute
   '/lojinha/select': typeof LayoutLojinhaSelectRoute
   '/pix/$paymentId': typeof LayoutPixPaymentIdRoute
   '/vendas/lanchonete': typeof LayoutVendasLanchoneteRoute
@@ -324,6 +332,7 @@ export interface FileRoutesById {
   '/_layout/lanchonete/meus-pedidos': typeof LayoutLanchoneteMeusPedidosRoute
   '/_layout/lanchonete/pedir': typeof LayoutLanchonetePedirRoute
   '/_layout/lanchonete/select': typeof LayoutLanchoneteSelectRoute
+  '/_layout/lojinha/catalogo': typeof LayoutLojinhaCatalogoRoute
   '/_layout/lojinha/select': typeof LayoutLojinhaSelectRoute
   '/_layout/pix/$paymentId': typeof LayoutPixPaymentIdRoute
   '/_layout/vendas/lanchonete': typeof LayoutVendasLanchoneteRoute
@@ -362,6 +371,7 @@ export interface FileRouteTypes {
     | '/lanchonete/meus-pedidos'
     | '/lanchonete/pedir'
     | '/lanchonete/select'
+    | '/lojinha/catalogo'
     | '/lojinha/select'
     | '/pix/$paymentId'
     | '/vendas/lanchonete'
@@ -398,6 +408,7 @@ export interface FileRouteTypes {
     | '/lanchonete/meus-pedidos'
     | '/lanchonete/pedir'
     | '/lanchonete/select'
+    | '/lojinha/catalogo'
     | '/lojinha/select'
     | '/pix/$paymentId'
     | '/vendas/lanchonete'
@@ -435,6 +446,7 @@ export interface FileRouteTypes {
     | '/_layout/lanchonete/meus-pedidos'
     | '/_layout/lanchonete/pedir'
     | '/_layout/lanchonete/select'
+    | '/_layout/lojinha/catalogo'
     | '/_layout/lojinha/select'
     | '/_layout/pix/$paymentId'
     | '/_layout/vendas/lanchonete'
@@ -584,6 +596,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLojinhaSelectRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/lojinha/catalogo': {
+      id: '/_layout/lojinha/catalogo'
+      path: '/lojinha/catalogo'
+      fullPath: '/lojinha/catalogo'
+      preLoaderRoute: typeof LayoutLojinhaCatalogoRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/lanchonete/select': {
       id: '/_layout/lanchonete/select'
       path: '/lanchonete/select'
@@ -726,6 +745,7 @@ interface LayoutRouteChildren {
   LayoutLanchoneteMeusPedidosRoute: typeof LayoutLanchoneteMeusPedidosRoute
   LayoutLanchonetePedirRoute: typeof LayoutLanchonetePedirRoute
   LayoutLanchoneteSelectRoute: typeof LayoutLanchoneteSelectRoute
+  LayoutLojinhaCatalogoRoute: typeof LayoutLojinhaCatalogoRoute
   LayoutLojinhaSelectRoute: typeof LayoutLojinhaSelectRoute
   LayoutPixPaymentIdRoute: typeof LayoutPixPaymentIdRoute
   LayoutVendasLanchoneteRoute: typeof LayoutVendasLanchoneteRoute
@@ -762,6 +782,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutLanchoneteMeusPedidosRoute: LayoutLanchoneteMeusPedidosRoute,
   LayoutLanchonetePedirRoute: LayoutLanchonetePedirRoute,
   LayoutLanchoneteSelectRoute: LayoutLanchoneteSelectRoute,
+  LayoutLojinhaCatalogoRoute: LayoutLojinhaCatalogoRoute,
   LayoutLojinhaSelectRoute: LayoutLojinhaSelectRoute,
   LayoutPixPaymentIdRoute: LayoutPixPaymentIdRoute,
   LayoutVendasLanchoneteRoute: LayoutVendasLanchoneteRoute,
