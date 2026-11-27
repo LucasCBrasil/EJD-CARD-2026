@@ -19,7 +19,7 @@ export const sanitizeProductForRole = <T extends Record<string, unknown>>(
   const rawStock = product.stock
   const numericStock = rawStock === null || rawStock === undefined || rawStock === '' ? NaN : Number(rawStock)
   const outOfStock = Number.isFinite(numericStock) && numericStock <= 0
-  const { stock: _stock, is_consigned: _isConsigned, ...safeProduct } = product
+  const { stock: _stock, is_consigned: _isConsigned, size_stock: _sizeStock, ...safeProduct } = product
 
   return {
     ...safeProduct,

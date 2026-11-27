@@ -1,7 +1,7 @@
 /**
  * Testes da vitrine da Lojinha e sanitização de estoque por perfil:
  * 1. Permissões: todos os perfis veem a vitrine; apenas equipe da lojinha/admin vê estoque e vende
- * 2. Sanitização no backend: remove `stock` e `is_consigned` da lojinha para não-equipe, mantendo `out_of_stock`
+ * 2. Sanitização no backend: remove estoques e `is_consigned` da lojinha para não-equipe, mantendo `out_of_stock`
  * 3. Lanchonete preservada: não altera produtos da lanchonete (autoatendimento usa `stock`)
  * 4. Catálogo no front: ordenação (disponíveis primeiro), fallback antes do deploy da Edge Function e busca sem acento
  *
@@ -45,6 +45,7 @@ const tests: Array<{ name: string; run: () => void }> = [
         category: 'lojinha',
         stock: 12,
         is_consigned: true,
+        size_stock: { M: 5, G: 7 },
         active: true,
       }
       const zeroStockProduct = {
@@ -72,6 +73,7 @@ const tests: Array<{ name: string; run: () => void }> = [
         const sanitizedAvailable = sanitizeProductForRole(availableProduct, role)
         assert.equal('stock' in sanitizedAvailable, false, `stock não deve ir para ${role}`)
         assert.equal('is_consigned' in sanitizedAvailable, false, `is_consigned não deve ir para ${role}`)
+        assert.equal('size_stock' in sanitizedAvailable, false, `estoque por tamanho não deve ir para ${role}`)
         assert.equal(sanitizedAvailable.out_of_stock, false)
 
         const sanitizedZero = sanitizeProductForRole(zeroStockProduct, role)
@@ -94,6 +96,7 @@ const tests: Array<{ name: string; run: () => void }> = [
         category: 'lojinha',
         stock: 12,
         is_consigned: true,
+        size_stock: { M: 5, G: 7 },
         active: true,
       }
 
@@ -102,6 +105,7 @@ const tests: Array<{ name: string; run: () => void }> = [
         const result = sanitizeProductForRole(product, role)
         assert.equal(result.stock, 12)
         assert.equal(result.is_consigned, true)
+        assert.deepEqual(result.size_stock, { M: 5, G: 7 })
       }
     },
   },

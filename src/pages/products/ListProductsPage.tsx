@@ -214,12 +214,20 @@ const ListProductsPage = () => {
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-ferro-500">{product.is_combo ? 'Estoque do combo' : 'Quantidade'}</span>
+                        <span className="text-sm text-ferro-500">{product.size_stock ? 'Estoque total' : product.is_combo ? 'Estoque do combo' : 'Quantidade'}</span>
                         <span className={`font-ticket font-bold ${stockColor}`}>
                           {product.stock === null ? 'Sem limite' : product.stock}
                         </span>
                       </div>
                     </div>
+                    {context === 'lojinha' && product.size_stock && (
+                      <p className="mb-4 text-xs text-ferro-600">
+                        Tamanhos: {Object.entries(product.size_stock)
+                          .sort(([a], [b]) => ['PP', 'P', 'M', 'G', 'GG', 'XGG'].indexOf(a) - ['PP', 'P', 'M', 'G', 'GG', 'XGG'].indexOf(b))
+                          .map(([size, quantity]) => `${size}: ${quantity}`)
+                          .join(' · ')}
+                      </p>
+                    )}
                     {product.is_combo && (
                       <p className="mb-4 text-xs text-ferro-600">
                         Combo: {(product.combo_items || []).map((item: any) => `${item.quantity}× ${item.name}`).join(' + ')}

@@ -17,6 +17,17 @@ interface CartItemSnapshot {
   product_name: string
   price: number
   image_url: string | null
+  variant_size?: string | null
+}
+
+const cartKeyFor = (productId: string, variantSize?: string | null) =>
+  variantSize ? `${productId}::${variantSize}` : productId
+
+const parseCartKey = (key: string) => {
+  const separator = key.lastIndexOf('::')
+  return separator < 0
+    ? { productId: key, variantSize: null as string | null }
+    : { productId: key.slice(0, separator), variantSize: key.slice(separator + 2) }
 }
 
 const SalesPage: React.FC = () => {
@@ -36,6 +47,7 @@ const SalesPage: React.FC = () => {
   const [coupons, setCoupons] = useState<Array<{ name: string; discountAmount?: number }>>([])
   const [cartItems, setCartItems] = useState<Record<string, number>>({})
   const [cartItemSnapshots, setCartItemSnapshots] = useState<Record<string, CartItemSnapshot>>({})
+  const [sizeSelectionProduct, setSizeSelectionProduct] = useState<Product | null>(null)
   const [lojinhaCartId, setLojinhaCartId] = useState<string | null>(null)
   const [lojinhaCartVersion, setLojinhaCartVersion] = useState<number | null>(null)
   const [isCartLoading, setIsCartLoading] = useState(false)
@@ -76,11 +88,13 @@ const SalesPage: React.FC = () => {
     const quantities: Record<string, number> = {}
     const snapshots: Record<string, CartItemSnapshot> = {}
     for (const item of cart.items || []) {
-      quantities[item.product_id] = item.quantity
-      snapshots[item.product_id] = {
+      const key = cartKeyFor(item.product_id, item.variant_size || null)
+      quantities[key] = item.quantity
+      snapshots[key] = {
         product_name: item.product_name,
         price: Number(item.price),
         image_url: item.image_url || null,
+        variant_size: item.variant_size || null,
       }
     }
     setCartItems(quantities)
@@ -366,10 +380,11 @@ const SalesPage: React.FC = () => {
 
   const total = useMemo(() => {
     if (!products || !Array.isArray(products)) return 0
-    return Object.entries(cartItems).reduce((acc, [productId, qty]) => {
+    return Object.entries(cartItems).reduce((acc, [cartKey, qty]) => {
+      const { productId } = parseCartKey(cartKey)
       const p = products.find(pr => pr && pr.id === productId)
       const price = context === 'lojinha'
-        ? cartItemSnapshots[productId]?.price ?? p?.price
+        ? cartItemSnapshots[cartKey]?.price ?? p?.price
         : p?.price
       if (price === undefined) return acc
       return acc + price * qty
@@ -383,12 +398,21 @@ const SalesPage: React.FC = () => {
     return total
   }, [total, isCouponApplied, couponCode, couponDiscountAmount, context])
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: Product, variantSize?: string) => {
     const pid = product.id
     if (!pid) return
 
     if (context === 'lojinha') {
-      void mutateLojinhaCart({ action: 'add-item', productId: pid, quantity: 1 })
+      if (product.size_stock && !variantSize) {
+        setSizeSelectionProduct(product)
+        return
+      }
+      void mutateLojinhaCart({
+        action: 'add-item',
+        productId: pid,
+        quantity: 1,
+        ...(variantSize ? { variantSize } : {}),
+      })
       return
     }
 
@@ -413,37 +437,49 @@ const SalesPage: React.FC = () => {
     }))
   }
 
-  const handleDecrease = (productId: string) => {
+  const handleDecrease = (cartKey: string) => {
     if (context === 'lojinha') {
-      void mutateLojinhaCart({ action: 'decrease-item', productId })
+      const { productId, variantSize } = parseCartKey(cartKey)
+      void mutateLojinhaCart({
+        action: 'decrease-item',
+        productId,
+        ...(variantSize ? { variantSize } : {}),
+      })
       return
     }
 
     setCartItems(prev => {
-      const current = prev[productId] || 0
+      const current = prev[cartKey] || 0
       const next = Math.max(0, current - 1)
       const copy = { ...prev }
       if (next === 0) {
-        delete copy[productId]
+        delete copy[cartKey]
       } else {
-        copy[productId] = next
+        copy[cartKey] = next
       }
       return copy
     })
   }
 
-  const handleIncrease = (productId: string) => {
+  const handleIncrease = (cartKey: string) => {
     if (context === 'lojinha') {
-      void mutateLojinhaCart({ action: 'add-item', productId, quantity: 1 })
+      const { productId, variantSize } = parseCartKey(cartKey)
+      void mutateLojinhaCart({
+        action: 'add-item',
+        productId,
+        quantity: 1,
+        ...(variantSize ? { variantSize } : {}),
+      })
       return
     }
 
     if (!products || !Array.isArray(products)) return
+    const { productId } = parseCartKey(cartKey)
     const product = products.find(p => p && p.id === productId)
     if (!product) return
 
     if (product.stock !== null && product.stock !== undefined) {
-      const currentQuantity = cartItems[productId] || 0
+      const currentQuantity = cartItems[cartKey] || 0
       if (product.stock === 0) {
         showWarning('Sem estoque na bag', `Você não possui mais "${product.name}" na sua bag.`)
         return
@@ -459,7 +495,7 @@ const SalesPage: React.FC = () => {
 
     setCartItems(prev => ({
       ...prev,
-      [productId]: (prev[productId] || 0) + 1
+      [cartKey]: (prev[cartKey] || 0) + 1
     }))
   }
 
@@ -608,9 +644,10 @@ const SalesPage: React.FC = () => {
     }
 
     const items: SaleItem[] = []
-    for (const [productId, quantity] of Object.entries(cartItems)) {
+    for (const [cartKey, quantity] of Object.entries(cartItems)) {
+      const { productId, variantSize } = parseCartKey(cartKey)
       const product = products.find(item => item?.id === productId)
-      const snapshot = cartItemSnapshots[productId]
+      const snapshot = cartItemSnapshots[cartKey]
       const productName = snapshot?.product_name || product?.name
       const price = snapshot?.price ?? product?.price
       if (!productName || price === undefined) {
@@ -623,7 +660,7 @@ const SalesPage: React.FC = () => {
       items.push({
         id: product?.id || productId,
         productId,
-        productName,
+        productName: variantSize ? `${productName} (${variantSize})` : productName,
         price,
         quantity,
         image: snapshot?.image_url || product?.image_url || null,
@@ -854,7 +891,7 @@ const SalesPage: React.FC = () => {
                         disabled={isSaving || (context === 'lojinha' && !selectedAccount)}
                         className="w-full bg-ferro-800 hover:bg-ferro-700 text-creme-200 font-display font-semibold tracking-wide text-sm py-2 px-2 rounded-lg transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        + Adicionar
+                        {context === 'lojinha' && p.size_stock ? 'Escolher tamanho' : '+ Adicionar'}
                       </button>
                     </div>
                   </div>
@@ -991,13 +1028,14 @@ const SalesPage: React.FC = () => {
               <div className="space-y-3">
                 {/* Lista de itens */}
                 <div className="picote-horizontal pt-3 space-y-2 max-h-64 overflow-y-auto">
-                  {Object.entries(cartItems).map(([productId, qty]) => {
+                  {Object.entries(cartItems).map(([cartKey, qty]) => {
+                    const { productId, variantSize } = parseCartKey(cartKey)
                     const p = products.find(pr => pr.id === productId)
-                    const snapshot = cartItemSnapshots[productId]
+                    const snapshot = cartItemSnapshots[cartKey]
                     const productName = snapshot?.product_name || p?.name || 'Produto indisponível'
                     const productPrice = snapshot?.price ?? p?.price ?? 0
                     return (
-                      <div key={productId} className="bg-creme-50 p-2 rounded-lg border border-ferro-200">
+                      <div key={cartKey} className="bg-creme-50 p-2 rounded-lg border border-ferro-200">
                         <div className="flex items-center gap-2">
                           <OptimizedImage
                             src={snapshot?.image_url || p?.image_url || ''}
@@ -1007,13 +1045,14 @@ const SalesPage: React.FC = () => {
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-ferro-900 truncate leading-tight">{productName}</p>
+                            {variantSize && <p className="text-xs font-semibold text-ferro-700">Tamanho: {variantSize}</p>}
                             <p className="text-xs text-ferro-500">R$ {formatPrice(productPrice)}</p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-1.5">
                             <button
-                              onClick={() => handleDecrease(productId)}
+                              onClick={() => handleDecrease(cartKey)}
                               disabled={isSaving}
                               className={`${smallBtn} w-8 h-8 bg-creme-200 hover:bg-creme-300 border border-ferro-200 text-ferro-800 text-base`}
                               aria-label="Diminuir"
@@ -1022,7 +1061,7 @@ const SalesPage: React.FC = () => {
                             </button>
                             <span className="w-6 text-center text-sm font-semibold text-ferro-900">{qty}</span>
                             <button
-                              onClick={() => handleIncrease(productId)}
+                              onClick={() => handleIncrease(cartKey)}
                               disabled={isSaving}
                               className={`${smallBtn} w-8 h-8 bg-creme-200 hover:bg-creme-300 border border-ferro-200 text-ferro-800 text-base`}
                               aria-label="Aumentar"
@@ -1169,6 +1208,51 @@ const SalesPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {sizeSelectionProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ferro-900/60 p-4" role="dialog" aria-modal="true" aria-labelledby="size-selection-title">
+          <div className="w-full max-w-sm rounded-2xl border-2 border-ferro-800 bg-creme-50 p-5 shadow-bilhete">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 id="size-selection-title" className="font-display text-lg font-semibold uppercase tracking-wide text-ferro-900">
+                  Escolha o tamanho
+                </h2>
+                <p className="mt-1 text-sm text-ferro-600">{sizeSelectionProduct.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSizeSelectionProduct(null)}
+                className="rounded-lg px-2 py-1 text-ferro-600 hover:bg-creme-200"
+                aria-label="Fechar seleção de tamanho"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {['PP', 'P', 'M', 'G', 'GG', 'XGG'].map((size) => {
+                const available = Number(sizeSelectionProduct.size_stock?.[size] || 0)
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    disabled={available <= 0 || isSaving}
+                    onClick={() => {
+                      handleAddToCart(sizeSelectionProduct, size)
+                      setSizeSelectionProduct(null)
+                    }}
+                    className="rounded-xl border border-ferro-300 bg-creme-100 px-3 py-3 text-left hover:border-ferro-700 hover:bg-creme-200 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <span className="block font-display font-semibold text-ferro-900">{size}</span>
+                    <span className="block text-xs text-ferro-600">
+                      {available > 0 ? `${available} em estoque` : 'Esgotado'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Movimentação da Bag (Abastecer / Devolver) */}
       {context === 'lanchonete' && bagModalMode && (
@@ -1331,10 +1415,11 @@ const SalesPage: React.FC = () => {
         transactionType="debit"
         amount={discountedTotal.toFixed(2)}
         formattedAmount={discountedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        description={`${Object.entries(cartItems).map(([id, q]) => {
-          const p = products.find(pp => pp.id === id)
-          const productName = cartItemSnapshots[id]?.product_name || p?.name
-          return productName ? `${productName} (${q}x)` : ''
+        description={`${Object.entries(cartItems).map(([key, q]) => {
+          const { productId, variantSize } = parseCartKey(key)
+          const p = products.find(pp => pp.id === productId)
+          const productName = cartItemSnapshots[key]?.product_name || p?.name
+          return productName ? `${productName}${variantSize ? ` (${variantSize})` : ''} (${q}x)` : ''
         }).filter(Boolean).join(', ')}`}
         isLoading={isSaving}
       />
