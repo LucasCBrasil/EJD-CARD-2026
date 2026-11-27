@@ -83,6 +83,16 @@ SELECT is(
   'validacao aceita estoque positivo para tamanhos conhecidos'
 );
 SELECT is(
+  public.valid_lojinha_size_stock('{"PP Baby Look": 2, "GG Baby Look": 1}'::JSONB),
+  TRUE,
+  'validacao aceita os novos tamanhos Baby Look'
+);
+SELECT is(
+  public.valid_lojinha_size_stock('{"XGG": 2}'::JSONB),
+  FALSE,
+  'validacao rejeita tamanhos que nao fazem parte da lista atual'
+);
+SELECT is(
   public.valid_lojinha_size_stock('{"X": 2}'::JSONB),
   FALSE,
   'validacao rejeita tamanhos desconhecidos'

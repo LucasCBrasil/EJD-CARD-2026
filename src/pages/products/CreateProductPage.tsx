@@ -4,9 +4,8 @@ import { useNavigate, useLocation, useParams } from '@tanstack/react-router'
 import { Button, Header } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { productService } from '../../services'
+import { LOJINHA_PRODUCT_SIZES } from '../../constants/productSizes'
 import { LANCHONETE_MENU_CATEGORIES, type ProductCategory } from '../../types'
-
-const SHIRT_SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XGG'] as const
 
 const CreateProductPage = () => {
   const navigate = useNavigate()
@@ -28,7 +27,7 @@ const CreateProductPage = () => {
     price: '',
     stock: '',
     hasSizes: false,
-    sizeStock: Object.fromEntries(SHIRT_SIZES.map((size) => [size, ''])) as Record<string, string>,
+    sizeStock: Object.fromEntries(LOJINHA_PRODUCT_SIZES.map((size) => [size, ''])) as Record<string, string>,
     isConsigned: false,
     menuCategory: 'Outros',
     image: null as File | string | null
@@ -76,7 +75,7 @@ const CreateProductPage = () => {
             price: (Number(data.price) || 0).toFixed(2).replace('.', ','),
             stock: String(data.stock ?? 0),
             hasSizes: Boolean(data.size_stock),
-            sizeStock: Object.fromEntries(SHIRT_SIZES.map((size) => [
+            sizeStock: Object.fromEntries(LOJINHA_PRODUCT_SIZES.map((size) => [
               size,
               data.size_stock?.[size] === undefined ? '' : String(data.size_stock[size]),
             ])),
@@ -335,7 +334,7 @@ const CreateProductPage = () => {
               </label>
               {formData.hasSizes ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {SHIRT_SIZES.map((size) => (
+                  {LOJINHA_PRODUCT_SIZES.map((size) => (
                     <label key={size} className="text-sm font-semibold text-ferro-700">
                       Tamanho {size}
                       <input

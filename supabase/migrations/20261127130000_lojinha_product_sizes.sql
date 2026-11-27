@@ -18,7 +18,10 @@ BEGIN
 
   FOR v_entry IN SELECT * FROM jsonb_each(p_size_stock)
   LOOP
-    IF v_entry.key NOT IN ('PP', 'P', 'M', 'G', 'GG', 'XGG')
+    IF v_entry.key NOT IN (
+      'PP', 'PP Baby Look', 'P', 'P Baby Look', 'M', 'M Baby Look',
+      'G', 'G Baby Look', 'GG', 'GG Baby Look'
+    )
        OR jsonb_typeof(v_entry.value) <> 'number'
        OR v_entry.value::TEXT !~ '^(0|[1-9][0-9]*)$'
        OR LENGTH(v_entry.value::TEXT) > 10 THEN
@@ -53,11 +56,17 @@ ALTER TABLE public.lojinha_cart_items
   DROP CONSTRAINT lojinha_cart_items_pkey,
   ADD CONSTRAINT lojinha_cart_items_pkey PRIMARY KEY (cart_id, product_id, variant_size),
   ADD CONSTRAINT lojinha_cart_items_variant_size_check
-    CHECK (variant_size IN ('', 'PP', 'P', 'M', 'G', 'GG', 'XGG'));
+    CHECK (variant_size IN (
+      '', 'PP', 'PP Baby Look', 'P', 'P Baby Look', 'M', 'M Baby Look',
+      'G', 'G Baby Look', 'GG', 'GG Baby Look'
+    ));
 
 ALTER TABLE public.sale_items
   ADD COLUMN variant_size TEXT
-  CHECK (variant_size IS NULL OR variant_size IN ('PP', 'P', 'M', 'G', 'GG', 'XGG'));
+  CHECK (variant_size IS NULL OR variant_size IN (
+    'PP', 'PP Baby Look', 'P', 'P Baby Look', 'M', 'M Baby Look',
+    'G', 'G Baby Look', 'GG', 'GG Baby Look'
+  ));
 
 CREATE OR REPLACE FUNCTION public.save_lojinha_product_with_sizes(
   p_product_id UUID,

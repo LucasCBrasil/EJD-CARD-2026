@@ -3,8 +3,14 @@ import { useNavigate, useLocation } from '@tanstack/react-router'
 import { Header, ConfirmationModal } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { productService, type Product } from '../../services/productService'
+import { LOJINHA_PRODUCT_SIZES } from '../../constants/productSizes'
 import OptimizedImage from '../../components/ui/OptimizedImage';
 import { LANCHONETE_MENU_CATEGORIES, type ProductCategory } from '../../types'
+
+const getSizeOrder = (size: string) => {
+  const index = LOJINHA_PRODUCT_SIZES.findIndex((supportedSize) => supportedSize === size)
+  return index < 0 ? LOJINHA_PRODUCT_SIZES.length : index
+}
 
 const ListProductsPage = () => {
   const navigate = useNavigate()
@@ -223,7 +229,7 @@ const ListProductsPage = () => {
                     {context === 'lojinha' && product.size_stock && (
                       <p className="mb-4 text-xs text-ferro-600">
                         Tamanhos: {Object.entries(product.size_stock)
-                          .sort(([a], [b]) => ['PP', 'P', 'M', 'G', 'GG', 'XGG'].indexOf(a) - ['PP', 'P', 'M', 'G', 'GG', 'XGG'].indexOf(b))
+                            .sort(([a], [b]) => getSizeOrder(a) - getSizeOrder(b))
                           .map(([size, quantity]) => `${size}: ${quantity}`)
                           .join(' · ')}
                       </p>
