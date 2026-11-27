@@ -77,7 +77,18 @@ const getAuthUser = async (req: Request) => {
 }
 
 const menuCategories = ['Salgados', 'Sobremesas', 'Bebidas', 'Outros']
-const productSizes = ['PP', 'P', 'M', 'G', 'GG', 'XGG']
+const productSizes = [
+  'PP',
+  'PP Baby Look',
+  'P',
+  'P Baby Look',
+  'M',
+  'M Baby Look',
+  'G',
+  'G Baby Look',
+  'GG',
+  'GG Baby Look',
+]
 
 const isValidSizeStock = (value: unknown): value is Record<string, number> | null =>
   value === null || (

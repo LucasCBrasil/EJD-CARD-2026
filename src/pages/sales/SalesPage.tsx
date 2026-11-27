@@ -9,6 +9,10 @@ import { UserAccount } from '../../types'
 import OptimizedImage from '../../components/ui/OptimizedImage'
 import { api, type AmbulanteBagItem } from '../../lib/api-client'
 import { LANCHONETE_MENU_CATEGORIES } from '../../types'
+import {
+  LOJINHA_BABY_LOOK_SIZES,
+  LOJINHA_STANDARD_SIZES,
+} from '../../constants/productSizes'
 
 type ContextType = 'lojinha' | 'lanchonete'
 type BagModalMode = 'take' | 'return' | null
@@ -1211,7 +1215,7 @@ const SalesPage: React.FC = () => {
 
       {sizeSelectionProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ferro-900/60 p-4" role="dialog" aria-modal="true" aria-labelledby="size-selection-title">
-          <div className="w-full max-w-sm rounded-2xl border-2 border-ferro-800 bg-creme-50 p-5 shadow-bilhete">
+          <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border-2 border-ferro-800 bg-creme-50 p-5 shadow-bilhete">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h2 id="size-selection-title" className="font-display text-lg font-semibold uppercase tracking-wide text-ferro-900">
@@ -1228,28 +1232,38 @@ const SalesPage: React.FC = () => {
                 ✕
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {['PP', 'P', 'M', 'G', 'GG', 'XGG'].map((size) => {
-                const available = Number(sizeSelectionProduct.size_stock?.[size] || 0)
-                return (
-                  <button
-                    key={size}
-                    type="button"
-                    disabled={available <= 0 || isSaving}
-                    onClick={() => {
-                      handleAddToCart(sizeSelectionProduct, size)
-                      setSizeSelectionProduct(null)
-                    }}
-                    className="rounded-xl border border-ferro-300 bg-creme-100 px-3 py-3 text-left hover:border-ferro-700 hover:bg-creme-200 disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    <span className="block font-display font-semibold text-ferro-900">{size}</span>
-                    <span className="block text-xs text-ferro-600">
-                      {available > 0 ? `${available} em estoque` : 'Esgotado'}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+            {[
+              { title: 'Tradicional', sizes: LOJINHA_STANDARD_SIZES },
+              { title: 'Baby Look', sizes: LOJINHA_BABY_LOOK_SIZES },
+            ].map(({ title, sizes }) => (
+              <section key={title} className="mb-4 last:mb-0">
+                <h3 className="mb-2 border-b border-ferro-200 pb-1 text-sm font-semibold uppercase tracking-wide text-ferro-700">
+                  {title}
+                </h3>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {sizes.map((size) => {
+                    const available = Number(sizeSelectionProduct.size_stock?.[size] || 0)
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        disabled={available <= 0 || isSaving}
+                        onClick={() => {
+                          handleAddToCart(sizeSelectionProduct, size)
+                          setSizeSelectionProduct(null)
+                        }}
+                        className="rounded-xl border border-ferro-300 bg-creme-100 px-3 py-3 text-left hover:border-ferro-700 hover:bg-creme-200 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        <span className="block font-display font-semibold text-ferro-900">{size}</span>
+                        <span className="block text-xs text-ferro-600">
+                          {available > 0 ? `${available} em estoque` : 'Esgotado'}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         </div>
       )}
