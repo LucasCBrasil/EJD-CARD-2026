@@ -77,6 +77,18 @@ const getAuthUser = async (req: Request) => {
 }
 
 const menuCategories = ['Salgados', 'Sobremesas', 'Bebidas', 'Outros']
+const productSizes = ['PP', 'P', 'M', 'G', 'GG', 'XGG']
+
+const isValidSizeStock = (value: unknown): value is Record<string, number> | null =>
+  value === null || (
+    typeof value === 'object'
+    && !Array.isArray(value)
+    && Object.keys(value).length > 0
+    && Object.entries(value).every(([size, quantity]) =>
+      productSizes.includes(size) && Number.isInteger(quantity) && Number(quantity) >= 0
+    )
+    && Object.values(value as Record<string, number>).some((quantity) => quantity > 0)
+  )
 
 
 const requireAuth = async (req: Request) => {
@@ -286,7 +298,7 @@ Deno.serve(async (req) => {
           const rawStock = product.stock
           const numericStock = rawStock === null || rawStock === undefined || rawStock === '' ? NaN : Number(rawStock)
           const outOfStock = Number.isFinite(numericStock) && numericStock <= 0
-          const { stock: _stock, is_consigned: _isConsigned, ...safeProduct } = product
+          const { stock: _stock, is_consigned: _isConsigned, size_stock: _sizeStock, ...safeProduct } = product
           return { ...safeProduct, out_of_stock: outOfStock }
         })
 
@@ -312,7 +324,8 @@ Deno.serve(async (req) => {
           stock,
           image_url,
           is_consigned,
-          menu_category
+          menu_category,
+          size_stock
         }: {
           name: string
           price: number
@@ -322,6 +335,7 @@ Deno.serve(async (req) => {
           image_url?: string | null
           is_consigned?: boolean
           menu_category?: string
+          size_stock?: Record<string, number> | null
         } = await req.json()
 
         // Validações básicas
@@ -342,9 +356,10 @@ Deno.serve(async (req) => {
           (is_consigned !== undefined && typeof is_consigned !== 'boolean')
           || (category !== 'lojinha' && is_consigned === true)
           || (menu_category !== undefined && !menuCategories.includes(menu_category))
+          || (category === 'lojinha' && !isValidSizeStock(size_stock ?? null))
         ) {
           return new Response(
-            JSON.stringify({ success: false, error: 'A identificação de consignado só pode ser usada em produtos da lojinha.' } as ApiResponse),
+            JSON.stringify({ success: false, error: 'Dados inválidos para consignação ou estoque por tamanho.' } as ApiResponse),
             { status: 400, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
           )
         }
@@ -382,22 +397,35 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Criar produto
-        const { data: product, error } = await supabase
-          .from('products')
-          .insert({
-            name,
-            price,
-            category,
-            description,
-            stock,
-            image_url,
-            is_consigned: category === 'lojinha' && is_consigned === true,
-            menu_category: category === 'lanchonete' ? menu_category || 'Outros' : 'Outros',
-            active: true
+        const { data: product, error } = category === 'lojinha'
+          ? await supabase.rpc('save_lojinha_product_with_sizes', {
+            p_product_id: null,
+            p_name: name,
+            p_price: price,
+            p_description: description || null,
+            p_image_url: image_url || null,
+            p_is_consigned: is_consigned === true,
+            p_size_stock: size_stock ?? null,
+            p_stock: stock ?? null,
+            p_active: true,
           })
-          .select()
-          .single()
+          : await supabase
+            .from('products')
+            .insert({
+              name,
+              price,
+              category,
+              description,
+              stock,
+              image_url,
+              is_consigned: false,
+              menu_category: menu_category || 'Outros',
+              active: true,
+            })
+            .select()
+            .single()
+
+        const savedProduct = Array.isArray(product) ? product[0] : product
 
         if (error) {
           return new Response(
@@ -415,7 +443,7 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({
             success: true,
-            data: product,
+            data: savedProduct,
             message: 'Produto criado com sucesso!'
           } as ApiResponse),
           {
@@ -427,6 +455,7 @@ Deno.serve(async (req) => {
 
       case 'PUT': {
         // ATUALIZAR PRODUTO - permissões verificadas acima baseadas em role e categoria
+        const body = await req.json()
         const {
           id,
           name,
@@ -436,8 +465,12 @@ Deno.serve(async (req) => {
           image_url,
           active,
           is_consigned,
-          menu_category
-        } = await req.json()
+          menu_category,
+          size_stock,
+          expected_stock,
+          expected_size_stock
+        } = body
+        const hasSizeStock = Object.prototype.hasOwnProperty.call(body, 'size_stock')
 
         if (!id) {
           return new Response(
@@ -454,7 +487,7 @@ Deno.serve(async (req) => {
 
         const { data: currentProduct, error: currentProductError } = await supabase
           .from('products')
-          .select('is_combo, category')
+          .select('is_combo, category, size_stock, stock, name, price, description, image_url, active, is_consigned')
           .eq('id', id)
           .maybeSingle()
 
@@ -473,6 +506,21 @@ Deno.serve(async (req) => {
           )
         }
 
+        if (
+          currentProduct.category === 'lojinha'
+          && (
+            !Object.prototype.hasOwnProperty.call(body, 'expected_stock')
+            || !Object.prototype.hasOwnProperty.call(body, 'expected_size_stock')
+            || !(expected_stock === null || (Number.isInteger(expected_stock) && expected_stock >= 0))
+            || !isValidSizeStock(expected_size_stock)
+          )
+        ) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Dados de estoque de referência inválidos. Recarregue o produto antes de salvar.' } as ApiResponse),
+            { status: 400, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+          )
+        }
+
         if (currentProduct.is_combo) {
           return new Response(
             JSON.stringify({ success: false, error: 'Combos devem ser gerenciados pela tela de combos.' } as ApiResponse),
@@ -484,9 +532,10 @@ Deno.serve(async (req) => {
           (is_consigned !== undefined && typeof is_consigned !== 'boolean')
           || (currentProduct.category !== 'lojinha' && is_consigned === true)
           || (menu_category !== undefined && !menuCategories.includes(menu_category))
+          || (currentProduct.category === 'lojinha' && hasSizeStock && !isValidSizeStock(size_stock))
         ) {
           return new Response(
-            JSON.stringify({ success: false, error: 'A identificação de consignado só pode ser usada em produtos da lojinha.' } as ApiResponse),
+            JSON.stringify({ success: false, error: 'Dados inválidos para consignação ou estoque por tamanho.' } as ApiResponse),
             { status: 400, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
           )
         }
@@ -526,14 +575,40 @@ Deno.serve(async (req) => {
           updates.menu_category = menu_category
         }
 
-        const { data: product, error } = await supabase
-          .from('products')
-          .update(updates)
-          .eq('id', id)
-          .select()
-          .single()
+        const { data: product, error } = currentProduct.category === 'lojinha'
+          ? await supabase.rpc('save_lojinha_product_with_sizes', {
+            p_product_id: id,
+            p_name: name ?? currentProduct.name,
+            p_price: price ?? currentProduct.price,
+            p_description: description ?? currentProduct.description,
+            p_image_url: image_url === undefined ? currentProduct.image_url : image_url,
+            p_is_consigned: is_consigned ?? currentProduct.is_consigned,
+            p_size_stock: hasSizeStock ? size_stock : currentProduct.size_stock,
+            p_stock: stock ?? currentProduct.stock,
+            p_active: active ?? currentProduct.active,
+            p_expected_size_stock: expected_size_stock,
+            p_expected_stock: expected_stock,
+          })
+          : await supabase
+            .from('products')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single()
 
         if (error) {
+          if (error.message.includes('PRODUCT_STOCK_CHANGED')) {
+            return new Response(
+              JSON.stringify({ success: false, error: 'O estoque mudou desde que você abriu o formulário. Atualize os dados e tente novamente.' } as ApiResponse),
+              { status: 409, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+            )
+          }
+          if (error.message.includes('PRODUCT_SIZE_RESERVED')) {
+            return new Response(
+              JSON.stringify({ success: false, error: 'Não é possível alterar os estoques por tamanho enquanto há carrinhos abertos com esse produto. Cancele ou finalize esses carrinhos primeiro.' } as ApiResponse),
+              { status: 409, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
+            )
+          }
           return new Response(
             JSON.stringify({
               success: false,

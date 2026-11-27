@@ -6,6 +6,8 @@ import { useToastContext } from '../../contexts/ToastContext'
 import { productService } from '../../services'
 import { LANCHONETE_MENU_CATEGORIES, type ProductCategory } from '../../types'
 
+const SHIRT_SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XGG'] as const
+
 const CreateProductPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -25,10 +27,14 @@ const CreateProductPage = () => {
     name: '',
     price: '',
     stock: '',
+    hasSizes: false,
+    sizeStock: Object.fromEntries(SHIRT_SIZES.map((size) => [size, ''])) as Record<string, string>,
     isConsigned: false,
     menuCategory: 'Outros',
     image: null as File | string | null
   })
+  const [originalStock, setOriginalStock] = useState<number | null>(null)
+  const [originalSizeStock, setOriginalSizeStock] = useState<Record<string, number> | null>(null)
   
   const getSelectedImageName = () => {
     if (formData.image instanceof File) {
@@ -69,10 +75,17 @@ const CreateProductPage = () => {
             name: data.name ?? '',
             price: (Number(data.price) || 0).toFixed(2).replace('.', ','),
             stock: String(data.stock ?? 0),
+            hasSizes: Boolean(data.size_stock),
+            sizeStock: Object.fromEntries(SHIRT_SIZES.map((size) => [
+              size,
+              data.size_stock?.[size] === undefined ? '' : String(data.size_stock[size]),
+            ])),
             isConsigned: data.is_consigned === true,
             menuCategory: data.menu_category || 'Outros',
             image: (data as any).image_url ?? data.image ?? null
           })
+          setOriginalStock(data.stock)
+          setOriginalSizeStock(data.size_stock ?? null)
           const imageUrl = (data as any).image_url ?? data.image ?? null
           setExistingUrl(imageUrl)
           setImagePreview(imageUrl)
@@ -180,7 +193,26 @@ const CreateProductPage = () => {
     }
     
     if (!formData.stock || parseInt(formData.stock) <= 0) {
-      showWarning('Quantidade inválida', 'Por favor, preencha uma quantidade válida.')
+      if (context !== 'lojinha' || !formData.hasSizes) {
+        showWarning('Quantidade inválida', 'Por favor, preencha uma quantidade válida.')
+        return
+      }
+    }
+
+    const sizeStock = formData.hasSizes
+      ? Object.fromEntries(
+        Object.entries(formData.sizeStock)
+          .filter(([, quantity]) => quantity !== '')
+          .map(([size, quantity]) => [size, Number(quantity)]),
+      )
+      : null
+    if (formData.hasSizes && (
+      !sizeStock
+      || Object.keys(sizeStock).length === 0
+      || Object.values(sizeStock).some((quantity) => !Number.isInteger(quantity) || quantity < 0)
+      || Object.values(sizeStock).every((quantity) => quantity === 0)
+    )) {
+      showWarning('Estoque por tamanho inválido', 'Informe o estoque de pelo menos um tamanho. Quantidades devem ser inteiras e não negativas.')
       return
     }
     
@@ -193,7 +225,10 @@ const CreateProductPage = () => {
           id: id ? id : null,
           name: formData.name,
           price: parseFloat(formData.price.replace(',', '.')),
-          stock: parseInt(formData.stock, 10),
+          stock: formData.hasSizes ? Object.values(sizeStock || {}).reduce((sum, quantity) => sum + quantity, 0) : parseInt(formData.stock, 10),
+          size_stock: context === 'lojinha' ? sizeStock : null,
+          expected_stock: id ? originalStock : undefined,
+          expected_size_stock: id ? originalSizeStock : undefined,
           category: context,
           description: formData.name,
           is_consigned: context === 'lojinha' && formData.isConsigned,
@@ -274,6 +309,69 @@ const CreateProductPage = () => {
                 </span>
               </span>
             </label>
+          )}
+
+          {context === 'lojinha' && (
+            <section className="space-y-3 rounded-xl border border-ferro-200 bg-creme-100 p-4">
+              <label className="flex items-start gap-3 text-ferro-800">
+                <input
+                  type="checkbox"
+                  checked={formData.hasSizes}
+                  onChange={(event) => setFormData((previous) => ({
+                    ...previous,
+                    hasSizes: event.target.checked,
+                    stock: event.target.checked
+                      ? previous.stock
+                      : String(Object.values(previous.sizeStock).reduce((sum, value) => sum + (Number(value) || 0), 0)),
+                  }))}
+                  className="mt-1 h-4 w-4 accent-vagao-600"
+                />
+                <span>
+                  <span className="block font-display font-semibold">Produto com tamanhos</span>
+                  <span className="mt-1 block text-sm text-ferro-600">
+                    Configure um estoque separado por tamanho. Ao ativar em um produto existente, informe como o estoque atual será distribuído.
+                  </span>
+                </span>
+              </label>
+              {formData.hasSizes ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {SHIRT_SIZES.map((size) => (
+                    <label key={size} className="text-sm font-semibold text-ferro-700">
+                      Tamanho {size}
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={formData.sizeStock[size] ?? ''}
+                        onChange={(event) => setFormData((previous) => ({
+                          ...previous,
+                          sizeStock: { ...previous.sizeStock, [size]: event.target.value },
+                        }))}
+                        className="mt-1 w-full"
+                        placeholder="0"
+                      />
+                    </label>
+                  ))}
+                  <p className="col-span-full text-sm text-ferro-600">
+                    Estoque total: {Object.values(formData.sizeStock).reduce((sum, value) => sum + (Number(value) || 0), 0)}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="stock" className={labelClass}>Quantidade em estoque</label>
+                  <input
+                    type="number"
+                    id="stock"
+                    value={formData.stock}
+                    onChange={(event) => handleInputChange('stock', event.target.value)}
+                    min="1"
+                    required
+                    className="w-full"
+                    placeholder="0"
+                  />
+                </div>
+              )}
+            </section>
           )}
 
           {context === 'lanchonete' && (
@@ -367,7 +465,7 @@ const CreateProductPage = () => {
                 />
               </div>
 
-              <div>
+              {context !== 'lojinha' && <div>
                 <label htmlFor="quantity" className={labelClass}>
                   Quantidade
                 </label>
@@ -382,7 +480,7 @@ const CreateProductPage = () => {
                   className="w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   placeholder="0"
                 />
-              </div>
+              </div>}
             </div>
           </div>
 

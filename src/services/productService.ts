@@ -11,6 +11,9 @@ export type Product = {
   stock: number | null
   image?: string | null
   image_url?: string | null
+  size_stock?: Record<string, number> | null
+  expected_stock?: number | null
+  expected_size_stock?: Record<string, number> | null
   category?: string | null
   [key: string]: any
 }
@@ -35,6 +38,7 @@ export const productService = {
         menu_category: product.menu_category || 'Outros',
         description: product.description || null,
         stock: product.stock == null ? null : Number(product.stock),
+        size_stock: product.size_stock || null,
         active: product.active !== false,
         createdAt: product.created_at,
         image_url: product.image_url || product.image || null,
@@ -98,6 +102,7 @@ export const productService = {
         menu_category: product.menu_category || 'Outros',
         description: product.description || null,
         stock: product.stock == null ? null : Number(product.stock),
+        size_stock: product.size_stock || null,
         active: product.active !== false,
         createdAt: product.created_at,
         image_url: product.image_url || product.image || null,
@@ -192,6 +197,9 @@ export const productService = {
         menu_category: category === 'lanchonete' ? product.menu_category || 'Outros' : undefined,
         active: product.id ? (typeof product.active === 'boolean' ? product.active : true) : true,
         is_consigned: category === 'lojinha' && product.is_consigned === true,
+        size_stock: category === 'lojinha' ? product.size_stock || null : undefined,
+        expected_stock: product.id ? product.expected_stock : undefined,
+        expected_size_stock: product.id ? product.expected_size_stock : undefined,
       }
 
       const method = product.id ? 'PUT' : 'POST'
@@ -218,6 +226,7 @@ export const productService = {
         menu_category: savedProduct.menu_category || 'Outros',
         description: savedProduct.description || null,
         stock: savedProduct.stock == null ? null : Number(savedProduct.stock),
+        size_stock: savedProduct.size_stock || null,
         active: savedProduct.active !== false,
         createdAt: savedProduct.created_at,
         image_url: savedProduct.image_url || savedProduct.image || null,

@@ -23,7 +23,7 @@ const loadCart = async (supabase: ReturnType<typeof createSupabaseClient>, cartI
 
   const { data: items, error: itemsError } = await supabase
     .from('lojinha_cart_items')
-    .select('product_id, product_name, price, quantity, image_url')
+    .select('product_id, variant_size, product_name, price, quantity, image_url')
     .eq('cart_id', cartId)
     .order('product_name')
 
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json()
-    const { action, cartId, productId, quantity } = body
+    const { action, cartId, productId, quantity, variantSize } = body
     if (typeof action !== 'string' || typeof cartId !== 'string') {
       return jsonResponse(400, { success: false, error: 'action e cartId são obrigatórios' }, origin)
     }
@@ -109,6 +109,7 @@ Deno.serve(async (req) => {
         p_cart_id: cartId,
         p_product_id: productId,
         p_quantity: quantity,
+        p_variant_size: typeof variantSize === 'string' ? variantSize : null,
       })
       rpcError = result.error
     } else if (action === 'decrease-item') {
@@ -118,6 +119,7 @@ Deno.serve(async (req) => {
       const result = await supabase.rpc('decrease_lojinha_cart_item', {
         p_cart_id: cartId,
         p_product_id: productId,
+        p_variant_size: typeof variantSize === 'string' ? variantSize : null,
       })
       rpcError = result.error
     } else if (action === 'cancel') {
