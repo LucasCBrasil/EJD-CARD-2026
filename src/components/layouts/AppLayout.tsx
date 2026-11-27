@@ -97,12 +97,10 @@ const AppLayout = () => {
 
   const handleBackToContext = () => {
     const context = getBackContext()
-    // Se estiver em subpágina de produtos (create/edit/list), volta para /products
-    // Caso contrário, volta para a página principal do contexto
-    if (isInFormPage || isInListPage) {
-      navigate({ to: `/${context}/select` as any, search: {} as any })
+    if (isInFormPage) {
+      navigate({ to: `/${context}/products` as any, search: {} as any })
     } else if (isInListPage) {
-      navigate({ to: `/${context}/select` as any, search: {} as any })
+      navigate({ to: `/${context}` as any, search: {} as any })
     } else {
       navigate({ to: `/${context}` as any, search: {} as any })
     }

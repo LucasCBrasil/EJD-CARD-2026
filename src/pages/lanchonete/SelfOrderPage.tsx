@@ -50,7 +50,10 @@ const SelfOrderPage: React.FC = () => {
 
   const filteredProducts = useMemo(() => {
     const term = search.trim().toLowerCase()
-    return term ? products.filter((p) => p.name.toLowerCase().includes(term)) : products
+    const availableProducts = products.filter((product) => product.stock === null || product.stock > 0)
+    return term
+      ? availableProducts.filter((product) => product.name.toLowerCase().includes(term))
+      : availableProducts
   }, [products, search])
   const groupedProducts = useMemo(
     () => LANCHONETE_MENU_CATEGORIES.map((category) => ({
@@ -71,17 +74,20 @@ const SelfOrderPage: React.FC = () => {
   const currentBalance = balance.data ?? 0
   const hasEnoughBalance = currentBalance >= total
 
-  // Item saiu do cardápio (removido/inativado) enquanto estava no carrinho
+  // Remove itens que saíram do cardápio ou esgotaram enquanto estavam no carrinho.
   useEffect(() => {
     if (!menu.data) return
-    const removed = Object.keys(cart).filter((id) => !productsById.has(id))
+    const removed = Object.keys(cart).filter((id) => {
+      const product = productsById.get(id)
+      return !product || (product.stock !== null && product.stock <= 0)
+    })
     if (removed.length === 0) return
     setCart((prev) => {
       const next = { ...prev }
       removed.forEach((id) => delete next[id])
       return next
     })
-    showWarning('Cardápio atualizado', 'Um item do seu carrinho não está mais disponível e foi removido.')
+    showWarning('Cardápio atualizado', 'Um item do seu carrinho não está mais disponível ou esgotou e foi removido.')
   }, [menu.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Carrinho mudou: a próxima confirmação é um pedido novo
@@ -295,16 +301,21 @@ const SelfOrderPage: React.FC = () => {
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 {categoryProducts.map((product) => {
                   const quantity = cart[product.id] || 0
-                  const soldOut = product.stock !== null && product.stock <= 0
                   return (
               <div
                 key={product.id}
                 className={`flex flex-col bg-creme-50 rounded-xl border-2 overflow-hidden shadow-sm ${
                   quantity > 0 ? 'border-latao-500 ring-2 ring-latao-300' : 'border-ferro-800'
-                } ${soldOut ? 'opacity-50' : ''}`}
+                }`}
               >
                 <div className="h-24 sm:h-36 bg-creme-200 flex items-center justify-center">
-                  <OptimizedImage src={product.imageUrl || ''} alt={product.name} className="w-full h-full object-cover" context="lanchonete" />
+                  <OptimizedImage
+                    src={product.imageUrl || ''}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                    context="lanchonete"
+                    menuCategory={product.menuCategory}
+                  />
                 </div>
                 <div className="picote-horizontal flex flex-col flex-1 p-3">
                   <h3 className="font-display font-medium text-ferro-900 text-sm leading-tight mb-1 line-clamp-2">{product.name}</h3>
@@ -314,14 +325,8 @@ const SelfOrderPage: React.FC = () => {
                     </p>
                   )}
                   <p className="font-slab text-lg text-vagao-600 mt-auto">R$ {formatPrice(product.price)}</p>
-                  <p className={`text-xs mb-1 ${
-                    product.stock !== null && product.stock <= 5 ? 'text-latao-700' : 'text-ferro-600'
-                  }`}>
-                    Em estoque: {product.stock === null ? 'sem limite' : product.stock}
-                  </p>
-                  {soldOut ? (
-                    <p className="mt-2 text-center font-display text-sm uppercase tracking-wide text-ferro-500 py-2">Esgotado</p>
-                  ) : quantity === 0 ? (
+
+                  {quantity === 0 ? (
                     <button
                       type="button"
                       onClick={() => changeQuantity(product, 1)}
