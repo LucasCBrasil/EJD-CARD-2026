@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, type ApiResult, type SelfOrderItemInput } from '../lib/api-client'
 import { useAuth } from '../contexts/AuthContext'
 import { accountKeys, useAccountByUserId } from './useAccounts'
+import { LANCHONETE_MENU_CATEGORIES, type LanchoneteMenuCategory } from '../types'
 
 export const SELF_ORDER_FLAG = 'lanchonete_self_order'
 
@@ -34,7 +35,7 @@ const unwrap = <T,>(response: ApiResult<T>, fallback: string): T => {
 export interface MenuProduct {
   id: string
   name: string
-  menuCategory: string
+  menuCategory: LanchoneteMenuCategory
   description: string | null
   price: number
   stock: number | null // null = sem controle de estoque
@@ -63,7 +64,9 @@ export function useLanchoneteMenu() {
         .map((product) => ({
           id: product.id,
           name: product.name,
-          menuCategory: product.menu_category || 'Outros',
+          menuCategory: LANCHONETE_MENU_CATEGORIES.includes(product.menu_category)
+            ? product.menu_category
+            : 'Outros',
           description: product.description || null,
           price: Number(product.price) || 0,
           stock: product.stock === null || product.stock === undefined ? null : Number(product.stock),

@@ -223,7 +223,7 @@ const CreateProductPage = () => {
   }
 
   const handleCancel = () => {
-    safeNavigate(`${basePath}/select`)
+    safeNavigate(context === 'lanchonete' ? `${basePath}/products` : basePath)
   }
 
   const labelClass = 'block text-sm font-display font-semibold uppercase tracking-wide text-ferro-800 mb-2'

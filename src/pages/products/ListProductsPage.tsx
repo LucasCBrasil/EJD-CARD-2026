@@ -4,7 +4,7 @@ import { Header, ConfirmationModal } from '../../components/shared'
 import { useToastContext } from '../../contexts/ToastContext'
 import { productService, type Product } from '../../services/productService'
 import OptimizedImage from '../../components/ui/OptimizedImage';
-import type { ProductCategory } from '../../types'
+import { LANCHONETE_MENU_CATEGORIES, type ProductCategory } from '../../types'
 
 const ListProductsPage = () => {
   const navigate = useNavigate()
@@ -136,25 +136,6 @@ const ListProductsPage = () => {
     return price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
-  const getDefaultImage = (context: 'lojinha' | 'lanchonete'): string => {
-    const labels = {
-      lanchonete: { title: 'Item sem imagem', sub: 'Cardápio da Lanchonete', icon: '☕' },
-      lojinha: { title: 'Produto sem imagem', sub: 'Lojinha', icon: '🚂' }
-    }[context]
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
-        <rect width="400" height="400" fill="#fcf0d8"/>
-        <circle cx="200" cy="170" r="90" fill="#e6cdb0" opacity="0.6"/>
-        <text x="200" y="200" font-size="80" text-anchor="middle">${labels.icon}</text>
-        <rect x="40" y="282" width="320" height="4" fill="#48240c"/>
-        <rect x="40" y="298" width="320" height="4" fill="#48240c"/>
-        ${Array.from({ length: 12 }, (_, i) => `<rect x="${46 + i * 27}" y="280" width="9" height="24" fill="#9c6048"/>`).join('')}
-        <text x="200" y="345" font-size="22" text-anchor="middle" fill="#48240c" font-family="Arial" font-weight="bold">${labels.title}</text>
-        <text x="200" y="370" font-size="15" text-anchor="middle" fill="#a83024" font-family="Arial">${labels.sub}</text>
-      </svg>`
-    return `data:image/svg+xml,${encodeURIComponent(svg)}`
-  }
-
   const navBtn = 'px-3 py-2 bg-creme-200 hover:bg-creme-300 text-ferro-800 border border-ferro-200 font-display text-sm rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
 
   return (
@@ -189,7 +170,10 @@ const ListProductsPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {currentProducts.map((product, index) => {
               const productKey = product.id ?? `product-${index}`
-              const src = product.image_url || (product as any).image || getDefaultImage(context)
+              const src = product.image_url || product.image || null
+              const menuCategory = LANCHONETE_MENU_CATEGORIES.includes(product.menu_category)
+                ? product.menu_category
+                : 'Outros'
               const stockColor = (product.stock ?? 0) > 10 ? 'text-green-700' : (product.stock ?? 0) > 5 ? 'text-latao-700' : 'text-vagao-600'
               return (
                 <div
@@ -201,6 +185,7 @@ const ListProductsPage = () => {
                     alt={product.name}
                     className="h-44 bg-creme-200"
                     context={context}
+                    menuCategory={menuCategory}
                   />
                   {/* Informações do Produto */}
                   <div className="picote-horizontal p-4">
