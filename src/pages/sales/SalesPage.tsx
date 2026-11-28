@@ -8,6 +8,7 @@ import { useSupabaseData } from '../../contexts/SupabaseDataContext'
 import { UserAccount } from '../../types'
 import OptimizedImage from '../../components/ui/OptimizedImage'
 import { api, type AmbulanteBagItem } from '../../lib/api-client'
+import { normalizeSearch } from '../../lib/search'
 import { LANCHONETE_MENU_CATEGORIES } from '../../types'
 import {
   LOJINHA_BABY_LOOK_SIZES,
@@ -341,9 +342,9 @@ const SalesPage: React.FC = () => {
 
   const filteredProducts = useMemo(() => {
     if (!products || !Array.isArray(products)) return []
-    const filterLower = searchFilter.toLowerCase().trim()
-    const matchingProducts = filterLower
-      ? products.filter(p => p && p.name && p.name.toLowerCase().includes(filterLower))
+    const term = normalizeSearch(searchFilter)
+    const matchingProducts = term
+      ? products.filter(p => p && p.name && normalizeSearch(p.name).includes(term))
       : products
     if (context !== 'lanchonete') return matchingProducts
     const categoryOrder = new Map(LANCHONETE_MENU_CATEGORIES.map((category, index) => [category, index]))
