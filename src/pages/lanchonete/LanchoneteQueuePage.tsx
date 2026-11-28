@@ -32,6 +32,8 @@ const LanchoneteQueuePage: React.FC = () => {
   const { showSuccess, showError, showInfo } = useToastContext()
   const [tab, setTab] = useState<QueueTab>('pending')
   const [confirm, setConfirm] = useState<{ order: LanchoneteOrder; action: OrderAction } | null>(null)
+  const [autoWorking, setAutoWorking] = useState(false)
+  const attemptedAutoOrders = useRef(new Set<string>())
 
   const openQueue = useLanchoneteQueue('open')
   const closedQueue = useLanchoneteQueue(
@@ -82,6 +84,36 @@ const LanchoneteQueuePage: React.FC = () => {
     }
   }
 
+  // Processa um pedido por vez. A janela precisa estar disponível antes de
+  // mudar o status, para que um bloqueio de pop-ups não perca a comanda.
+  useEffect(() => {
+    if (autoWorking || updateOrder.isPending || !openQueue.data) return
+    const order = openQueue.data.find(o => o.status === 'pending' && !attemptedAutoOrders.current.has(o.id))
+    if (!order) return
+
+    attemptedAutoOrders.current.add(order.id)
+    let printWindow: Window | null = null
+    try {
+      printWindow = openOrderPrintWindow()
+    } catch {
+      // A janela bloqueada é tratada abaixo como uma falha de impressão.
+    }
+    if (!printWindow) {
+      showError('Preparo automático interrompido', `Permita pop-ups para imprimir o pedido Nº ${order.saleNumber} e inicie o preparo manualmente.`, 0)
+      return
+    }
+
+    setAutoWorking(true)
+    updateOrder.mutate({ saleId: order.id, action: 'preparing' }, {
+      onSuccess: () => printOrder(order, printWindow),
+      onError: (error) => {
+        printWindow?.close()
+        showError('Não foi possível confirmar o preparo', `Pedido Nº ${order.saleNumber}: verifique a aba Preparando antes de tentar novamente. Se estiver lá, use Reimprimir comanda. ${error instanceof Error ? error.message : ''}`, 0)
+      },
+      onSettled: () => setAutoWorking(false),
+    })
+  }, [openQueue.data, autoWorking, updateOrder.isPending])
+
   const runAction = (order: LanchoneteOrder, action: OrderAction) => {
     const printWindow = action === 'preparing' ? openOrderPrintWindow() : null
     updateOrder.mutate({ saleId: order.id, action }, {
@@ -115,7 +147,7 @@ const LanchoneteQueuePage: React.FC = () => {
       <div>
         <span className="carimbo text-vagao-600 text-xs">☕ Vagão-restaurante</span>
         <h2 className="mt-3 text-2xl md:text-3xl font-display font-semibold uppercase tracking-wide text-ferro-900">Fila de pedidos</h2>
-        <p className="text-base text-ferro-700">Pedidos feitos pelo app. Atualiza a cada 5 segundos.</p>
+        <p className="text-base text-ferro-700">Os pedidos são enviados automaticamente para preparo e impressão. Atualiza a cada 5 segundos.</p>
         {flag.data === false && (
           <p className="mt-2 rounded-lg bg-latao-100 border border-latao-300 p-2 text-sm text-latao-900">
             Os pedidos pelo app estão fechados (flag <code>lanchonete_self_order</code> desligada). Os pedidos em aberto continuam aqui.
@@ -213,7 +245,7 @@ const LanchoneteQueuePage: React.FC = () => {
                     {next && (
                       <button
                         type="button"
-                        disabled={updateOrder.isPending}
+                        disabled={updateOrder.isPending || autoWorking}
                         onClick={() => handleAction(order, next.action)}
                         className="flex-1 rounded-lg bg-ferro-800 hover:bg-ferro-700 py-3 font-display font-semibold tracking-wide text-creme-200 disabled:opacity-50 active:scale-[0.98] touch-manipulation"
                       >
@@ -223,7 +255,7 @@ const LanchoneteQueuePage: React.FC = () => {
                     {canCancel && (
                       <button
                         type="button"
-                        disabled={updateOrder.isPending}
+                        disabled={updateOrder.isPending || autoWorking}
                         onClick={() => handleAction(order, 'cancel')}
                         aria-label={`Cancelar pedido ${order.saleNumber}`}
                         className="rounded-lg border border-vagao-300 px-3 py-3 font-display text-sm text-vagao-700 hover:bg-vagao-50 disabled:opacity-50 touch-manipulation"
