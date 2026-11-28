@@ -74,16 +74,21 @@ Deno.serve(async (req) => {
       })
     }
 
-    const formattedTransactions = (transactions || []).map((transaction) => ({
-      id: transaction.id,
-      user_id: transaction.user_id,
-      amount: transaction.amount,
-      type: transaction.type,
-      description: transaction.description,
-      created_by: transaction.created_by,
-      created_at: transaction.created_at,
-      user_name: transaction.app_users?.[0]?.name || null,
-    }))
+    const formattedTransactions = (transactions || []).map((transaction) => {
+      // Relação muitos para um: o PostgREST devolve um objeto, e ler só [0] deixa o nome vazio.
+      const account = Array.isArray(transaction.app_users) ? transaction.app_users[0] : transaction.app_users
+
+      return {
+        id: transaction.id,
+        user_id: transaction.user_id,
+        amount: transaction.amount,
+        type: transaction.type,
+        description: transaction.description,
+        created_by: transaction.created_by,
+        created_at: transaction.created_at,
+        user_name: account?.name || null,
+      }
+    })
 
     return new Response(JSON.stringify({ success: true, data: formattedTransactions } as ApiResponse), {
       status: 200,
