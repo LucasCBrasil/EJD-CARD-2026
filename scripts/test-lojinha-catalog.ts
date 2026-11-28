@@ -15,6 +15,7 @@ import {
   isLojinhaItemOutOfStock,
   toLojinhaCatalogItems,
 } from '../src/lib/lojinhaCatalog'
+import { normalizeSearch } from '../src/lib/search'
 import {
   canViewLojinhaStock,
   sanitizeProductForRole,
@@ -183,6 +184,21 @@ const tests: Array<{ name: string; run: () => void }> = [
         filterLojinhaCatalogItems(items, '').map((i) => i.id),
         ['1', '2'],
       )
+    },
+  },
+  {
+    name: 'Busca de produtos compara sem acentos nos dois lados, inclusive nome salvo em forma decomposta',
+    run: () => {
+      const matches = (name: string, query: string) => normalizeSearch(name).includes(normalizeSearch(query))
+
+      assert.equal(matches('Água', 'agua'), true)
+      assert.equal(matches('Água com Gás', 'COM GAS'), true)
+      assert.equal(matches('Pão de Queijo', 'pao'), true)
+      assert.equal(matches('Açaí', 'acai'), true)
+      assert.equal(matches('Agua', 'água'), true)
+      assert.equal(matches('A\u0301gua', 'água'), true)
+      assert.equal(matches('Água', '  agua  '), true)
+      assert.equal(matches('Suco', 'agua'), false)
     },
   },
 ]

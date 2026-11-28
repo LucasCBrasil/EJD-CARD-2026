@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { api, type AmbulanteSellerSummary } from '../../lib/api-client'
 import { useToastContext } from '../../contexts/ToastContext'
+import { normalizeSearch } from '../../lib/search'
 
 const AmbulantesControlPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastContext()
@@ -32,13 +33,13 @@ const AmbulantesControlPage: React.FC = () => {
   }, [loadAllBags])
 
   const filteredSellers = useMemo(() => {
-    const query = searchFilter.trim().toLowerCase()
+    const query = normalizeSearch(searchFilter)
     if (!query) return sellers
     return sellers.filter(
       (s) =>
-        s.sellerName.toLowerCase().includes(query) ||
-        s.sellerEmail.toLowerCase().includes(query) ||
-        s.items.some((item) => item.productName.toLowerCase().includes(query))
+        normalizeSearch(s.sellerName).includes(query) ||
+        normalizeSearch(s.sellerEmail).includes(query) ||
+        s.items.some((item) => normalizeSearch(item.productName).includes(query))
     )
   }, [sellers, searchFilter])
 

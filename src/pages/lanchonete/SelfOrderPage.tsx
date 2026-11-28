@@ -5,6 +5,7 @@ import OptimizedImage from '../../components/ui/OptimizedImage'
 import { useToastContext } from '../../contexts/ToastContext'
 import { useAuth } from '../../contexts/AuthContext'
 import { LANCHONETE_MENU_CATEGORIES } from '../../types'
+import { normalizeSearch } from '../../lib/search'
 import {
   LanchoneteOrderError,
   useCreateSelfOrder,
@@ -49,10 +50,10 @@ const SelfOrderPage: React.FC = () => {
   const productsById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
   const filteredProducts = useMemo(() => {
-    const term = search.trim().toLowerCase()
+    const term = normalizeSearch(search)
     const availableProducts = products.filter((product) => product.stock === null || product.stock > 0)
     return term
-      ? availableProducts.filter((product) => product.name.toLowerCase().includes(term))
+      ? availableProducts.filter((product) => normalizeSearch(product.name).includes(term))
       : availableProducts
   }, [products, search])
   const groupedProducts = useMemo(

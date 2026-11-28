@@ -1,3 +1,5 @@
+import { normalizeSearch } from './search'
+
 export interface LojinhaCatalogItem {
   id: string
   name: string
@@ -53,13 +55,6 @@ export const toLojinhaCatalogItems = (rawProducts: RawLojinhaProduct[] = []): Lo
       return a.name.localeCompare(b.name, 'pt-BR')
     })
 }
-
-const normalizeSearch = (value: string): string =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
 
 export const filterLojinhaCatalogItems = (
   items: LojinhaCatalogItem[],
