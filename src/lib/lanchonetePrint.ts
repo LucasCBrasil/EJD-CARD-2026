@@ -1,4 +1,4 @@
-﻿import type { LanchoneteOrder } from './api-client'
+import type { LanchoneteOrder } from './api-client'
 
 /** Prepara a janela durante o clique para evitar o bloqueio de pop-ups. */
 export function openOrderPrintWindow(): Window | null {
@@ -27,6 +27,7 @@ export function printLanchoneteOrder(printWindow: Window, order: LanchoneteOrder
   order.items.forEach(item => add('li', `${item.quantity} x ${item.productName}`, items))
   add('p', `Total: R$ ${order.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`).className = 'total'
   add('p', 'Pago com saldo')
+  printWindow.addEventListener('afterprint', () => printWindow.close(), { once: true })
   printWindow.focus()
   printWindow.print()
 }
