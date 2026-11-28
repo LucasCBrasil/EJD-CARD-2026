@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { api } from '../../lib/api-client'
 import { accountKeys } from '../../hooks/useAccounts'
 import { pixPricing } from '../../../supabase/functions/_shared/pix-pricing'
+import { loadPayerDocument, savePayerDocument } from '../../lib/pixPayerDocument'
 
 const money = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 type Payment = { paymentId: string; pixCode: string; qrCodeUrl: string; amount: number; chargedAmount?: number }
@@ -26,6 +27,9 @@ export default function PixPage() {
   const attempt = useRef<{ input: string; key: string } | null>(null)
   const validAmount = Number.isFinite(amount) && amount >= 0.01
   const { serviceFee, chargedAmount } = pixPricing(amount)
+  const userId = user?.id
+
+  useEffect(() => { setCpfCnpj(userId ? loadPayerDocument(userId) : '') }, [userId])
 
   useEffect(() => {
     if (paymentId === 'new') { setPayment(null); setStatus('pending'); setError(''); return }
@@ -69,6 +73,8 @@ export default function PixPage() {
     try {
       const response = await api.createPixPayment({ amount, cpfCnpj, idempotencyKey: attempt.current.key })
       if (!response.success) throw new Error(response.error || 'Não foi possível gerar o Pix.')
+      // Só depois do sucesso, para não lembrar um documento que o Mercado Pago recusou.
+      savePayerDocument(user.id, cpfCnpj)
       setPayment(response.data)
       setStatus('pending')
       await navigate({ to: '/pix/$paymentId', params: { paymentId: response.data.paymentId } })
@@ -96,7 +102,8 @@ export default function PixPage() {
           <p className="text-xs text-ferro-600 mt-1">Escolha qualquer valor a partir de R$ 0,01.</p></div>
         <div><p className="font-semibold mb-2">CPF/CNPJ do pagador</p>
           <CpfCnpjInput value={cpfCnpj} onChange={setCpfCnpj} aria-label="CPF ou CNPJ do pagador" />
-          {cpfCnpj && !isValidCpfCnpj(cpfCnpj).valid && <p className="text-sm text-vagao-700 mt-1">Informe um CPF ou CNPJ válido.</p>}</div>
+          {cpfCnpj && !isValidCpfCnpj(cpfCnpj).valid && <p className="text-sm text-vagao-700 mt-1">Informe um CPF ou CNPJ válido.</p>}
+          <p className="text-xs text-ferro-600 mt-1">Depois de gerar o Pix, o documento fica salvo neste aparelho para a próxima recarga.</p></div>
         {validAmount && <div className="bilhete p-4 space-y-2">
           <div className="flex justify-between text-sm"><span>Crédito na conta</span><span>{money(amount)}</span></div>
           <div className="flex justify-between text-sm"><span>Taxa de serviço (1%)</span><span>{money(serviceFee)}</span></div>
