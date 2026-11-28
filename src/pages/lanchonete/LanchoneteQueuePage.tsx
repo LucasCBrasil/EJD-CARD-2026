@@ -4,6 +4,7 @@ import { useToastContext } from '../../contexts/ToastContext'
 import { useLanchoneteQueue, useSelfOrderEnabled, useUpdateLanchoneteOrder } from '../../hooks/useLanchoneteOrders'
 import type { LanchoneteOrder } from '../../lib/api-client'
 import { getOrderStatusClass, getOrderStatusLabel } from '../../lib/orderStatus'
+import { openOrderPrintWindow, printLanchoneteOrder } from '../../lib/lanchonetePrint'
 
 type QueueTab = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
 type OrderAction = 'preparing' | 'ready' | 'delivered' | 'cancel'
@@ -68,9 +69,24 @@ const LanchoneteQueuePage: React.FC = () => {
     knownIds.current = new Set(openQueue.data.map((o) => o.id))
   }, [openQueue.data, showInfo])
 
+  const printOrder = (order: LanchoneteOrder, printWindow: Window | null) => {
+    if (!printWindow) {
+      showError('Não foi possível abrir a impressão', 'Permita janelas pop-up e use Reimprimir comanda.')
+      return
+    }
+    try {
+      printLanchoneteOrder(printWindow, order)
+    } catch {
+      printWindow.close()
+      showError('Não foi possível imprimir', 'Confira a impressora e use Reimprimir comanda.')
+    }
+  }
+
   const runAction = (order: LanchoneteOrder, action: OrderAction) => {
+    const printWindow = action === 'preparing' ? openOrderPrintWindow() : null
     updateOrder.mutate({ saleId: order.id, action }, {
       onSuccess: () => {
+        if (action === 'preparing') printOrder(order, printWindow)
         setFreshIds((prev) => {
           const next = new Set(prev)
           next.delete(order.id)
@@ -81,6 +97,7 @@ const LanchoneteQueuePage: React.FC = () => {
         setConfirm(null)
       },
       onError: (error) => {
+        printWindow?.close()
         showError('Não foi possível atualizar', error instanceof Error ? error.message : 'Tente novamente')
         setConfirm(null)
       },
@@ -184,6 +201,12 @@ const LanchoneteQueuePage: React.FC = () => {
                   <span>Pago com saldo</span>
                   <span className="font-slab text-ferro-900">R$ {formatPrice(order.total)}</span>
                 </div>
+
+                {order.status !== 'pending' && order.status !== 'cancelled' && (
+                  <button type="button" onClick={() => printOrder(order, openOrderPrintWindow())} className="w-full rounded-lg border border-ferro-300 px-3 py-2 text-sm text-ferro-800 hover:bg-creme-200">
+                    Reimprimir comanda
+                  </button>
+                )}
 
                 {!isClosedTab && (
                   <div className="flex gap-2">
